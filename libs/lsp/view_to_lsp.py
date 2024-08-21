@@ -1,15 +1,13 @@
 from __future__ import annotations
+from re import sub
 from typing import cast
-from lsp.types import LanguageKind, TextDocumentItem
+from lsp.types import LanguageKind, Position, TextDocumentItem
 from sublime import Region
 from sublime_plugin import sublime
 
 
 def view_to_text_document_item(view: sublime.View) -> TextDocumentItem :
-    uri = view.settings().get("cn_uri")
-    if not uri:
-        uri = view_to_uri(view)
-        view.settings().set("lsp_uri", uri)
+    uri = get_view_uri(view)
     language_id = 'plaintext'
     syntax = view.syntax()
     if syntax:
@@ -21,6 +19,13 @@ def view_to_text_document_item(view: sublime.View) -> TextDocumentItem :
         'version': view.change_count()
     }
 
+def point_to_position(view: sublime.View, point: int) -> Position:
+    row, col = view.rowcol(point)
+    return {
+        "line": row,
+        "character": col
+    }
+
 def view_to_uri(view) -> str:
     file_name = view.file_name()
     if not file_name:
@@ -28,8 +33,11 @@ def view_to_uri(view) -> str:
     return 'file://' + file_name
 
 
-def get_view_uri(view) -> str | None:
+def get_view_uri(view) -> str:
     uri = view.settings().get("cn_uri")
+    if not uri:
+        uri = view_to_uri(view)
+        view.settings().set("lsp_uri", uri)
     return uri
 
 

@@ -1,13 +1,8 @@
 from __future__ import annotations
-import asyncio
-import os
-from re import sub
-import re
-
 from event_loop import run_future
 from lsp.server import LanguageServer
 from lsp.types import CompletionParams, HoverParams
-from lsp.view_to_lsp import get_view_uri, view_to_text_document_item
+from lsp.view_to_lsp import get_view_uri, point_to_position, view_to_text_document_item
 import sublime
 from html import escape
 
@@ -34,9 +29,6 @@ def plugin_loaded() -> None:
     run_future(main())
 
 def open_document(view: sublime.View):
-    file_name = view.file_name()
-    if not file_name:
-        return
     for server in servers:
         text_document = view_to_text_document_item(view)
         server.notify.did_open_text_document({
@@ -54,26 +46,19 @@ class DocumentListener(sublime_plugin.ViewEventListener):
         open_document(self.view)
 
     def on_close(self):
-        uri = get_view_uri(self.view)
-        if not uri:
-            return
         for server in servers:
             server.notify.did_close_text_document({
                 'textDocument': {
-                    'uri': uri
+                    'uri': get_view_uri(self.view)
                 }
             })
 
     def on_query_completions(self, _prefix: str, locations: list[Point]):
         completion_list = sublime.CompletionList()
-        file_name = self.view.file_name()
-        if not file_name:
-            return
-        row, col = self.view.rowcol(locations[0])
         params: CompletionParams = {
-            'position': {'line': row, 'character': col},
+            'position': point_to_position(self.view, locations[0]),
             'textDocument': {
-                'uri': 'file://' + file_name
+                'uri': get_view_uri(self.view)
             }
         }
         run_future(self.do_completions(completion_list, params))
@@ -84,11 +69,10 @@ class DocumentListener(sublime_plugin.ViewEventListener):
             file_name = self.view.file_name()
             if not file_name:
                 return
-            row, col = self.view.rowcol(point)
             run_future(self.do_hover({
-                'position': { 'line': row,'character': col },
+                'position': point_to_position(self.view, point),
                 'textDocument': {
-                    'uri': 'file://' + file_name
+                    'uri': get_view_uri(self.view)
                 },
             }, point))
 

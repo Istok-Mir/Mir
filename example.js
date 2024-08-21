@@ -7,5 +7,3 @@ x.addEventListener()
 x.addEventListener('click', () => {
 
 })
-
-window.addEventListener('click',)

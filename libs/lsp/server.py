@@ -9,7 +9,7 @@ from sublime_plugin import sublime
 import datetime
 
 from .dotted_dict import DottedDict
-from .types import ErrorCodes, LSPAny, LogMessageParams, RegistrationParams
+from .types import ErrorCodes, LSPAny, LogMessageParams, MessageType, RegistrationParams
 from .lsp_requests import LspRequest, LspNotification
 from .capabilities import client_capabilities, method_to_capability
 
@@ -67,13 +67,6 @@ def create_message(payload: PayloadLike) :
         "Content-Type: application/vscode-jsonrpc; charset=utf-8\r\n\r\n".encode(ENCODING),
         body
     )
-
-
-class MessageType:
-    error = 1
-    warning = 2
-    info = 3
-    log = 4
 
 
 class Request():
@@ -192,7 +185,7 @@ class LanguageServer:
 
     def _log(self, message: str) -> None:
         self.send_notification("window/logMessage",
-                     {"type": MessageType.info, "message": message})
+                     {"type": MessageType.Info, "message": message})
 
     async def run_forever(self) -> bool:
         try:
@@ -333,12 +326,12 @@ class LanguageServer:
             self._log(f"unhandled {method}")
             return
         try:
-            handler(params)
+            handler(OnNotificationPayload(self, params))
         except asyncio.CancelledError:
             return
         except Exception as ex:
             if not self._received_shutdown:
-                self.send_notification("window/logMessage", {"type": MessageType.error, "message": str(ex)})
+                self.send_notification("window/logMessage", {"type": MessageType.Error, "message": str(ex)})
 
 
 T = TypeVar('T')
@@ -347,9 +340,22 @@ class OnRequestPayload(Generic[T]):
         self.server =server
         self.params =params
 
+T = TypeVar('T')
+class OnNotificationPayload(Generic[T]):
+    def __init__(self, server: LanguageServer, params: T) -> None:
+        self.server =server
+        self.params =params
 
-def on_log_message(payload: OnRequestPayload[LogMessageParams]):
-        print(f"dasdasd")
+
+def on_log_message(payload: OnNotificationPayload[LogMessageParams]):
+    message_type = {
+        MessageType.Error: 'Error',
+        MessageType.Warning: 'Warning',
+        MessageType.Info: 'Info',
+        MessageType.Debug: 'Debug',
+        MessageType.Log: 'Log',
+    }.get(payload.params.get('type', MessageType.Log))
+    print(f"{message_type}: {payload.params.get('message')}")
 
 async def workspace_configuration(payload: OnRequestPayload):
     return []
