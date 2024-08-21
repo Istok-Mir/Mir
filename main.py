@@ -57,7 +57,9 @@ class DocumentListener3(sublime_plugin.EventListener):
             server.stop()
 
 class DocumentListener(sublime_plugin.ViewEventListener):
-    hovers: asyncio.Future | None = None
+    def __init__(self, view: sublime.View):
+        super().__init__(view)
+        self.pending_hover_requests: asyncio.Future | None=None
     def on_load(self):
         open_document(self.view)
 
@@ -76,6 +78,9 @@ class DocumentListener(sublime_plugin.ViewEventListener):
         return completion_list
 
     def on_hover(self, point, hover_zone):
+        if self.pending_hover_requests:
+            self.pending_hover_requests.cancel()
+            self.pending_hover_requests=None
         if hover_zone == 1:
             run_future(self.do_hover({
                 'position': point_to_position(self.view, point),
@@ -85,14 +90,12 @@ class DocumentListener(sublime_plugin.ViewEventListener):
             }, point))
 
     async def do_hover(self, params: HoverParams, hover_point):
-        if DocumentListener.hovers:
-            DocumentListener.hovers.cancel()
-            DocumentListener.hovers=None
         results = []
         try:
-            futures = asyncio.gather(*[server.send.hover(params) for server in servers if server.capabilities.has('hoverProvider')])
-            DocumentListener.hovers = futures
-            results = await futures
+            hover_requests = asyncio.gather(*[server.send.hover(params) for server in servers if server.capabilities.has('hoverProvider')])
+            self.pending_hover_requests=hover_requests
+            results = await hover_requests
+            self.pending_hover_requests=None
         except Exception as e:
             print('HoverError:', e)
         combined_content = []
@@ -104,7 +107,7 @@ class DocumentListener(sublime_plugin.ViewEventListener):
                     combined_content.append(content)
             if combined_content:
                 self.view.show_popup(
-                    f"<html style='border: 1px solid color(var(--foreground) blend(var(--background) 20%));'><div style='padding: 0.2rem 0.5rem; font-size: 1rem;'>{'<hr>'.join(combined_content)}</div></html>",
+                    f"<html style='border: 1px solid color(var(--foreground) blend(var(--background) 20%));'><body><div style='padding: 0.2rem 0.5rem; font-size: 1rem;'>{'<hr>'.join(combined_content)}</div></body></html>",
                     sublime.PopupFlags.HIDE_ON_MOUSE_MOVE_AWAY,
                     hover_point,
                     max_width=800,
