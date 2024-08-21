@@ -35,6 +35,15 @@ def open_document(view: sublime.View):
             'textDocument': text_document
         })
 
+def close_document(view: sublime.View):
+    for server in servers:
+        server.notify.did_close_text_document({
+            'textDocument': {
+                'uri': get_view_uri(view)
+            }
+        })
+
+
 class DocumentListener3(sublime_plugin.EventListener):
     def on_exit(self):
         global servers
@@ -46,12 +55,7 @@ class DocumentListener(sublime_plugin.ViewEventListener):
         open_document(self.view)
 
     def on_close(self):
-        for server in servers:
-            server.notify.did_close_text_document({
-                'textDocument': {
-                    'uri': get_view_uri(self.view)
-                }
-            })
+       close_document(self.view)
 
     def on_query_completions(self, _prefix: str, locations: list[Point]):
         completion_list = sublime.CompletionList()
