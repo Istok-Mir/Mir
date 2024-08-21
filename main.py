@@ -27,7 +27,7 @@ async def main():
     servers.append(tailwind_ls)
 
     # notify ls of currenly open views
-    views = sublime.active_window().views()
+    views = [v for w in sublime.windows() for v in w.views()]
     for v in views:
         open_document(v)
 

@@ -184,6 +184,8 @@ class LanguageServer:
             self.notify.initialized({})
         except Exception as e:
             print('Error when creating the subprocess:', e)
+            print(f'Stopping {self.name}')
+            self.stop()
 
     def stop(self):
         run_future(self.shutdown())
