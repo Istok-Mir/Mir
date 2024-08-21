@@ -133,7 +133,9 @@ class CommmunicationLogs:
     def append(self, log: str):
         self.logs.append(log)
         self.panel.run_command("append", {
-            'characters': log + '\n\n'
+            'characters': log + '\n\n',
+            'force': False,
+            'scroll_to_end': True
         })
         self.panel.clear_undo_stack()
 

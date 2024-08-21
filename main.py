@@ -1,4 +1,5 @@
 from __future__ import annotations
+import asyncio
 from event_loop import run_future
 from lsp.minihtml import FORMAT_MARKED_STRING, FORMAT_MARKUP_CONTENT, FORMAT_STRING, minihtml
 from lsp.server import LanguageServer
@@ -56,6 +57,7 @@ class DocumentListener3(sublime_plugin.EventListener):
             server.stop()
 
 class DocumentListener(sublime_plugin.ViewEventListener):
+    hovers: asyncio.Future | None = None
     def on_load(self):
         open_document(self.view)
 
@@ -83,13 +85,18 @@ class DocumentListener(sublime_plugin.ViewEventListener):
             }, point))
 
     async def do_hover(self, params: HoverParams, hover_point):
+        if DocumentListener.hovers:
+            DocumentListener.hovers.cancel()
+            DocumentListener.hovers=None
+        results = []
+        try:
+            futures = asyncio.gather(*[server.send.hover(params) for server in servers if server.capabilities.has('hoverProvider')])
+            DocumentListener.hovers = futures
+            results = await futures
+        except Exception as e:
+            print('HoverError:', e)
         combined_content = []
-        for server in servers:
-            res = None
-            try:
-                res = await server.send.hover(params)
-            except Exception as e:
-                print('HoverError:', e)
+        for res in results:
             if isinstance(res, dict):
                 content = res['contents']
                 if content:
