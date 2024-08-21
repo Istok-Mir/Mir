@@ -1,15 +1,18 @@
 from __future__ import annotations
-from typing import  Any, Dict, Generic, List, Optional, TypeVar, Union
+from typing import  Any, Dict, Generic, List, Optional, TypeVar, Union, cast
 import asyncio
 import json
 
+from event_loop import run_future
 from lsp.capabilities import ServerCapability
 from sublime_plugin import sublime
 import datetime
 
 from .dotted_dict import DottedDict
-from .types import ErrorCodes, LSPAny
+from .types import ErrorCodes, LSPAny, LogMessageParams, RegistrationParams
 from .lsp_requests import LspRequest, LspNotification
+from .capabilities import client_capabilities, method_to_capability
+
 
 StringDict = Dict[str, Any]
 PayloadLike = Union[List[StringDict], StringDict, None]
@@ -144,7 +147,12 @@ class LanguageServer:
         self._response_handlers: Dict[Any, Request] = {}
         self.on_request_handlers = {}
         self.on_notification_handlers = {}
-        self.logs = []
+        self.communcation_logs = []
+
+        # respond to server requests and notifications
+        self.on_request('workspace/configuration', workspace_configuration)
+        self.on_request('client/registerCapability', register_capability)
+        self.on_notification('window/logMessage', on_log_message)
 
     async def start(self):
         try:
@@ -152,13 +160,26 @@ class LanguageServer:
                 self.cmd,
                 stdout=asyncio.subprocess.PIPE,
                 stdin=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
             )
+            asyncio.get_event_loop().create_task(self.run_forever())
+
+            folders = sublime.active_window().folders()
+            root_folder = folders[0] if folders else ''
+            initialize_result = await self.send.initialize({
+                'processId': self.process.pid,
+                'rootUri': 'file://' + root_folder,
+                'rootPath': root_folder,
+                'workspaceFolders': [{'name': 'OLSP', 'uri': 'file://' + root_folder}],
+                'capabilities': client_capabilities,
+                'initializationOptions': {'completionDisableFilterText': True, 'disableAutomaticTypingAcquisition': False, 'locale': 'en', 'maxTsServerMemory': 0, 'npmLocation': '', 'plugins': [], 'preferences': {'allowIncompleteCompletions': True, 'allowRenameOfImportPath': True, 'allowTextChangesInNewFiles': True, 'autoImportFileExcludePatterns': [], 'disableSuggestions': False, 'displayPartsForJSDoc': True, 'excludeLibrarySymbolsInNavTo': True, 'generateReturnInDocTemplate': True, 'importModuleSpecifierEnding': 'auto', 'importModuleSpecifierPreference': 'shortest', 'includeAutomaticOptionalChainCompletions': True, 'includeCompletionsForImportStatements': True, 'includeCompletionsForModuleExports': True, 'includeCompletionsWithClassMemberSnippets': True, 'includeCompletionsWithInsertText': True, 'includeCompletionsWithObjectLiteralMethodSnippets': True, 'includeCompletionsWithSnippetText': True, 'includePackageJsonAutoImports': 'auto', 'interactiveInlayHints': True, 'jsxAttributeCompletionStyle': 'auto', 'lazyConfiguredProjectsFromExternalProject': False, 'organizeImportsAccentCollation': True, 'organizeImportsCaseFirst': False, 'organizeImportsCollation': 'ordinal', 'organizeImportsCollationLocale': 'en', 'organizeImportsIgnoreCase': 'auto', 'organizeImportsNumericCollation': False, 'providePrefixAndSuffixTextForRename': True, 'provideRefactorNotApplicableReason': True, 'quotePreference': 'auto', 'useLabelDetailsInCompletionEntries': True}, 'tsserver': {'fallbackPath': '', 'logDirectory': '', 'logVerbosity': 'off', 'path': '', 'trace': 'off', 'useSyntaxServer': 'auto'}}
+            })
+            self.capabilities.assign(cast(dict, initialize_result['capabilities']))
+            self.notify.initialized({})
         except Exception as e:
             print('Error when creating the subprocess:', e)
-        asyncio.get_event_loop().create_task(self.run_forever())
 
     def stop(self):
+        run_future(self.shutdown())
         if self.process:
             self.process.kill()
 
@@ -220,7 +241,7 @@ class LanguageServer:
             self._log(f"Error handling server payload: {err}")
 
     def send_notification(self, method: str, params: Optional[dict] = None):
-        self.logs.append(f'{method} notification | client -> {self.name}\nParams: {sublime.encode_value(params)}')
+        self.communcation_logs.append(f'{method} notification | client -> {self.name}\nParams: {sublime.encode_value(params)}')
         self._send_payload_sync(
             make_notification(method, params))
 
@@ -229,7 +250,7 @@ class LanguageServer:
             make_response(request_id, params)))
 
     def send_error_response(self, request_id: Any, err: Error) -> None:
-        self.logs.append(f'Error response ({request_id}) | client -> {self.name}\nReason: {err}')
+        self.communcation_logs.append(f'Error response ({request_id}) | client -> {self.name}\nReason: {err}')
         asyncio.get_event_loop().create_task(self._send_payload(
             make_error_response(request_id, err)))
 
@@ -240,14 +261,14 @@ class LanguageServer:
         self._response_handlers[request_id] = request
         start_of_req = datetime.datetime.now()
         async with request.cv:
-            self.logs.append(f'{method} request ({request_id}) | client -> {self.name}\nParams: {sublime.encode_value(params)}')
+            self.communcation_logs.append(f'{method} request ({request_id}) | client -> {self.name}\nParams: {sublime.encode_value(params)}')
             await self._send_payload(make_request(method, request_id, params))
             await request.cv.wait()
         if isinstance(request.error, Error):
-            self.logs.append(f'{method} error response ({request_id}) | {self.name} -> client\nReason:\n{request.error}')
+            self.communcation_logs.append(f'{method} error response ({request_id}) | {self.name} -> client\nReason:\n{request.error}')
             raise request.error
         end_of_req = datetime.datetime.now()
-        self.logs.append(f'{method} response ({request_id}) - {round((end_of_req-start_of_req).total_seconds(), 2)}s | {self.name} -> client \n{request.result}')
+        self.communcation_logs.append(f'{method} response ({request_id}) - {round((end_of_req-start_of_req).total_seconds(), 2)}s | {self.name} -> client \n{request.result}')
         return request.result
 
     def _send_payload_sync(self, payload: StringDict) -> None:
@@ -294,9 +315,9 @@ class LanguageServer:
                     ErrorCodes.MethodNotFound, "method '{}' not handled on client.".format(method)))
             return
         try:
-            self.logs.append(f'{method} request ({request_id}) | {self.name} -> client\nParams: {sublime.encode_value(params)}')
+            self.communcation_logs.append(f'{method} request ({request_id}) | {self.name} -> client\nParams: {sublime.encode_value(params)}')
             res = await handler(OnRequestPayload(self, params))
-            self.logs.append(f'{method} response ({request_id}) | client -> {self.name}\n{sublime.encode_value(res)}')
+            self.communcation_logs.append(f'{method} response ({request_id}) | client -> {self.name}\n{sublime.encode_value(res)}')
             self.send_response(request_id, res)
         except Error as ex:
             self.send_error_response(request_id, ex)
@@ -307,7 +328,7 @@ class LanguageServer:
         method = response.get("method", "")
         params = response.get("params")
         handler = self.on_notification_handlers.get(method)
-        self.logs.append(f'{method} notification | {self.name} -> client\nParams: {sublime.encode_value(params)}')
+        self.communcation_logs.append(f'{method} notification | {self.name} -> client\nParams: {sublime.encode_value(params)}')
         if not handler:
             self._log(f"unhandled {method}")
             return
@@ -319,8 +340,27 @@ class LanguageServer:
             if not self._received_shutdown:
                 self.send_notification("window/logMessage", {"type": MessageType.error, "message": str(ex)})
 
+
 T = TypeVar('T')
 class OnRequestPayload(Generic[T]):
     def __init__(self, server: LanguageServer, params: T) -> None:
         self.server =server
         self.params =params
+
+
+def on_log_message(payload: OnRequestPayload[LogMessageParams]):
+        print(f"dasdasd")
+
+async def workspace_configuration(payload: OnRequestPayload):
+    return []
+
+async def register_capability(payload: OnRequestPayload[RegistrationParams]):
+    params = payload.params
+    registrations = params["registrations"]
+    for registration in registrations:
+        capability_path = method_to_capability(registration["method"])
+        options = registration.get("registerOptions")
+        if not isinstance(options, dict):
+            options = {}
+        payload.server.capabilities.register(capability_path, options)
+

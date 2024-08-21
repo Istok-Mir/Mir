@@ -16,14 +16,14 @@ client_capabilities: ClientCapabilities = {
         },
         'hover': {
             'dynamicRegistration': True,
-            'contentFormat': [MarkupKind.Markdown, MarkupKind.PlainText]
+            'contentFormat': [MarkupKind.PlainText]
         },
         'completion': {
             'dynamicRegistration': True,
             'completionItem': {
                 'snippetSupport': True,
                 'deprecatedSupport': True,
-                'documentationFormat': [MarkupKind.Markdown, MarkupKind.PlainText],
+                'documentationFormat': [MarkupKind.PlainText],
                 'tagSupport': {'valueSet': [CompletionItemTag.Deprecated]},
                 'resolveSupport': {
                     'properties': ['detail', 'documentation', 'additionalTextEdits']
@@ -44,7 +44,7 @@ client_capabilities: ClientCapabilities = {
             'contextSupport': True,
             'signatureInformation': {
                 'activeParameterSupport': True,
-                'documentationFormat': [MarkupKind.Markdown, MarkupKind.PlainText],
+                'documentationFormat': [MarkupKind.PlainText],
                 'parameterInformation': {'labelOffsetSupport': True}
             }
         },

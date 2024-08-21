@@ -1,12 +1,11 @@
-let x = document.querySelector('article')
-document.querySelector('a')
-document.querySelector('area')
+let x = document.querySelector('button')
+x.addEventListener('click')
 
-x.addEventListener('click', ()=> {
+
+x.addEventListener()
+
+x.addEventListener('click', () => {
 
 })
 
-x.removeEventListener()
-let x = document.querySelector('a')
-
-console.table()
+window.addEventListener('click',)

@@ -1,13 +1,13 @@
-
 from __future__ import annotations
 import asyncio
 import os
 from re import sub
+import re
 
 from event_loop import run_future
-from lsp.server import LanguageServer, OnRequestPayload
-from lsp.types import CompletionParams, HoverParams, LogMessageParams, MessageType, RegistrationParams
-from lsp.capabilities import client_capabilities, method_to_capability
+from lsp.server import LanguageServer
+from lsp.types import CompletionParams, HoverParams
+from lsp.view_to_lsp import get_view_uri, view_to_text_document_item
 import sublime
 from html import escape
 
@@ -25,53 +25,23 @@ async def main():
     await tailwind_ls.start()
     servers.append(tailwind_ls)
 
-    def on_log_message(payload: OnRequestPayload[LogMessageParams]):
-        print(f"dasdasd")
-
-    async def workspace_configuration(payload: OnRequestPayload):
-        return []
-
-    async def register_capability(payload: OnRequestPayload[RegistrationParams]):
-        params = payload.params
-        registrations = params["registrations"]
-        for registration in registrations:
-            capability_path = method_to_capability(registration["method"])
-            options = registration.get("registerOptions")
-            if not isinstance(options, dict):
-                options = {}
-            payload.server.capabilities.register(capability_path, options)
-
-    for s in servers:
-        s.on_request('workspace/configuration', workspace_configuration)
-        s.on_request('client/registerCapability', register_capability)
-        s.on_notification('window/logMessage', on_log_message)
-
-    folders = sublime.active_window().folders()
-    root_folder = folders[0] if folders else ''
-    result = await ts_ls.send.initialize({
-        'processId': os.getpid(),
-        'rootUri': 'file://' + root_folder,
-        'rootPath': root_folder,
-        'workspaceFolders': [{'name': 'OLSP', 'uri': 'file://' + root_folder}],
-        'capabilities': client_capabilities,
-        'initializationOptions': {'completionDisableFilterText': True, 'disableAutomaticTypingAcquisition': False, 'locale': 'en', 'maxTsServerMemory': 0, 'npmLocation': '', 'plugins': [], 'preferences': {'allowIncompleteCompletions': True, 'allowRenameOfImportPath': True, 'allowTextChangesInNewFiles': True, 'autoImportFileExcludePatterns': [], 'disableSuggestions': False, 'displayPartsForJSDoc': True, 'excludeLibrarySymbolsInNavTo': True, 'generateReturnInDocTemplate': True, 'importModuleSpecifierEnding': 'auto', 'importModuleSpecifierPreference': 'shortest', 'includeAutomaticOptionalChainCompletions': True, 'includeCompletionsForImportStatements': True, 'includeCompletionsForModuleExports': True, 'includeCompletionsWithClassMemberSnippets': True, 'includeCompletionsWithInsertText': True, 'includeCompletionsWithObjectLiteralMethodSnippets': True, 'includeCompletionsWithSnippetText': True, 'includePackageJsonAutoImports': 'auto', 'interactiveInlayHints': True, 'jsxAttributeCompletionStyle': 'auto', 'lazyConfiguredProjectsFromExternalProject': False, 'organizeImportsAccentCollation': True, 'organizeImportsCaseFirst': False, 'organizeImportsCollation': 'ordinal', 'organizeImportsCollationLocale': 'en', 'organizeImportsIgnoreCase': 'auto', 'organizeImportsNumericCollation': False, 'providePrefixAndSuffixTextForRename': True, 'provideRefactorNotApplicableReason': True, 'quotePreference': 'auto', 'useLabelDetailsInCompletionEntries': True}, 'tsserver': {'fallbackPath': '', 'logDirectory': '', 'logVerbosity': 'off', 'path': '', 'trace': 'off', 'useSyntaxServer': 'auto'}}
-    })
-    ts_ls.notify.initialized({})
-    ts_ls.capabilities.assign(result['capabilities'])
-    result2 =await tailwind_ls.send.initialize({
-        'processId': os.getpid(),
-        'rootUri': 'file://' + root_folder,
-        'rootPath': root_folder,
-        'workspaceFolders': [{'name': 'OLSP', 'uri': 'file://' + root_folder}],
-        'capabilities': client_capabilities,
-        'initializationOptions': {},
-    })
-    tailwind_ls.capabilities.assign(result2['capabilities'])
-    tailwind_ls.notify.initialized({})
-    tailwind_ls.notify.workspace_did_change_configuration({'settings': {'tailwindCSS': {'classAttributes': ['class', 'className', 'ngClass'], 'colorDecorators': True, 'emmetCompletions': False, 'experimental': {'classRegex': []}, 'files': {'exclude': ['**/.git/**', '**/node_modules/**', '**/.hg/**']}, 'includeLanguages': {'elixir': 'html'}, 'lint': {'cssConflict': 'warning', 'invalidApply': 'error', 'invalidConfigPath': 'error', 'invalidScreen': 'error', 'invalidTailwindDirective': 'error', 'invalidVariant': 'error', 'recommendedVariantOrder': 'warning'}, 'rootFontSize': 16, 'showPixelEquivalents': True, 'validate': True}}})
+    # notify ls of currenly open views
+    views = sublime.active_window().views()
+    for v in views:
+        open_document(v)
 
 def plugin_loaded() -> None:
     run_future(main())
+
+def open_document(view: sublime.View):
+    file_name = view.file_name()
+    if not file_name:
+        return
+    for server in servers:
+        text_document = view_to_text_document_item(view)
+        server.notify.did_open_text_document({
+            'textDocument': text_document
+        })
 
 class DocumentListener3(sublime_plugin.EventListener):
     def on_exit(self):
@@ -81,27 +51,16 @@ class DocumentListener3(sublime_plugin.EventListener):
 
 class DocumentListener(sublime_plugin.ViewEventListener):
     def on_load(self):
-        file_name = self.view.file_name()
-        if not file_name:
-            return
-        for server in servers:
-            server.notify.did_open_text_document({
-                'textDocument': {
-                    'version': self.view.change_count(),
-                    'languageId': 'typescriptreact',
-                    'text': self.view.substr(sublime.Region(0, self.view.size())),
-                    'uri': 'file://' + file_name
-                }
-            })
+        open_document(self.view)
 
     def on_close(self):
-        file_name = self.view.file_name()
-        if not file_name:
+        uri = get_view_uri(self.view)
+        if not uri:
             return
         for server in servers:
             server.notify.did_close_text_document({
                 'textDocument': {
-                    'uri': 'file://' + file_name
+                    'uri': uri
                 }
             })
 
