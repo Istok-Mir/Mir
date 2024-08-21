@@ -83,7 +83,7 @@ class DocumentListener(sublime_plugin.ViewEventListener):
             }, point))
 
     async def do_hover(self, params: HoverParams, hover_point):
-        contents = []
+        combined_content = []
         for server in servers:
             res = None
             try:
@@ -92,14 +92,12 @@ class DocumentListener(sublime_plugin.ViewEventListener):
                 print('HoverError:', e)
             if isinstance(res, dict):
                 content = res['contents']
-                print('content', content)
                 if content:
                     content = minihtml(self.view, content, FORMAT_MARKED_STRING | FORMAT_MARKUP_CONTENT)
-                    contents.append(content)
-            if contents:
-                print('contents', contents)
+                    combined_content.append(content)
+            if combined_content:
                 self.view.show_popup(
-                    f"<html style='border: 1px solid color(var(--foreground) blend(var(--background) 20%));'><div style='padding: 0.2rem 0.5rem; font-size: 1rem;'>{'<hr>'.join(contents)}</div></html>",
+                    f"<html style='border: 1px solid color(var(--foreground) blend(var(--background) 20%));'><div style='padding: 0.2rem 0.5rem; font-size: 1rem;'>{'<hr>'.join(combined_content)}</div></html>",
                     sublime.PopupFlags.HIDE_ON_MOUSE_MOVE_AWAY,
                     hover_point,
                     max_width=800,
