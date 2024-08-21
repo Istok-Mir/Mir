@@ -1,5 +1,6 @@
 from __future__ import annotations
 from event_loop import run_future
+from lsp.minihtml import FORMAT_MARKED_STRING, FORMAT_MARKUP_CONTENT, FORMAT_STRING, minihtml
 from lsp.server import LanguageServer
 from lsp.types import CompletionParams, HoverParams
 from lsp.view_to_lsp import get_view_uri, point_to_position, view_to_text_document_item
@@ -78,6 +79,7 @@ class DocumentListener(sublime_plugin.ViewEventListener):
             }, point))
 
     async def do_hover(self, params: HoverParams, hover_point):
+        contents = []
         for server in servers:
             res = None
             try:
@@ -86,13 +88,18 @@ class DocumentListener(sublime_plugin.ViewEventListener):
                 print('HoverError:', e)
             if isinstance(res, dict):
                 content = res['contents']
-                if isinstance(content, dict) and 'value' in content:
-                    self.view.show_popup(
-                        "<pre style='white-space: pre-wrap'>"+escape(content['value']).replace('\n', '<br>')+"</pre>",
-                        sublime.PopupFlags.HIDE_ON_MOUSE_MOVE_AWAY,
-                        hover_point,
-                        max_width=1200,
-                    )
+                print('content', content)
+                if content:
+                    content = minihtml(self.view, content, FORMAT_MARKED_STRING | FORMAT_MARKUP_CONTENT)
+                    contents.append(content)
+            if contents:
+                print('contents', contents)
+                self.view.show_popup(
+                    f"<div style='padding: 0.2rem; font-size: 1rem'>{'<hr>'.join(contents)}</div>",
+                    sublime.PopupFlags.HIDE_ON_MOUSE_MOVE_AWAY,
+                    hover_point,
+                    max_width=800,
+                )
 
     async def do_completions(self, completion_list: sublime.CompletionList, params: CompletionParams):
         completions: list[sublime.CompletionValue] = []
