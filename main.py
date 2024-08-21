@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 import asyncio
 import os
@@ -5,7 +6,7 @@ from re import sub
 
 from event_loop import run_future
 from lsp.server import LanguageServer, OnRequestPayload
-from lsp.types import CompletionParams, HoverParams, RegistrationParams
+from lsp.types import CompletionParams, HoverParams, LogMessageParams, MessageType, RegistrationParams
 from lsp.capabilities import client_capabilities, method_to_capability
 import sublime
 from html import escape
@@ -17,15 +18,15 @@ servers: list[LanguageServer] = []
 
 async def main():
     global servers
-    ts_ls = LanguageServer('typescript-language-server --stdio')
+    ts_ls = LanguageServer('typescript-language-server', cmd='typescript-language-server --stdio')
     await ts_ls.start()
     servers.append(ts_ls)
-    tailwind_ls = LanguageServer('tailwindcss-language-server --stdio')
+    tailwind_ls = LanguageServer('tailwindcss-language-server', cmd='tailwindcss-language-server --stdio')
     await tailwind_ls.start()
     servers.append(tailwind_ls)
 
-    def on_log_message(payload: OnRequestPayload):
-        print('log:', payload)
+    def on_log_message(payload: OnRequestPayload[LogMessageParams]):
+        print(f"dasdasd")
 
     async def workspace_configuration(payload: OnRequestPayload):
         return []

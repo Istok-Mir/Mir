@@ -4,6 +4,8 @@ import asyncio
 import json
 
 from lsp.capabilities import ServerCapability
+from sublime_plugin import sublime
+import datetime
 
 from .dotted_dict import DottedDict
 from .types import ErrorCodes, LSPAny
@@ -127,8 +129,9 @@ class ServerCapabilities(DottedDict):
         self.remove(server_capability)
 
 
-class LanguageServer():
-    def __init__(self, cmd: str) -> None:
+class LanguageServer:
+    def __init__(self, name: str, cmd: str) -> None:
+        self.name = name
         self.send = LspRequest(self.send_request)
         self.notify = LspNotification(self.send_notification)
         self.capabilities = ServerCapabilities()
@@ -141,6 +144,7 @@ class LanguageServer():
         self._response_handlers: Dict[Any, Request] = {}
         self.on_request_handlers = {}
         self.on_notification_handlers = {}
+        self.logs = []
 
     async def start(self):
         try:
@@ -216,6 +220,7 @@ class LanguageServer():
             self._log(f"Error handling server payload: {err}")
 
     def send_notification(self, method: str, params: Optional[dict] = None):
+        self.logs.append(f'{method} notification | client -> {self.name}\nParams: {sublime.encode_value(params)}')
         self._send_payload_sync(
             make_notification(method, params))
 
@@ -224,6 +229,7 @@ class LanguageServer():
             make_response(request_id, params)))
 
     def send_error_response(self, request_id: Any, err: Error) -> None:
+        self.logs.append(f'Error response ({request_id}) | client -> {self.name}\nReason: {err}')
         asyncio.get_event_loop().create_task(self._send_payload(
             make_error_response(request_id, err)))
 
@@ -232,11 +238,17 @@ class LanguageServer():
         request_id = self.request_id
         self.request_id += 1
         self._response_handlers[request_id] = request
+        start_of_req = datetime.datetime.now()
         async with request.cv:
+            self.logs.append(f'{method} request ({request_id}) | client -> {self.name}\nParams: {sublime.encode_value(params)}')
             await self._send_payload(make_request(method, request_id, params))
             await request.cv.wait()
         if isinstance(request.error, Error):
+            self.logs.append(f'{method} error response ({request_id}) | {self.name} -> client\nReason:\n{request.error}')
             raise request.error
+        end_of_req = datetime.datetime.now()
+        self.logs.append(f'{method} response ({request_id}) - {round((end_of_req-start_of_req).total_seconds(), 2)}s | {self.name} -> client \n{request.result}')
+        print('logs', "\n\n".join(self.logs))
         return request.result
 
     def _send_payload_sync(self, payload: StringDict) -> None:
@@ -283,7 +295,10 @@ class LanguageServer():
                     ErrorCodes.MethodNotFound, "method '{}' not handled on client.".format(method)))
             return
         try:
-            self.send_response(request_id, await handler(OnRequestPayload(self, params)))
+            self.logs.append(f'{method} request ({request_id}) | {self.name} -> client\nParams: {sublime.encode_value(params)}')
+            res = await handler(OnRequestPayload(self, params))
+            self.logs.append(f'{method} response ({request_id}) | client -> {self.name}\n{sublime.encode_value(res)}')
+            self.send_response(request_id, res)
         except Error as ex:
             self.send_error_response(request_id, ex)
         except Exception as ex:
@@ -293,11 +308,12 @@ class LanguageServer():
         method = response.get("method", "")
         params = response.get("params")
         handler = self.on_notification_handlers.get(method)
+        self.logs.append(f'{method} notification | {self.name} -> client\nParams: {sublime.encode_value(params)}')
         if not handler:
             self._log(f"unhandled {method}")
             return
         try:
-            await handler(params)
+            handler(params)
         except asyncio.CancelledError:
             return
         except Exception as ex:
