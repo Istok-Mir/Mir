@@ -124,6 +124,18 @@ class ServerCapabilities(DottedDict):
             return
         self.remove(server_capability)
 
+class CommmunicationLogs:
+    def __init__(self, name: str):
+        self.name = name
+        self.logs: list[str] = []
+        self.panel = sublime.active_window().create_output_panel(name)
+
+    def append(self, log: str):
+        self.logs.append(log)
+        self.panel.run_command("append", {
+            'characters': log + '\n\n'
+        })
+        self.panel.clear_undo_stack()
 
 class LanguageServer:
     def __init__(self, name: str, cmd: str) -> None:
@@ -140,7 +152,7 @@ class LanguageServer:
         self._response_handlers: Dict[Any, Request] = {}
         self.on_request_handlers = {}
         self.on_notification_handlers = {}
-        self.communcation_logs = []
+        self.communcation_logs = CommmunicationLogs(name)
 
         # respond to server requests and notifications
         self.on_request('workspace/configuration', workspace_configuration)
@@ -234,7 +246,7 @@ class LanguageServer:
             self._log(f"Error handling server payload: {err}")
 
     def send_notification(self, method: str, params: Optional[dict] = None):
-        self.communcation_logs.append(f'{method} notification | client -> {self.name}\nParams: {sublime.encode_value(params)}')
+        self.communcation_logs.append(f'Send notification "{method}"\nParams: {sublime.encode_value(params)}')
         self._send_payload_sync(
             make_notification(method, params))
 
@@ -243,7 +255,7 @@ class LanguageServer:
             make_response(request_id, params)))
 
     def send_error_response(self, request_id: Any, err: Error) -> None:
-        self.communcation_logs.append(f'Error response ({request_id}) | client -> {self.name}\nReason: {err}')
+        self.communcation_logs.append(f'Send error response ({request_id})\n{err}')
         asyncio.get_event_loop().create_task(self._send_payload(
             make_error_response(request_id, err)))
 
@@ -254,14 +266,15 @@ class LanguageServer:
         self._response_handlers[request_id] = request
         start_of_req = datetime.datetime.now()
         async with request.cv:
-            self.communcation_logs.append(f'{method} request ({request_id}) | client -> {self.name}\nParams: {sublime.encode_value(params)}')
+            self.communcation_logs.append(f'Sending request "{method}" ({request_id})\nParams: {sublime.encode_value(params)}')
             await self._send_payload(make_request(method, request_id, params))
             await request.cv.wait()
-        if isinstance(request.error, Error):
-            self.communcation_logs.append(f'{method} error response ({request_id}) | {self.name} -> client\nReason:\n{request.error}')
-            raise request.error
         end_of_req = datetime.datetime.now()
-        self.communcation_logs.append(f'{method} response ({request_id}) - {round((end_of_req-start_of_req).total_seconds(), 2)}s | {self.name} -> client \n{request.result}')
+        duration = round((end_of_req-start_of_req).total_seconds(), 2)
+        if isinstance(request.error, Error):
+            self.communcation_logs.append(f'Recieved error response "{method}" ({request_id}) - {duration}s\n{request.error}')
+            raise request.error
+        self.communcation_logs.append(f'Recieved response "{method}" ({request_id}) - {duration}s\n{request.result}')
         return request.result
 
     def _send_payload_sync(self, payload: StringDict) -> None:
@@ -308,9 +321,9 @@ class LanguageServer:
                     ErrorCodes.MethodNotFound, "method '{}' not handled on client.".format(method)))
             return
         try:
-            self.communcation_logs.append(f'{method} request ({request_id}) | {self.name} -> client\nParams: {sublime.encode_value(params)}')
+            self.communcation_logs.append(f'Received request "{method}" ({request_id})\nParams: {sublime.encode_value(params)}')
             res = await handler(OnRequestPayload(self, params))
-            self.communcation_logs.append(f'{method} response ({request_id}) | client -> {self.name}\n{sublime.encode_value(res)}')
+            self.communcation_logs.append(f'Sending response "{method}" ({request_id})\n{sublime.encode_value(res)}')
             self.send_response(request_id, res)
         except Error as ex:
             self.send_error_response(request_id, ex)
@@ -321,7 +334,7 @@ class LanguageServer:
         method = response.get("method", "")
         params = response.get("params")
         handler = self.on_notification_handlers.get(method)
-        self.communcation_logs.append(f'{method} notification | {self.name} -> client\nParams: {sublime.encode_value(params)}')
+        self.communcation_logs.append(f'Received notification "{method}"\nParams: {sublime.encode_value(params)}')
         if not handler:
             self._log(f"unhandled {method}")
             return
