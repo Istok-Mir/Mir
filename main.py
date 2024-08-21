@@ -17,6 +17,10 @@ async def main():
     ts_ls = LanguageServer('typescript-language-server', cmd='typescript-language-server --stdio')
     await ts_ls.start()
     servers.append(ts_ls)
+    pvs_ls = LanguageServer('package-version-server', cmd="/Users/predrag/Downloads/package-version-server")
+    await pvs_ls.start()
+    servers.append(pvs_ls)
+
     tailwind_ls = LanguageServer('tailwindcss-language-server', cmd='tailwindcss-language-server --stdio')
     await tailwind_ls.start()
     servers.append(tailwind_ls)
@@ -95,7 +99,7 @@ class DocumentListener(sublime_plugin.ViewEventListener):
             if contents:
                 print('contents', contents)
                 self.view.show_popup(
-                    f"<div style='padding: 0.2rem; font-size: 1rem'>{'<hr>'.join(contents)}</div>",
+                    f"<html style='border: 1px solid color(var(--foreground) blend(var(--background) 20%));'><div style='padding: 0.2rem 0.5rem; font-size: 1rem;'>{'<hr>'.join(contents)}</div></html>",
                     sublime.PopupFlags.HIDE_ON_MOUSE_MOVE_AWAY,
                     hover_point,
                     max_width=800,
