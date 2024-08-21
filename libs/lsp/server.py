@@ -248,7 +248,6 @@ class LanguageServer:
             raise request.error
         end_of_req = datetime.datetime.now()
         self.logs.append(f'{method} response ({request_id}) - {round((end_of_req-start_of_req).total_seconds(), 2)}s | {self.name} -> client \n{request.result}')
-        print('logs', "\n\n".join(self.logs))
         return request.result
 
     def _send_payload_sync(self, payload: StringDict) -> None:

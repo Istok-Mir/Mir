@@ -144,7 +144,7 @@ class DocumentListener(sublime_plugin.ViewEventListener):
                 content = res['contents']
                 if isinstance(content, dict) and 'value' in content:
                     self.view.show_popup(
-                        "<pre style='white-space: pre'>"+escape(content['value']).replace('\n', '<br>')+"</pre>",
+                        "<pre style='white-space: pre-wrap'>"+escape(content['value']).replace('\n', '<br>')+"</pre>",
                         sublime.PopupFlags.HIDE_ON_MOUSE_MOVE_AWAY,
                         hover_point,
                         max_width=1200,
