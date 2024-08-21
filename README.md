@@ -1,4 +1,4 @@
-# OLSP
+# NC (NoConfig)
 
 Make sure to have "typescript-language-server" globaly installed (https://github.com/typescript-language-server/typescript-language-server).
 
