@@ -70,9 +70,6 @@ class DocumentListener(sublime_plugin.ViewEventListener):
 
     def on_hover(self, point, hover_zone):
         if hover_zone == 1:
-            file_name = self.view.file_name()
-            if not file_name:
-                return
             run_future(self.do_hover({
                 'position': point_to_position(self.view, point),
                 'textDocument': {
