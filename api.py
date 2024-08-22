@@ -1,5 +1,5 @@
 from lsp.server import LanguageServer
-from lsp.providers import HoverProvider, register_provider, unregister_provider
+from lsp.providers import HoverProvider, CompletionProvider, register_provider, unregister_provider
 from .main import register_language_server, unregister_language_server
 
 __all__ = (
@@ -9,5 +9,6 @@ __all__ = (
 	'register_provider'
 	'unregister_provider',
 	'HoverProvider',
+	'CompletionProvider',
 )
 

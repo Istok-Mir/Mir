@@ -1,8 +1,7 @@
 from __future__ import annotations
-from typing import Literal
 from event_loop import run_future
 from lsp.capabilities import ServerCapability
-from lsp.providers import HoverProvider, Providers
+from lsp.providers import Providers
 from lsp.minihtml import FORMAT_MARKED_STRING, FORMAT_MARKUP_CONTENT, minihtml
 from lsp.server import LanguageServer, is_applicable_view, matches_activation_event_on_uri
 from lsp.types import CompletionParams, HoverParams
@@ -17,10 +16,6 @@ def servers_for_view(view: sublime.View, capability: ServerCapability | None = N
     if capability:
         return [s for s in ManageServers.started_servers if s.is_applicable_view(view) and s.capabilities.has(capability)]
     return [s for s in ManageServers.started_servers if s.is_applicable_view(view)]
-
-
-def providers_for_view(view: sublime.View, providers_name: Literal['hover_providers']) -> list[HoverProvider]:
-    return [provider for provider in getattr(Providers, providers_name) if is_applicable_view(view, provider.activation_events)]
 
 
 async def open_document(view: sublime.View):
@@ -120,16 +115,17 @@ class ManageServers(sublime_plugin.EventListener):
 class DocumentListener(sublime_plugin.ViewEventListener):
     def on_query_completions(self, _prefix: str, locations: list[Point]):
         completion_list = sublime.CompletionList()
+        point = locations[0]
         params: CompletionParams = {
-            'position': point_to_position(self.view, locations[0]),
+            'position': point_to_position(self.view, point),
             'textDocument': {
                 'uri': get_view_uri(self.view)
             }
         }
-        run_future(self.do_completions(completion_list, params))
+        run_future(self.do_completions(completion_list, params, point))
         return completion_list
 
-    async def do_completions(self, completion_list: sublime.CompletionList, params: CompletionParams):
+    async def do_completions(self, completion_list: sublime.CompletionList, params: CompletionParams, point: int):
         completions: list[sublime.CompletionValue] = []
         for server in servers_for_view(self.view):
             server.notify.did_change_text_document({
@@ -152,6 +148,16 @@ class DocumentListener(sublime_plugin.ViewEventListener):
                 items = res['items']
                 for i in items:
                     completions.append(sublime.CompletionItem(i['label']))
+        try:
+            completion_providers = [provider for provider in Providers.completion_providers if is_applicable_view(self.view, provider.activation_events)]
+            providers_results = await asyncio.gather(*[provider.provide_completion_items(self.view, point) for provider in completion_providers])
+            for res in providers_results: # todo refactor this. this is just a POC
+              if isinstance(res, list):
+                items = res
+                for i in items:
+                    completions.append(sublime.CompletionItem(i['label']))
+        except Exception as e:
+            print('CompletionProvidersError:', e)
         completion_list.set_completions(completions, sublime.INHIBIT_WORD_COMPLETIONS)
 
     def on_hover(self, hover_point, hover_zone):
@@ -170,7 +176,8 @@ class DocumentListener(sublime_plugin.ViewEventListener):
         except Exception as e:
             print('HoverError:', e)
         try:
-            providers_results = await asyncio.gather(*[provider.provide_hover(self.view, hover_point) for provider in providers_for_view(self.view, 'hover_providers')])
+            hover_providers = [provider for provider in Providers.hover_providers if is_applicable_view(self.view, provider.activation_events)]
+            providers_results = await asyncio.gather(*[provider.provide_hover(self.view, hover_point) for provider in hover_providers])
             results.extend(providers_results)
         except Exception as e:
             print('HoverProvidersError:', e)
