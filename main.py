@@ -1,5 +1,6 @@
 from __future__ import annotations
 from event_loop import run_future
+from lsp.capabilities import ServerCapability
 from lsp.minihtml import FORMAT_MARKED_STRING, FORMAT_MARKUP_CONTENT, minihtml
 from lsp.server import LanguageServer
 from lsp.types import CompletionParams, HoverParams
@@ -10,7 +11,9 @@ import sublime
 import sublime_plugin
 
 
-def servers_for_view(view: sublime.View) -> list[LanguageServer]:
+def servers_for_view(view: sublime.View, capability: ServerCapability | None = None) -> list[LanguageServer]:
+    if capability:
+        return [s for s in ManageServers.started_servers if s.is_applicable_view(view) and s.capabilities.has(capability)]
     return [s for s in ManageServers.started_servers if s.is_applicable_view(view)]
 
 
@@ -157,7 +160,7 @@ class DocumentListener(sublime_plugin.ViewEventListener):
     async def do_hover(self, params: HoverParams, hover_point):
         results = []
         try:
-            results = await asyncio.gather(*[server.send.hover(params) for server in servers_for_view(self.view) if server.capabilities.has('hoverProvider')])
+            results = await asyncio.gather(*[server.send.hover(params) for server in servers_for_view(self.view, capability='hoverProvider')])
         except Exception as e:
             print('HoverError:', e)
         combined_content = []
