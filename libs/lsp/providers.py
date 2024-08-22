@@ -4,8 +4,8 @@ from lsp.server import ActivationEvents
 from lsp.types import Hover
 import sublime
 
-class HoverProviders:
-	providers: List[HoverProvider]=[]
+class Providers:
+	hover_providers: List[HoverProvider]=[]
 
 class HoverProvider:
 	name: str
@@ -14,9 +14,11 @@ class HoverProvider:
 	async def provide_hover(self, view: sublime.View, hover_point: int) -> Hover:
 		...
 
-def register_hover_provider(hover_provider: HoverProvider):
-	HoverProviders.providers.append(hover_provider)
-	print('implement register_hover_provider')
+def register_provider(provider: HoverProvider):
+	if isinstance(provider, HoverProvider):
+		Providers.hover_providers.append(provider)
+	else:
+		raise Exception('Got a unusported provider')
 
-def unregister_hover_provider(hover_provider: HoverProvider):
+def unregister_provider(provider: HoverProvider):
 	print('implement unregister_hover_provider')

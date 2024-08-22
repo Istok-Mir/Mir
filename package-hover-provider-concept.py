@@ -1,6 +1,6 @@
 # this is just a concept
 from lsp.types import Hover, MarkupKind
-from .api import register_hover_provider, unregister_hover_provider, HoverProvider
+from .api import register_provider, unregister_provider, HoverProvider
 import sublime
 
 class ExampleHoverProvider(HoverProvider):
@@ -37,8 +37,8 @@ example_hover_provider = ExampleHoverProvider()
 
 
 def plugin_loaded() -> None:
-    register_hover_provider(example_hover_provider)
+    register_provider(example_hover_provider)
 
 
 def plugin_unloaded() -> None:
-    unregister_hover_provider(example_hover_provider)
+    unregister_provider(example_hover_provider)
