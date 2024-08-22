@@ -32,6 +32,9 @@ def view_to_uri(view) -> str:
         return f"buffer:{view.buffer_id()}"
     return 'file://' + file_name
 
+def file_name_to_uri(file_name: str) -> str:
+    return 'file://' + file_name
+
 
 def get_view_uri(view) -> str:
     uri = view.settings().get("cn_uri")

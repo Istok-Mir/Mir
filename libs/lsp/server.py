@@ -5,11 +5,13 @@ from typing_extensions import NotRequired
 import asyncio
 import json
 import shutil
+from os import path
+from pathlib import Path
 
 from event_loop import run_future
 from lsp.communcation_logs import CommmunicationLogs, format_payload
 from lsp.handle_server_requests_and_notifications import OnNotificationPayload, OnRequestPayload, on_log_message, register_capability, unregister_capability,workspace_configuration
-from lsp.view_to_lsp import get_view_uri
+from lsp.view_to_lsp import file_name_to_uri, get_view_uri
 from sublime_plugin import sublime
 import datetime
 from wcmatch.glob import BRACE
@@ -180,12 +182,13 @@ class LanguageServer:
             run_future(self._run_forever())
 
             folders = sublime.active_window().folders()
-            root_folder = folders[0] if folders else ''
+            first_foder = folders[0] if folders else ''
+            first_folder_uri = file_name_to_uri(first_foder)
             initialize_result = await self.send.initialize({
                 'processId': self._process.pid,
-                'workspaceFolders': [{'name': 'OLSP', 'uri': 'file://' + root_folder}],
-                'rootUri': 'file://' + root_folder,  # @deprecated in favour of `workspaceFolders`
-                'rootPath': root_folder,  # @deprecated in favour of `rootUri`.
+                'workspaceFolders': [{'name': Path(f).name, 'uri':file_name_to_uri(f)} for f in folders],
+                'rootUri': first_folder_uri,  # @deprecated in favour of `workspaceFolders`
+                'rootPath': first_foder,  # @deprecated in favour of `rootUri`.
                 'capabilities': CLIENT_CAPABILITIES,
                 'initializationOptions': {'completionDisableFilterText': True, 'disableAutomaticTypingAcquisition': False, 'locale': 'en', 'maxTsServerMemory': 0, 'npmLocation': '', 'plugins': [], 'preferences': {'allowIncompleteCompletions': True, 'allowRenameOfImportPath': True, 'allowTextChangesInNewFiles': True, 'autoImportFileExcludePatterns': [], 'disableSuggestions': False, 'displayPartsForJSDoc': True, 'excludeLibrarySymbolsInNavTo': True, 'generateReturnInDocTemplate': True, 'importModuleSpecifierEnding': 'auto', 'importModuleSpecifierPreference': 'shortest', 'includeAutomaticOptionalChainCompletions': True, 'includeCompletionsForImportStatements': True, 'includeCompletionsForModuleExports': True, 'includeCompletionsWithClassMemberSnippets': True, 'includeCompletionsWithInsertText': True, 'includeCompletionsWithObjectLiteralMethodSnippets': True, 'includeCompletionsWithSnippetText': True, 'includePackageJsonAutoImports': 'auto', 'interactiveInlayHints': True, 'jsxAttributeCompletionStyle': 'auto', 'lazyConfiguredProjectsFromExternalProject': False, 'organizeImportsAccentCollation': True, 'organizeImportsCaseFirst': False, 'organizeImportsCollation': 'ordinal', 'organizeImportsCollationLocale': 'en', 'organizeImportsIgnoreCase': 'auto', 'organizeImportsNumericCollation': False, 'providePrefixAndSuffixTextForRename': True, 'provideRefactorNotApplicableReason': True, 'quotePreference': 'auto', 'useLabelDetailsInCompletionEntries': True}, 'tsserver': {'fallbackPath': '', 'logDirectory': '', 'logVerbosity': 'off', 'path': '', 'trace': 'off', 'useSyntaxServer': 'auto'}}
             })

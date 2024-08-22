@@ -15,7 +15,7 @@ all_servers: list[LanguageServer] = [
     LanguageServer('typescript-language-server', {
         'cmd':'typescript-language-server --stdio',
         'activation_events': {
-            'selector': 'selector:source.js, source.jsx, source.ts, source.tsx'
+            'selector': 'source.js, source.jsx, source.ts, source.tsx'
         }
     }),
     LanguageServer('package-version-server', {
