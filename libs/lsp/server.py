@@ -1,17 +1,16 @@
 from __future__ import annotations
-from typing import  Any, Dict, Generic, List, Optional, TypeVar, Union, cast
+from typing import  Any, Dict, List, Optional, Union, cast
 import asyncio
 import json
 
 from event_loop import run_future
-from lsp.capabilities import ServerCapability
+from lsp.handle_server_requests_and_notifications import OnNotificationPayload, OnRequestPayload, on_log_message, register_capability, workspace_configuration
 from sublime_plugin import sublime
 import datetime
 
-from .dotted_dict import DottedDict
-from .types import ErrorCodes, LSPAny, LogMessageParams, MessageType, RegistrationParams
+from .types import ErrorCodes, MessageType
 from .lsp_requests import LspRequest, LspNotification
-from .capabilities import client_capabilities, method_to_capability
+from .capabilities import CLIENT_CAPABILITIES, ServerCapabilities
 
 
 StringDict = Dict[str, Any]
@@ -97,35 +96,6 @@ def content_length(line: bytes) -> Optional[int]:
             raise ValueError("Invalid Content-Length header: {}".format(value))
     return None
 
-
-class ServerCapabilities(DottedDict):
-    def has(self, server_capability: ServerCapability) -> bool:
-        value = self.get(server_capability)
-        return value is not False and value is not None
-
-    def register(
-        self,
-        server_capability: ServerCapability,
-        options: dict[str, Any]
-    ) -> None:
-        capability = self.get(server_capability)
-        if isinstance(capability, str):
-            msg = f"{server_capability} is already registered. Skipping."
-            print(msg)
-            return
-        self.set(server_capability, options)
-
-    def unregister(
-        self,
-        server_capability: ServerCapability,
-    ) -> None:
-        capability = self.get(server_capability)
-        if not isinstance(capability, str):
-            msg = f"{server_capability} is not a string. Skipping."
-            print(msg)
-            return
-        self.remove(server_capability)
-
 class CommmunicationLogs:
     def __init__(self, name: str):
         self.name = name
@@ -133,13 +103,17 @@ class CommmunicationLogs:
         self.panel = sublime.active_window().create_output_panel(name)
 
     def append(self, log: str):
-        self.logs.append(log)
+        time = datetime.datetime.now().strftime('%H:%M:%S')
+        log_with_time = f"[{time}] {log}"
+        self.logs.append(log_with_time)
+        self.panel.set_read_only(False)
         self.panel.run_command("append", {
-            'characters': log + '\n\n',
+            'characters': log_with_time + '\n\n',
             'force': False,
             'scroll_to_end': True
         })
         self.panel.clear_undo_stack()
+        self.panel.set_read_only(True)
 
 class LanguageServer:
     def __init__(self, name: str, cmd: str) -> None:
@@ -153,10 +127,13 @@ class LanguageServer:
         self._received_shutdown = False
 
         self.request_id = 1
+        # equests sent from client
         self._response_handlers: Dict[Any, Request] = {}
-        self._pending_requests: list[Request] = []
+        self._cancel_requests: list[Request] = []
+        # requests and notifications sent from server
         self.on_request_handlers = {}
         self.on_notification_handlers = {}
+        # logs
         self.communcation_logs = CommmunicationLogs(name)
 
         # respond to server requests and notifications
@@ -180,7 +157,7 @@ class LanguageServer:
                 'rootUri': 'file://' + root_folder,
                 'rootPath': root_folder,
                 'workspaceFolders': [{'name': 'OLSP', 'uri': 'file://' + root_folder}],
-                'capabilities': client_capabilities,
+                'capabilities': CLIENT_CAPABILITIES,
                 'initializationOptions': {'completionDisableFilterText': True, 'disableAutomaticTypingAcquisition': False, 'locale': 'en', 'maxTsServerMemory': 0, 'npmLocation': '', 'plugins': [], 'preferences': {'allowIncompleteCompletions': True, 'allowRenameOfImportPath': True, 'allowTextChangesInNewFiles': True, 'autoImportFileExcludePatterns': [], 'disableSuggestions': False, 'displayPartsForJSDoc': True, 'excludeLibrarySymbolsInNavTo': True, 'generateReturnInDocTemplate': True, 'importModuleSpecifierEnding': 'auto', 'importModuleSpecifierPreference': 'shortest', 'includeAutomaticOptionalChainCompletions': True, 'includeCompletionsForImportStatements': True, 'includeCompletionsForModuleExports': True, 'includeCompletionsWithClassMemberSnippets': True, 'includeCompletionsWithInsertText': True, 'includeCompletionsWithObjectLiteralMethodSnippets': True, 'includeCompletionsWithSnippetText': True, 'includePackageJsonAutoImports': 'auto', 'interactiveInlayHints': True, 'jsxAttributeCompletionStyle': 'auto', 'lazyConfiguredProjectsFromExternalProject': False, 'organizeImportsAccentCollation': True, 'organizeImportsCaseFirst': False, 'organizeImportsCollation': 'ordinal', 'organizeImportsCollationLocale': 'en', 'organizeImportsIgnoreCase': 'auto', 'organizeImportsNumericCollation': False, 'providePrefixAndSuffixTextForRename': True, 'provideRefactorNotApplicableReason': True, 'quotePreference': 'auto', 'useLabelDetailsInCompletionEntries': True}, 'tsserver': {'fallbackPath': '', 'logDirectory': '', 'logVerbosity': 'off', 'path': '', 'trace': 'off', 'useSyntaxServer': 'auto'}}
             })
             self.capabilities.assign(cast(dict, initialize_result['capabilities']))
@@ -253,7 +230,7 @@ class LanguageServer:
             self._log(f"Error handling server payload: {err}")
 
     def send_notification(self, method: str, params: Optional[dict] = None):
-        self.communcation_logs.append(f'Send notification "{method}"\nParams: {sublime.encode_value(params)}')
+        self.communcation_logs.append(f'Send notification "{method}"\nParams: {encode_json(params)}')
         self._send_payload_sync(
             make_notification(method, params))
 
@@ -267,26 +244,26 @@ class LanguageServer:
             make_error_response(request_id, err)))
 
     async def send_request(self, method: str, params: Optional[dict] = None):
-        for i, pending_request in enumerate(list(self._pending_requests)):
-            if pending_request.method == method:
-                self.notify.cancel_request({ 'id': pending_request.id })
-                self._pending_requests.pop(i)
+        for i, cancel_request in enumerate(list(self._cancel_requests)):
+            if cancel_request.method == method:
+                self.notify.cancel_request({ 'id': cancel_request.id })
+                self._cancel_requests.pop(i)
         request_id = self.request_id
         request = Request(request_id, method)
         self.request_id += 1
         self._response_handlers[request_id] = request
-        self._pending_requests.append(request)
+        self._cancel_requests.append(request)
         start_of_req = datetime.datetime.now()
         async with request.cv:
-            self.communcation_logs.append(f'Sending request "{method}" ({request_id})\nParams: {sublime.encode_value(params)}')
+            self.communcation_logs.append(f'Sending request "{method}" ({request_id})\nParams: {encode_json(params)}')
             await self._send_payload(make_request(method, request_id, params))
             await request.cv.wait()
         end_of_req = datetime.datetime.now()
         duration = round((end_of_req-start_of_req).total_seconds(), 2)
         if isinstance(request.error, Error):
-            self.communcation_logs.append(f'Recieved error response "{method}" ({request_id}) - {duration}s\n{request.error}')
+            self.communcation_logs.append(f'Recieved error response "{method}" ({request_id}) - {duration}s\n{encode_json(request.error)}')
             raise request.error
-        self.communcation_logs.append(f'Recieved response "{method}" ({request_id}) - {duration}s\n{request.result}')
+        self.communcation_logs.append(f'Recieved response "{method}" ({request_id}) - {duration}s\n{encode_json(request.result)}')
         return request.result
 
     def _send_payload_sync(self, payload: StringDict) -> None:
@@ -316,7 +293,7 @@ class LanguageServer:
 
     async def _response_handler(self, response: StringDict) -> None:
         request = self._response_handlers.pop(response["id"])
-        self._pending_requests = [r for r in self._pending_requests if r.id != response["id"]]
+        self._cancel_requests = [r for r in self._cancel_requests if r.id != response["id"]]
         if "result" in response and "error" not in response:
             await request.on_result(response["result"])
         elif "result" not in response and "error" in response:
@@ -334,9 +311,9 @@ class LanguageServer:
                     ErrorCodes.MethodNotFound, "method '{}' not handled on client.".format(method)))
             return
         try:
-            self.communcation_logs.append(f'Received request "{method}" ({request_id})\nParams: {sublime.encode_value(params)}')
+            self.communcation_logs.append(f'Received request "{method}" ({request_id})\nParams: {encode_json(params)}')
             res = await handler(OnRequestPayload(self, params))
-            self.communcation_logs.append(f'Sending response "{method}" ({request_id})\n{sublime.encode_value(res)}')
+            self.communcation_logs.append(f'Sending response "{method}" ({request_id})\n{encode_json(res)}')
             self.send_response(request_id, res)
         except Error as ex:
             self.send_error_response(request_id, ex)
@@ -347,7 +324,7 @@ class LanguageServer:
         method = response.get("method", "")
         params = response.get("params")
         handler = self.on_notification_handlers.get(method)
-        self.communcation_logs.append(f'Received notification "{method}"\nParams: {sublime.encode_value(params)}')
+        self.communcation_logs.append(f'Received notification "{method}"\nParams: {encode_json(params)}')
         if not handler:
             self._log(f"unhandled {method}")
             return
@@ -360,39 +337,12 @@ class LanguageServer:
                 self.send_notification("window/logMessage", {"type": MessageType.Error, "message": str(ex)})
 
 
-T = TypeVar('T')
-class OnRequestPayload(Generic[T]):
-    def __init__(self, server: LanguageServer, params: T) -> None:
-        self.server =server
-        self.params =params
+def encode_json(value: Any):
+    return one_level_indent(sublime.encode_value(value))
 
-T = TypeVar('T')
-class OnNotificationPayload(Generic[T]):
-    def __init__(self, server: LanguageServer, params: T) -> None:
-        self.server =server
-        self.params =params
+def one_level_indent(text):
+    return replace_last(text.replace('{', '{\n\t', 1).replace('[', '[\n\t', 1), '}', '\n}')
 
-
-def on_log_message(payload: OnNotificationPayload[LogMessageParams]):
-    message_type = {
-        MessageType.Error: 'Error',
-        MessageType.Warning: 'Warning',
-        MessageType.Info: 'Info',
-        MessageType.Debug: 'Debug',
-        MessageType.Log: 'Log',
-    }.get(payload.params.get('type', MessageType.Log))
-    print(f"Zenit: {message_type}: {payload.params.get('message')}")
-
-async def workspace_configuration(payload: OnRequestPayload):
-    return []
-
-async def register_capability(payload: OnRequestPayload[RegistrationParams]):
-    params = payload.params
-    registrations = params["registrations"]
-    for registration in registrations:
-        capability_path = method_to_capability(registration["method"])
-        options = registration.get("registerOptions")
-        if not isinstance(options, dict):
-            options = {}
-        payload.server.capabilities.register(capability_path, options)
-
+def replace_last(text:str, old_char: str, new_char: str):
+    k = text.rfind(old_char)
+    return text[:k] + new_char

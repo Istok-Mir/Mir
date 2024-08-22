@@ -1,8 +1,9 @@
 from __future__ import annotations
-from typing import Dict, Literal, Union, cast
+from typing import Any, Dict, Literal, Union, cast
+from lsp.dotted_dict import DottedDict
 from lsp.types import ClientCapabilities, CompletionItemKind, CompletionItemTag, InsertTextMode, MarkupKind
 
-client_capabilities: ClientCapabilities = {
+CLIENT_CAPABILITIES: ClientCapabilities = {
     'general': {
         'regularExpressions': {'engine': 'ECMAScript'},
         'markdown': {'parser': 'Python-Markdown', 'version': '3.2.2'}
@@ -233,3 +234,32 @@ def method_to_capability(method: str) -> ServerCapability:
     if capability_path is None:
         raise Exception(f'method_to_capability error. Fix: Add {method} to `_METHOD_TO_CAPABILITY`.')
     return cast(ServerCapability, capability_path)
+
+
+class ServerCapabilities(DottedDict):
+    def has(self, server_capability: ServerCapability) -> bool:
+        value = self.get(server_capability)
+        return value is not False and value is not None
+
+    def register(
+        self,
+        server_capability: ServerCapability,
+        options: dict[str, Any]
+    ) -> None:
+        capability = self.get(server_capability)
+        if isinstance(capability, str):
+            msg = f"{server_capability} is already registered. Skipping."
+            print(msg)
+            return
+        self.set(server_capability, options)
+
+    def unregister(
+        self,
+        server_capability: ServerCapability,
+    ) -> None:
+        capability = self.get(server_capability)
+        if not isinstance(capability, str):
+            msg = f"{server_capability} is not a string. Skipping."
+            print(msg)
+            return
+        self.remove(server_capability)
