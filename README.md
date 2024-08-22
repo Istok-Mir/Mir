@@ -3,7 +3,7 @@
 Zenit is a Sublime Text package that implements LSP.
 Features:
 - registering/unregistering capabilities
-- auto request cancelling
+- request cancelling
 - hover
 - completions
 - logs in panel
