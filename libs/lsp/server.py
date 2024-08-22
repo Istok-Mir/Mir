@@ -23,41 +23,37 @@ from .lsp_requests import LspRequest, LspNotification
 from .capabilities import CLIENT_CAPABILITIES, ServerCapabilities
 
 
-StringDict = Dict[str, Any]
-PayloadLike = Union[List[StringDict], StringDict, None]
-CONTENT_LENGTH = 'Content-Length: '
 ENCODING = "utf-8"
-
 
 class Error(Exception):
     def __init__(self, code: ErrorCodes, message: str) -> None:
         super().__init__(message)
         self.code = code
 
-    def to_lsp(self) -> StringDict:
+    def to_lsp(self) -> dict:
         return {"code": self.code, "message": super().__str__()}
 
     @classmethod
-    def from_lsp(cls, d: StringDict) -> 'Error':
+    def from_lsp(cls, d: dict) -> 'Error':
         return Error(d["code"], d["message"])
 
     def __str__(self) -> str:
         return f"{super().__str__()} ({self.code})"
 
 
-def make_response(request_id: Any, params: PayloadLike) -> StringDict:
+def make_response(request_id: Any, params: Any) -> dict:
     return {"jsonrpc": "2.0", "id": request_id, "result": params}
 
 
-def make_error_response(request_id: Any, err: Error) -> StringDict:
+def make_error_response(request_id: Any, err: Error) -> dict:
     return {"jsonrpc": "2.0", "id": request_id, "error": err.to_lsp()}
 
 
-def make_notification(method: str, params: PayloadLike) -> StringDict:
+def make_notification(method: str, params: Any) -> dict:
     return {"jsonrpc": "2.0", "method": method, "params": params}
 
 
-def make_request(method: str, request_id: Any, params: PayloadLike) -> StringDict:
+def make_request(method: str, request_id: Any, params: Any) -> dict:
     return {"jsonrpc": "2.0", "method": method, "id": request_id, "params": params}
 
 
@@ -65,7 +61,7 @@ class StopLoopException(Exception):
     pass
 
 
-def create_message(payload: PayloadLike) :
+def create_message(payload: Any) :
     body = json.dumps(
         payload,
         check_circular=False,
@@ -83,10 +79,10 @@ class Request():
         self.id: int = id
         self.method = method
         self.cv = asyncio.Condition()
-        self.result: Optional[PayloadLike] = None
+        self.result: Optional[Any] = None
         self.error: Optional[Error] = None
 
-    async def on_result(self, params: PayloadLike) -> None:
+    async def on_result(self, params: Any) -> None:
         self.result = params
         async with self.cv:
             self.cv.notify()
@@ -249,7 +245,7 @@ class LanguageServer:
         except Exception as e:
             print(f"Zenit ({self.name}) Error in _handle_body. ", e)
 
-    async def _receive_payload(self, payload: StringDict) -> None:
+    async def _receive_payload(self, payload: dict) -> None:
         try:
             if "method" in payload:
                 if "id" in payload:
@@ -268,7 +264,7 @@ class LanguageServer:
         self._send_payload_sync(
             make_notification(method, params))
 
-    async def send_response(self, request_id: Any, params: PayloadLike) -> None:
+    async def send_response(self, request_id: Any, params: Any) -> None:
         await self._send_payload(
             make_response(request_id, params))
 
@@ -303,7 +299,7 @@ class LanguageServer:
         self._communcation_logs.append(f'Recieved response "{method}" ({request_id}) - {duration}s\n{format_payload(request.result)}')
         return request.result
 
-    def _send_payload_sync(self, payload: StringDict) -> None:
+    def _send_payload_sync(self, payload: dict) -> None:
         if not self._process or not self._process.stdin:
             return
         msg = create_message(payload)
@@ -314,7 +310,7 @@ class LanguageServer:
         except Exception as e:
             print(f'Zenit ({self.name}) Exception | Error while writing (sync).', e)
 
-    async def _send_payload(self, payload: StringDict) -> None:
+    async def _send_payload(self, payload: dict) -> None:
         if not self._process or not self._process.stdin:
             return
         msg = create_message(payload)
@@ -332,7 +328,7 @@ class LanguageServer:
     def on_notification(self, method: str, cb):
         self.on_notification_handlers[method] = cb
 
-    async def _response_handler(self, response: StringDict) -> None:
+    async def _response_handler(self, response: dict) -> None:
         request = self._response_handlers.pop(response["id"])
         self._cancel_requests = [r for r in self._cancel_requests if r.id != response["id"]]
         if "result" in response and "error" not in response:
@@ -342,7 +338,7 @@ class LanguageServer:
         else:
             await request.on_error(Error(ErrorCodes.InvalidRequest, ''))
 
-    async def _request_handler(self, response: StringDict) -> None:
+    async def _request_handler(self, response: dict) -> None:
         method = response.get("method", "")
         params = response.get("params")
         request_id = response.get("id")
@@ -361,7 +357,7 @@ class LanguageServer:
         except Exception as ex:
             await self.send_error_response(request_id, Error(ErrorCodes.InternalError, str(ex)))
 
-    async def _notification_handler(self, response: StringDict) -> None:
+    async def _notification_handler(self, response: dict) -> None:
         method = response.get("method", "")
         params = response.get("params")
         handler = self.on_notification_handlers.get(method)
