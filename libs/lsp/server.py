@@ -1,7 +1,7 @@
+from __future__ import annotations
 from .capabilities import CLIENT_CAPABILITIES, ServerCapabilities
 from .lsp_requests import LspRequest, LspNotification
 from .types import ErrorCodes, MessageType
-from __future__ import annotations
 from event_loop import run_future
 from lsp.communcation_logs import CommmunicationLogs, format_payload
 from lsp.handle_server_requests_and_notifications import OnNotificationPayload, OnRequestPayload, on_log_message, register_capability, unregister_capability,workspace_configuration
