@@ -1,7 +1,7 @@
 from __future__ import annotations
-from typing import Any
 from lsp.types import MarkedString, MarkupContent
 from sublime_plugin import sublime
+from typing import Any
 import mdpopups
 import re
 

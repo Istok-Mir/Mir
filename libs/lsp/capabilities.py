@@ -1,7 +1,7 @@
 from __future__ import annotations
-from typing import Any, Literal, cast
 from lsp.dotted_dict import DottedDict
 from lsp.types import ClientCapabilities, CompletionItemKind, CompletionItemTag, InsertTextMode, MarkupKind
+from typing import Any, Literal, cast
 
 CLIENT_CAPABILITIES: ClientCapabilities = {
     'general': {

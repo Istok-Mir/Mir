@@ -1,55 +1,26 @@
 from __future__ import annotations
-import asyncio
 from event_loop import run_future
+from html import escape
 from lsp.minihtml import FORMAT_MARKED_STRING, FORMAT_MARKUP_CONTENT, minihtml
 from lsp.server import LanguageServer
 from lsp.types import CompletionParams, HoverParams
 from lsp.view_to_lsp import get_view_uri, point_to_position, view_to_text_document_item
-import sublime
-from html import escape
-
-import sublime_plugin
 from sublime_types import Point
-
-all_servers: list[LanguageServer] = [
-    LanguageServer('typescript-language-server', {
-        'cmd':'typescript-language-server --stdio',
-        'activation_events': {
-            'selector': 'source.js, source.jsx, source.ts, source.tsx'
-        }
-    }),
-    LanguageServer('package-version-server', {
-        'cmd': '/Users/predrag/Downloads/package-version-server',
-        'activation_events': {
-            'selector': 'source.json',
-            'on_uri': ['file://**/package.json'],
-        }
-    }),
-    LanguageServer('tailwindcss-language-server', {
-        'cmd':'tailwindcss-language-server --stdio',
-        'activation_events': {
-            'selector': 'source.jsx | source.js.react | source.js | source.tsx | source.ts | source.css | source.scss | source.less | text.html.vue | text.html.svelte | text.html.basic | text.html.twig | text.blade | text.html.blade | embedding.php | text.html.rails | text.html.erb | text.haml | text.jinja | text.django | text.html.elixir | source.elixir | text.html.ngx | source.astro',
-            'workspace_contains': ['**/tailwind.config.{ts,js,cjs,mjs}'],
-        }
-    })
-]
-started_servers: list[LanguageServer] = []
+import asyncio
+import sublime
+import sublime_plugin
 
 def servers_for_view(view: sublime.View) -> list[LanguageServer]:
-    global started_servers
-    return [s for s in started_servers if s.is_applicable_view(view)]
-
+    return [s for s in Servers.started_servers if s.is_applicable_view(view)]
 
 async def open_document(view: sublime.View):
-    global all_servers
-    global started_servers
-    for server in all_servers:
+    for server in Servers.all_servers:
         if not server.is_applicable_view(view):
             continue
-        if server not in started_servers:
+        if server not in Servers.started_servers:
             try:
                 await server.start()
-                started_servers.append(server)
+                Servers.started_servers.append(server)
             except Exception as e:
                 print(f'Zenit ({server.name}) | Error while starting.', e)
                 continue
@@ -59,7 +30,6 @@ async def open_document(view: sublime.View):
         })
 
 def close_document(view: sublime.View):
-    global started_servers
     for server in servers_for_view(view):
         server.notify.did_close_text_document({
             'textDocument': {
@@ -68,23 +38,45 @@ def close_document(view: sublime.View):
         })
         if server.matches_activation_event_on_uri(view): # close servers who specify on_uri activation event
             server.stop()
-            started_servers = [s for s in started_servers if s != server]
+            Servers.started_servers = [s for s in Servers.started_servers if s != server]
 
 
-class ControlsWhenServersStartOrShutdown(sublime_plugin.EventListener):
+class Servers(sublime_plugin.EventListener):
+    all_servers: list[LanguageServer] = [
+        LanguageServer('typescript-language-server', {
+            'cmd':'typescript-language-server --stdio',
+            'activation_events': {
+                'selector': 'source.js, source.jsx, source.ts, source.tsx'
+            }
+        }),
+        LanguageServer('package-version-server', {
+            'cmd': '/Users/predrag/Downloads/package-version-server',
+            'activation_events': {
+                'selector': 'source.json',
+                'on_uri': ['file://**/package.json'],
+            }
+        }),
+        LanguageServer('tailwindcss-language-server', {
+            'cmd':'tailwindcss-language-server --stdio',
+            'activation_events': {
+                'selector': 'source.jsx | source.js.react | source.js | source.tsx | source.ts | source.css | source.scss | source.less | text.html.vue | text.html.svelte | text.html.basic | text.html.twig | text.blade | text.html.blade | embedding.php | text.html.rails | text.html.erb | text.haml | text.jinja | text.django | text.html.elixir | source.elixir | text.html.ngx | source.astro',
+                'workspace_contains': ['**/tailwind.config.{ts,js,cjs,mjs}'],
+            }
+        })
+    ]
+    started_servers: list[LanguageServer] = []
+
     def on_init(self, views: list[sublime.View]):
         run_future(self.initialize(views))
 
     async def initialize(self, views: list[sublime.View]):
-        global all_servers
-        global started_servers
 
         # start servers that have selector "*"
-        for server in all_servers:
+        for server in Servers.all_servers:
             if server.configuration['activation_events']['selector'] == '*':
                 try:
                     await server.start()
-                    started_servers.append(server)
+                    Servers.started_servers.append(server)
                 except Exception as e:
                     print(f'Zenit ({server.name}) | Error while starting.', e)
             for v in views:
@@ -118,8 +110,7 @@ class ControlsWhenServersStartOrShutdown(sublime_plugin.EventListener):
         print('EventListener on_pre_close_window', window)
 
     def on_exit(self):
-        global started_servers
-        for server in started_servers:
+        for server in Servers.started_servers:
             server.stop()
 
 

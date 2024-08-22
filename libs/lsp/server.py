@@ -1,25 +1,22 @@
+from .capabilities import CLIENT_CAPABILITIES, ServerCapabilities
+from .lsp_requests import LspRequest, LspNotification
+from .types import ErrorCodes, MessageType
 from __future__ import annotations
-from typing import  Any, Dict, Literal, Optional, TypedDict, cast
-from typing_extensions import NotRequired
-import asyncio
-import json
-import shutil
-from os import path
-from pathlib import Path
-
 from event_loop import run_future
 from lsp.communcation_logs import CommmunicationLogs, format_payload
 from lsp.handle_server_requests_and_notifications import OnNotificationPayload, OnRequestPayload, on_log_message, register_capability, unregister_capability,workspace_configuration
 from lsp.view_to_lsp import file_name_to_uri, get_view_uri
+from pathlib import Path
 from sublime_plugin import sublime
-import datetime
+from typing import  Any, Dict, Literal, Optional, TypedDict, cast
+from typing_extensions import NotRequired
 from wcmatch.glob import BRACE
 from wcmatch.glob import globmatch
 from wcmatch.glob import GLOBSTAR
-
-from .types import ErrorCodes, MessageType
-from .lsp_requests import LspRequest, LspNotification
-from .capabilities import CLIENT_CAPABILITIES, ServerCapabilities
+import asyncio
+import datetime
+import json
+import shutil
 
 
 ENCODING = "utf-8"
