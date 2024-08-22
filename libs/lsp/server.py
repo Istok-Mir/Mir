@@ -112,6 +112,30 @@ class ActivationEvents(TypedDict):
     workspace_contains: NotRequired[list[str]] # todo: implement
 
 
+def is_applicable_view(view: sublime.View, activation_events: ActivationEvents) -> bool:
+        selector = activation_events['selector']
+        if selector == '*':
+            return True
+        matches_selector = view.match_selector(0,selector)
+        if not matches_selector:
+            return False
+        matches_on_uri = matches_activation_event_on_uri(view, activation_events)
+        if not matches_on_uri:
+            return False
+        return True
+
+
+def matches_activation_event_on_uri(view: sublime.View, activation_events: ActivationEvents) -> bool:
+    on_uri = activation_events.get('on_uri')
+    if on_uri:
+        uri = get_view_uri(view)
+        for uri_pattern in on_uri:
+            if not globmatch(uri, uri_pattern, flags=GLOBSTAR | BRACE):
+                return False
+    return True
+
+
+
 class LanguageServerConfiguration(TypedDict):
     cmd: str
     activation_events: ActivationEvents
@@ -145,28 +169,8 @@ class LanguageServer:
 
         attach_server_request_and_notification_handlers(self)
 
-    # doesnt' belong here
     def is_applicable_view(self, view: sublime.View) -> bool:
-        selector = self.configuration['activation_events']['selector']
-        if selector == '*':
-            return True
-        matches_selector = view.match_selector(0,selector)
-        if not matches_selector:
-            return False
-        matches_on_uri = self.matches_activation_event_on_uri(view)
-        if not matches_on_uri:
-            return False
-        return True
-
-    # doesnt' belong here
-    def matches_activation_event_on_uri(self, view: sublime.View) -> bool:
-        on_uri = self.configuration['activation_events'].get('on_uri')
-        if on_uri:
-            uri = get_view_uri(view)
-            for uri_pattern in on_uri:
-                if not globmatch(uri, uri_pattern, flags=GLOBSTAR | BRACE):
-                    return False
-        return True
+        return is_applicable_view(view, self.configuration['activation_events'])
 
     async def start(self):
         try:

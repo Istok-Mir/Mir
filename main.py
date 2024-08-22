@@ -1,8 +1,9 @@
 from __future__ import annotations
 from event_loop import run_future
 from lsp.capabilities import ServerCapability
+from lsp.hover_provider import HoverProvider, HoverProviders
 from lsp.minihtml import FORMAT_MARKED_STRING, FORMAT_MARKUP_CONTENT, minihtml
-from lsp.server import LanguageServer
+from lsp.server import LanguageServer, is_applicable_view
 from lsp.types import CompletionParams, HoverParams
 from lsp.view_to_lsp import get_view_uri, point_to_position, view_to_text_document_item
 from sublime_types import Point
@@ -15,6 +16,10 @@ def servers_for_view(view: sublime.View, capability: ServerCapability | None = N
     if capability:
         return [s for s in ManageServers.started_servers if s.is_applicable_view(view) and s.capabilities.has(capability)]
     return [s for s in ManageServers.started_servers if s.is_applicable_view(view)]
+
+
+def hover_providers_for_view(view: sublime.View) -> list[HoverProvider]:
+    return [hover_provider for hover_provider in HoverProviders.providers if is_applicable_view(view, hover_provider.activation_events)]
 
 
 async def open_document(view: sublime.View):
@@ -163,6 +168,12 @@ class DocumentListener(sublime_plugin.ViewEventListener):
             results = await asyncio.gather(*[server.send.hover(params) for server in servers_for_view(self.view, capability='hoverProvider')])
         except Exception as e:
             print('HoverError:', e)
+        try:
+            providers_results = await asyncio.gather(*[provider.provide_hover(self.view, hover_point) for provider in hover_providers_for_view(self.view)])
+            print('providers_results', providers_results)
+            results.extend(providers_results)
+        except Exception as e:
+            print('HoverProvidersError:', e)
         combined_content = []
         for res in results:
             if isinstance(res, dict):
@@ -172,7 +183,7 @@ class DocumentListener(sublime_plugin.ViewEventListener):
                     combined_content.append(content)
             if combined_content:
                 self.view.show_popup(
-                    f"<html style='border: 1px solid color(var(--foreground) blend(var(--background) 20%));'><body><div style='padding: 0.2rem 0.5rem; font-size: 1rem;'>{'<hr>'.join(combined_content)}</div></body></html>",
+                    f"""<html style='border: 1px solid color(var(--foreground) blend(var(--background) 20%));'><body><div style='padding: 0.2rem 0.5rem; font-size: 1rem;'>{'<hr style="border: 1px solid color(var(--foreground) blend(var(--background) 20%)); display:block"/>'.join(combined_content)}</div></body></html>""",
                     sublime.PopupFlags.HIDE_ON_MOUSE_MOVE_AWAY,
                     hover_point,
                     max_width=800,

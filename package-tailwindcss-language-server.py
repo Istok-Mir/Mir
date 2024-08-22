@@ -8,7 +8,6 @@ server = LanguageServer('tailwindcss-language-server', {
     }
 })
 
-
 def plugin_loaded() -> None:
     register_language_server(server)
 
