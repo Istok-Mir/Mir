@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Any, Dict, Literal, Union, cast
+from typing import Any, Literal, cast
 from lsp.dotted_dict import DottedDict
 from lsp.types import ClientCapabilities, CompletionItemKind, CompletionItemTag, InsertTextMode, MarkupKind
 

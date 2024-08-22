@@ -3,7 +3,7 @@ Module with additional collections.
 """
 from __future__ import annotations
 from copy import deepcopy
-from typing import Any, Generator, Generic, TypeVar
+from typing import Any, Generator
 import sublime
 
 class DottedDict:
