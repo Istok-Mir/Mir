@@ -151,8 +151,6 @@ class DocumentListener(sublime_plugin.ViewEventListener):
     async def do_completions(self, completion_list: sublime.CompletionList, params: CompletionParams):
         completions: list[sublime.CompletionValue] = []
         for server in servers_for_view(self.view):
-            if not server.capabilities.has('completionProvider'):
-                continue
             server.notify.did_change_text_document({
                 'textDocument': {
                     'uri': params['textDocument']['uri'],
@@ -162,6 +160,8 @@ class DocumentListener(sublime_plugin.ViewEventListener):
                     'text': self.view.substr(sublime.Region(0, self.view.size()))
                 }]
             })
+            if not server.capabilities.has('completionProvider'):
+                continue
             res=None
             try:
                 res = await server.send.completion(params)
