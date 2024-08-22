@@ -3,7 +3,7 @@ from event_loop import run_future
 from lsp.capabilities import ServerCapability
 from lsp.hover_provider import HoverProvider, HoverProviders
 from lsp.minihtml import FORMAT_MARKED_STRING, FORMAT_MARKUP_CONTENT, minihtml
-from lsp.server import LanguageServer, is_applicable_view
+from lsp.server import LanguageServer, is_applicable_view, matches_activation_event_on_uri
 from lsp.types import CompletionParams, HoverParams
 from lsp.view_to_lsp import get_view_uri, point_to_position, view_to_text_document_item
 from sublime_types import Point
@@ -46,7 +46,7 @@ def close_document(view: sublime.View):
                 'uri': get_view_uri(view)
             }
         })
-        if server.matches_activation_event_on_uri(view): # close servers who specify on_uri activation event
+        if matches_activation_event_on_uri(view, server.configuration['activation_events']): # close servers who specify on_uri activation event
             server.stop()
             ManageServers.started_servers = [s for s in ManageServers.started_servers if s != server]
 
