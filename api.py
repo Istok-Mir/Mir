@@ -3,11 +3,11 @@ from lsp.providers import HoverProvider, register_provider, unregister_provider
 from .main import register_language_server, unregister_language_server
 
 __all__ = (
-	'LanguageServer',
 	'register_language_server',
 	'unregister_language_server',
-	'HoverProvider',
+	'LanguageServer',
 	'register_provider'
 	'unregister_provider',
+	'HoverProvider',
 )
 
