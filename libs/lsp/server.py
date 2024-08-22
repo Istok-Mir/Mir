@@ -1,5 +1,7 @@
 from __future__ import annotations
-from typing import  Any, Dict, List, Optional, Union, cast
+from re import sub
+from typing import  Any, Dict, List, Literal, Optional, TypedDict, Union, cast
+from typing_extensions import NotRequired
 import asyncio
 import json
 import shutil
@@ -7,8 +9,12 @@ import shutil
 from event_loop import run_future
 from lsp.communcation_logs import CommmunicationLogs, format_payload
 from lsp.handle_server_requests_and_notifications import OnNotificationPayload, OnRequestPayload, on_log_message, register_capability, unregister_capability,workspace_configuration
+from lsp.view_to_lsp import get_view_uri
 from sublime_plugin import sublime
 import datetime
+from wcmatch.glob import BRACE
+from wcmatch.glob import globmatch
+from wcmatch.glob import GLOBSTAR
 
 from .types import ErrorCodes, MessageType
 from .lsp_requests import LspRequest, LspNotification
@@ -99,14 +105,27 @@ def content_length(line: bytes) -> Optional[int]:
     return None
 
 
+class ActivationEvents(TypedDict):
+    selector: str | Literal['*']
+    on_uri: NotRequired[list[str]]
+    '''
+    If specified the server will only start for the given uri.
+    and will shutdown as soon as the view is closed.
+    '''
+    workspace_contains: NotRequired[list[str]] # todo: implement
+
+class LanguageServerConfiguration(TypedDict):
+    cmd: str
+    activation_events: ActivationEvents
+
 class LanguageServer:
-    def __init__(self, name: str, cmd: str) -> None:
+    def __init__(self, name: str, configuration: LanguageServerConfiguration) -> None:
         self.name = name
         self.send = LspRequest(self.send_request)
         self.notify = LspNotification(self.send_notification)
         self.capabilities = ServerCapabilities()
 
-        self._cmd = cmd
+        self.configuration = configuration
         self._process = None
         self._received_shutdown = False
 
@@ -126,16 +145,40 @@ class LanguageServer:
         self.on_request('client/unregisterCapability', unregister_capability)
         self.on_notification('window/logMessage', on_log_message)
 
+    def is_applicable_view(self, view: sublime.View) -> bool:
+        selector = self.configuration['activation_events']['selector']
+        if selector == '*':
+            return True
+        matches_selector = view.match_selector(0,selector)
+        if not matches_selector:
+            return False
+        matches_on_uri = self.matches_activation_event_on_uri(view)
+        if not matches_on_uri:
+            print(view, self.name, 'eej')
+            return False
+        print(view, self.name, 'applicable')
+        return True
+
+    def matches_activation_event_on_uri(self, view: sublime.View) -> bool:
+        on_uri = self.configuration['activation_events'].get('on_uri')
+        if on_uri:
+            uri = get_view_uri(view)
+            for uri_pattern in on_uri:
+                if not globmatch(uri, uri_pattern, flags=GLOBSTAR | BRACE):
+                    print('pedja', uri, uri_pattern)
+                    return False
+        return True
+
+
     async def start(self):
         try:
-            if not shutil.which(self._cmd.split()[0]):
-                raise RuntimeError(f"Command not found: {self._cmd}")
+            if not shutil.which(self.configuration['cmd'].split()[0]):
+                raise RuntimeError(f"Command not found: {self.configuration['cmd']}")
 
             self._process = await asyncio.create_subprocess_shell(
-                self._cmd,
+                self.configuration['cmd'],
                 stdout=asyncio.subprocess.PIPE,
                 stdin=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
             )
             run_future(self._run_forever())
 
@@ -143,9 +186,9 @@ class LanguageServer:
             root_folder = folders[0] if folders else ''
             initialize_result = await self.send.initialize({
                 'processId': self._process.pid,
-                'rootUri': 'file://' + root_folder,
-                'rootPath': root_folder,
                 'workspaceFolders': [{'name': 'OLSP', 'uri': 'file://' + root_folder}],
+                'rootUri': 'file://' + root_folder,  # @deprecated in favour of `workspaceFolders`
+                'rootPath': root_folder,  # @deprecated in favour of `rootUri`.
                 'capabilities': CLIENT_CAPABILITIES,
                 'initializationOptions': {'completionDisableFilterText': True, 'disableAutomaticTypingAcquisition': False, 'locale': 'en', 'maxTsServerMemory': 0, 'npmLocation': '', 'plugins': [], 'preferences': {'allowIncompleteCompletions': True, 'allowRenameOfImportPath': True, 'allowTextChangesInNewFiles': True, 'autoImportFileExcludePatterns': [], 'disableSuggestions': False, 'displayPartsForJSDoc': True, 'excludeLibrarySymbolsInNavTo': True, 'generateReturnInDocTemplate': True, 'importModuleSpecifierEnding': 'auto', 'importModuleSpecifierPreference': 'shortest', 'includeAutomaticOptionalChainCompletions': True, 'includeCompletionsForImportStatements': True, 'includeCompletionsForModuleExports': True, 'includeCompletionsWithClassMemberSnippets': True, 'includeCompletionsWithInsertText': True, 'includeCompletionsWithObjectLiteralMethodSnippets': True, 'includeCompletionsWithSnippetText': True, 'includePackageJsonAutoImports': 'auto', 'interactiveInlayHints': True, 'jsxAttributeCompletionStyle': 'auto', 'lazyConfiguredProjectsFromExternalProject': False, 'organizeImportsAccentCollation': True, 'organizeImportsCaseFirst': False, 'organizeImportsCollation': 'ordinal', 'organizeImportsCollationLocale': 'en', 'organizeImportsIgnoreCase': 'auto', 'organizeImportsNumericCollation': False, 'providePrefixAndSuffixTextForRename': True, 'provideRefactorNotApplicableReason': True, 'quotePreference': 'auto', 'useLabelDetailsInCompletionEntries': True}, 'tsserver': {'fallbackPath': '', 'logDirectory': '', 'logVerbosity': 'off', 'path': '', 'trace': 'off', 'useSyntaxServer': 'auto'}}
             })
@@ -158,6 +201,7 @@ class LanguageServer:
         run_future(self.shutdown())
         if self._process:
             self._process.kill()
+            self._process = None
 
     async def shutdown(self):
         await self.send.shutdown()

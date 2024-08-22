@@ -14,20 +14,14 @@ class CommmunicationLogs:
         self.logs.append(log_with_time)
         self.panel.set_read_only(False)
         self.panel.run_command("append", {
-            'characters': log_with_time + '\n\n',
+            'characters': log_with_time + '\n',
             'force': False,
             'scroll_to_end': True
         })
+        self.panel.settings().set('scroll_past_end', False)
         self.panel.clear_undo_stack()
         self.panel.set_read_only(True)
 
 
 def format_payload(value: Any):
-    return one_level_indent(sublime.encode_value(value))
-
-def one_level_indent(text):
-    return replace_last(text.replace('{', '{\n\t', 1).replace('[', '[\n\t', 1), '}', '\n}')
-
-def replace_last(text:str, old_char: str, new_char: str):
-    k = text.rfind(old_char)
-    return text[:k] + new_char
+    return sublime.encode_value(value, pretty=True)
