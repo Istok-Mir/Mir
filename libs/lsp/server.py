@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import  Any, Dict, List, Optional, Union, cast
 import asyncio
 import json
+import shutil
 
 from event_loop import run_future
 from lsp.handle_server_requests_and_notifications import OnNotificationPayload, OnRequestPayload, on_log_message, register_capability, workspace_configuration
@@ -143,12 +144,16 @@ class LanguageServer:
 
     async def start(self):
         try:
+            if not shutil.which(self.cmd.split()[0]):
+                raise RuntimeError(f"Command not found: {self.cmd}")
+
             self.process = await asyncio.create_subprocess_shell(
                 self.cmd,
                 stdout=asyncio.subprocess.PIPE,
                 stdin=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
             )
-            asyncio.get_event_loop().create_task(self.run_forever())
+            run_future(self.run_forever())
 
             folders = sublime.active_window().folders()
             root_folder = folders[0] if folders else ''
@@ -163,9 +168,7 @@ class LanguageServer:
             self.capabilities.assign(cast(dict, initialize_result['capabilities']))
             self.notify.initialized({})
         except Exception as e:
-            print('Error when creating the subprocess:', e)
-            print(f'Stopping {self.name}')
-            self.stop()
+            print('Zenit: Error when creating the subprocess.', e)
 
     def stop(self):
         run_future(self.shutdown())
@@ -200,8 +203,10 @@ class LanguageServer:
                 if not line:
                     continue
                 body = await self.process.stdout.readexactly(num_bytes)
-                asyncio.get_event_loop().create_task(self._handle_body(body))
-        except(BrokenPipeError, ConnectionResetError, StopLoopException):
+
+                run_future(self._handle_body(body))
+        except (BrokenPipeError, ConnectionResetError, StopLoopException) as e:
+            print('Zenit: Error in run_forever.', e)
             pass
         return self._received_shutdown
 
@@ -214,6 +219,8 @@ class LanguageServer:
             self._log(f"malformed {ENCODING}: {ex}")
         except json.JSONDecodeError as ex:
             self._log(f"malformed JSON: {ex}")
+        except Exception as e:
+            print(f"Zenit: Error in _handle_body. {e}")
 
     async def _receive_payload(self, payload: StringDict) -> None:
         try:
@@ -234,14 +241,14 @@ class LanguageServer:
         self._send_payload_sync(
             make_notification(method, params))
 
-    def send_response(self, request_id: Any, params: PayloadLike) -> None:
-        asyncio.get_event_loop().create_task(self._send_payload(
-            make_response(request_id, params)))
+    async def send_response(self, request_id: Any, params: PayloadLike) -> None:
+        await self._send_payload(
+            make_response(request_id, params))
 
-    def send_error_response(self, request_id: Any, err: Error) -> None:
+    async def send_error_response(self, request_id: Any, err: Error) -> None:
         self.communcation_logs.append(f'Send error response ({request_id})\n{err}')
-        asyncio.get_event_loop().create_task(self._send_payload(
-            make_error_response(request_id, err)))
+        await self._send_payload(
+            make_error_response(request_id, err))
 
     async def send_request(self, method: str, params: Optional[dict] = None):
         for i, cancel_request in enumerate(list(self._cancel_requests)):
@@ -272,8 +279,10 @@ class LanguageServer:
         msg = create_message(payload)
         try:
             self.process.stdin.writelines(msg)
+        except BrokenPipeError as e:
+            print(f"Zenit: BrokenPipeError | Error while writing (sync). {e}")
         except Exception as e:
-            print('Error while writing:', e)
+            print('Zenit: Exception | Error while writing (sync).', e)
 
     async def _send_payload(self, payload: StringDict) -> None:
         if not self.process or not self.process.stdin:
@@ -282,8 +291,10 @@ class LanguageServer:
         try:
             self.process.stdin.writelines(msg)
             await self.process.stdin.drain()
+        except BrokenPipeError as e:
+            print("Zenit: BrokenPipeError | Error while writing.", e)
         except Exception as e:
-            print('Error while writing:', e)
+            print('Zenit: Exception | Error while writing:', e)
 
     def on_request(self, method: str, cb):
         self.on_request_handlers[method] = cb
@@ -307,18 +318,18 @@ class LanguageServer:
         request_id = response.get("id")
         handler = self.on_request_handlers.get(method)
         if not handler:
-            self.send_error_response(request_id, Error(
+            await self.send_error_response(request_id, Error(
                     ErrorCodes.MethodNotFound, "method '{}' not handled on client.".format(method)))
             return
         try:
             self.communcation_logs.append(f'Received request "{method}" ({request_id})\nParams: {encode_json(params)}')
             res = await handler(OnRequestPayload(self, params))
             self.communcation_logs.append(f'Sending response "{method}" ({request_id})\n{encode_json(res)}')
-            self.send_response(request_id, res)
+            await self.send_response(request_id, res)
         except Error as ex:
-            self.send_error_response(request_id, ex)
+            await self.send_error_response(request_id, ex)
         except Exception as ex:
-            self.send_error_response(request_id, Error(ErrorCodes.InternalError, str(ex)))
+            await self.send_error_response(request_id, Error(ErrorCodes.InternalError, str(ex)))
 
     async def _notification_handler(self, response: StringDict) -> None:
         method = response.get("method", "")
