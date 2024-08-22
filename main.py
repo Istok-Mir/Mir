@@ -170,7 +170,6 @@ class DocumentListener(sublime_plugin.ViewEventListener):
             print('HoverError:', e)
         try:
             providers_results = await asyncio.gather(*[provider.provide_hover(self.view, hover_point) for provider in hover_providers_for_view(self.view)])
-            print('providers_results', providers_results)
             results.extend(providers_results)
         except Exception as e:
             print('HoverProvidersError:', e)
