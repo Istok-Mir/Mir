@@ -71,7 +71,7 @@ def close_document(view: sublime.View):
             started_servers = [s for s in started_servers if s != server]
 
 
-class TheTowerThatControlsTheLifeOfServers(sublime_plugin.EventListener):
+class ControlsWhenServersStartOrShutdown(sublime_plugin.EventListener):
     def on_init(self, views: list[sublime.View]):
         run_future(self.initialize(views))
 
@@ -103,13 +103,13 @@ class TheTowerThatControlsTheLifeOfServers(sublime_plugin.EventListener):
         print('EventListener on_revert', view)
 
     def on_load(self, view):
-        print('EventListener on_load', view)
+        run_future(open_document(view))
 
     def on_activated(self, view):
         print('EventListener on_activated', view)
 
     def on_close(self, view):
-        print('EventListener on_close', view)
+        close_document(view)
 
     def on_new_window(self, window):
         print('EventListener on_new_window', window)
@@ -124,12 +124,6 @@ class TheTowerThatControlsTheLifeOfServers(sublime_plugin.EventListener):
 
 
 class DocumentListener(sublime_plugin.ViewEventListener):
-    def on_load(self):
-        run_future(open_document(self.view))
-
-    def on_close(self):
-       close_document(self.view)
-
     def on_query_completions(self, _prefix: str, locations: list[Point]):
         completion_list = sublime.CompletionList()
         params: CompletionParams = {
@@ -140,6 +134,31 @@ class DocumentListener(sublime_plugin.ViewEventListener):
         }
         run_future(self.do_completions(completion_list, params))
         return completion_list
+
+    async def do_completions(self, completion_list: sublime.CompletionList, params: CompletionParams):
+        completions: list[sublime.CompletionValue] = []
+        for server in servers_for_view(self.view):
+            server.notify.did_change_text_document({
+                'textDocument': {
+                    'uri': params['textDocument']['uri'],
+                    'version': self.view.change_count()
+                },
+                'contentChanges': [{
+                    'text': self.view.substr(sublime.Region(0, self.view.size()))
+                }]
+            })
+            if not server.capabilities.has('completionProvider'):
+                continue
+            res=None
+            try:
+                res = await server.send.completion(params)
+            except Exception as e:
+                print('CompletionError:', e)
+            if isinstance(res, dict):
+                items = res['items']
+                for i in items:
+                    completions.append(sublime.CompletionItem(i['label']))
+        completion_list.set_completions(completions, sublime.INHIBIT_WORD_COMPLETIONS)
 
     def on_hover(self, point, hover_zone):
         if hover_zone == 1:
@@ -171,27 +190,3 @@ class DocumentListener(sublime_plugin.ViewEventListener):
                     max_width=800,
                 )
 
-    async def do_completions(self, completion_list: sublime.CompletionList, params: CompletionParams):
-        completions: list[sublime.CompletionValue] = []
-        for server in servers_for_view(self.view):
-            server.notify.did_change_text_document({
-                'textDocument': {
-                    'uri': params['textDocument']['uri'],
-                    'version': self.view.change_count()
-                },
-                'contentChanges': [{
-                    'text': self.view.substr(sublime.Region(0, self.view.size()))
-                }]
-            })
-            if not server.capabilities.has('completionProvider'):
-                continue
-            res=None
-            try:
-                res = await server.send.completion(params)
-            except Exception as e:
-                print('CompletionError:', e)
-            if isinstance(res, dict):
-                items = res['items']
-                for i in items:
-                    completions.append(sublime.CompletionItem(i['label']))
-        completion_list.set_completions(completions, sublime.INHIBIT_WORD_COMPLETIONS)
