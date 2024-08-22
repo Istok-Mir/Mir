@@ -1,6 +1,5 @@
 from __future__ import annotations
 from event_loop import run_future
-from html import escape
 from lsp.minihtml import FORMAT_MARKED_STRING, FORMAT_MARKUP_CONTENT, minihtml
 from lsp.server import LanguageServer
 from lsp.types import CompletionParams, HoverParams
@@ -12,17 +11,17 @@ import sublime_plugin
 
 
 def servers_for_view(view: sublime.View) -> list[LanguageServer]:
-    return [s for s in Servers.started_servers if s.is_applicable_view(view)]
+    return [s for s in ManageServers.started_servers if s.is_applicable_view(view)]
 
 
 async def open_document(view: sublime.View):
-    for server in Servers.all_servers:
+    for server in ManageServers.all_servers:
         if not server.is_applicable_view(view):
             continue
-        if server not in Servers.started_servers:
+        if server not in ManageServers.started_servers:
             try:
                 await server.start()
-                Servers.started_servers.append(server)
+                ManageServers.started_servers.append(server)
             except Exception as e:
                 print(f'Zenit ({server.name}) | Error while starting.', e)
                 continue
@@ -41,23 +40,23 @@ def close_document(view: sublime.View):
         })
         if server.matches_activation_event_on_uri(view): # close servers who specify on_uri activation event
             server.stop()
-            Servers.started_servers = [s for s in Servers.started_servers if s != server]
+            ManageServers.started_servers = [s for s in ManageServers.started_servers if s != server]
 
 
 def register_language_server(server: LanguageServer):
-    if server in Servers.all_servers:
+    if server in ManageServers.all_servers:
         print(f'register_language_server {server.name} is skipped because it was already registred.')
         return
-    Servers.all_servers.append(server)
+    ManageServers.all_servers.append(server)
 
 
 def unregister_language_server(server: LanguageServer):
     server.stop()
-    Servers.started_servers = [s for s in Servers.started_servers if s != server]
-    Servers.all_servers = [s for s in Servers.started_servers if s != server]
+    ManageServers.started_servers = [s for s in ManageServers.started_servers if s != server]
+    ManageServers.all_servers = [s for s in ManageServers.started_servers if s != server]
 
 
-class Servers(sublime_plugin.EventListener):
+class ManageServers(sublime_plugin.EventListener):
     all_servers: list[LanguageServer] = []
     started_servers: list[LanguageServer] = []
 
@@ -67,11 +66,11 @@ class Servers(sublime_plugin.EventListener):
     async def initialize(self, views: list[sublime.View]):
 
         # start servers that have selector "*"
-        for server in Servers.all_servers:
+        for server in ManageServers.all_servers:
             if server.configuration['activation_events']['selector'] == '*':
                 try:
                     await server.start()
-                    Servers.started_servers.append(server)
+                    ManageServers.started_servers.append(server)
                 except Exception as e:
                     print(f'Zenit ({server.name}) | Error while starting.', e)
             for v in views:
@@ -105,7 +104,7 @@ class Servers(sublime_plugin.EventListener):
         print('EventListener on_pre_close_window', window)
 
     def on_exit(self):
-        for server in Servers.started_servers:
+        for server in ManageServers.started_servers:
             server.stop()
 
 
