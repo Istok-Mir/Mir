@@ -258,8 +258,7 @@ class ServerCapabilities(DottedDict):
         server_capability: ServerCapability,
     ) -> None:
         capability = self.get(server_capability)
-        if not isinstance(capability, str):
-            msg = f"{server_capability} is not a string. Skipping."
-            print(msg)
+        if not capability:
+            print(f"{server_capability} is not present in the current capabilities. Skipping.")
             return
         self.remove(server_capability)

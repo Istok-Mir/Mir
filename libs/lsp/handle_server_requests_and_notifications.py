@@ -1,6 +1,6 @@
 from __future__ import annotations
 from lsp.capabilities import method_to_capability
-from lsp.types import LogMessageParams, MessageType, RegistrationParams
+from lsp.types import LogMessageParams, MessageType, RegistrationParams, UnregistrationParams
 from typing import TYPE_CHECKING, Generic, TypeVar
 if TYPE_CHECKING:
     from lsp.server import LanguageServer
@@ -41,3 +41,11 @@ async def register_capability(payload: OnRequestPayload[RegistrationParams]):
         if not isinstance(options, dict):
             options = {}
         payload.server.capabilities.register(capability_path, options)
+
+
+async def unregister_capability(payload: OnRequestPayload[UnregistrationParams]):
+    params = payload.params
+    unregisterations = params["unregisterations"]
+    for unregistration in unregisterations:
+        capability_path = method_to_capability(unregistration["method"])
+        payload.server.capabilities.unregister(capability_path)

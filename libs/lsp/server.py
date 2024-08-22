@@ -6,7 +6,7 @@ import shutil
 
 from event_loop import run_future
 from lsp.communcation_logs import CommmunicationLogs, format_payload
-from lsp.handle_server_requests_and_notifications import OnNotificationPayload, OnRequestPayload, on_log_message, register_capability, workspace_configuration
+from lsp.handle_server_requests_and_notifications import OnNotificationPayload, OnRequestPayload, on_log_message, register_capability, unregister_capability,workspace_configuration
 from sublime_plugin import sublime
 import datetime
 
@@ -123,6 +123,7 @@ class LanguageServer:
         # respond to server requests and notifications
         self.on_request('workspace/configuration', workspace_configuration)
         self.on_request('client/registerCapability', register_capability)
+        self.on_request('client/unregisterCapability', unregister_capability)
         self.on_notification('window/logMessage', on_log_message)
 
     async def start(self):
