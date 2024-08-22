@@ -4,7 +4,7 @@ from .api import register_hover_provider, unregister_hover_provider, HoverProvid
 import sublime
 
 class ExampleHoverProvider(HoverProvider):
-    name= 'name might be used to display to the user'
+    name= 'Package Json Enhancer'
     activation_events = {
         'selector': 'source.json',
         'on_uri': ['file://**/package.json'],
