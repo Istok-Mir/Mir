@@ -14,6 +14,10 @@ from sublime_types import Point
 all_servers: list[LanguageServer] = []
 started_servers: list[LanguageServer] = []
 
+def servers_for_view(view: sublime.View) -> list[LanguageServer]:
+    global started_servers
+    return [s for s in started_servers if s.is_applicable_view(view)]
+
 async def main():
     global all_servers
     global started_servers
@@ -79,13 +83,13 @@ async def open_document(view: sublime.View):
 
 def close_document(view: sublime.View):
     global started_servers
-    for server in started_servers:
+    for server in servers_for_view(view):
         server.notify.did_close_text_document({
             'textDocument': {
                 'uri': get_view_uri(view)
             }
         })
-        if server.matches_activation_event_on_uri(view):
+        if server.matches_activation_event_on_uri(view): # close servers who specify on_uri activation event
             server.stop()
             started_servers = [s for s in started_servers if s != server]
 
@@ -126,7 +130,7 @@ class DocumentListener(sublime_plugin.ViewEventListener):
     async def do_hover(self, params: HoverParams, hover_point):
         results = []
         try:
-            results = await asyncio.gather(*[server.send.hover(params) for server in all_servers if server.capabilities.has('hoverProvider')])
+            results = await asyncio.gather(*[server.send.hover(params) for server in servers_for_view(self.view) if server.capabilities.has('hoverProvider')])
         except Exception as e:
             print('HoverError:', e)
         combined_content = []
@@ -135,8 +139,10 @@ class DocumentListener(sublime_plugin.ViewEventListener):
                 content = res['contents']
                 if content:
                     content = minihtml(self.view, content, FORMAT_MARKED_STRING | FORMAT_MARKUP_CONTENT)
+                    print('content', content)
                     combined_content.append(content)
             if combined_content:
+                print('ovdeee')
                 self.view.show_popup(
                     f"<html style='border: 1px solid color(var(--foreground) blend(var(--background) 20%));'><body><div style='padding: 0.2rem 0.5rem; font-size: 1rem;'>{'<hr>'.join(combined_content)}</div></body></html>",
                     sublime.PopupFlags.HIDE_ON_MOUSE_MOVE_AWAY,
@@ -146,7 +152,7 @@ class DocumentListener(sublime_plugin.ViewEventListener):
 
     async def do_completions(self, completion_list: sublime.CompletionList, params: CompletionParams):
         completions: list[sublime.CompletionValue] = []
-        for server in all_servers:
+        for server in servers_for_view(self.view):
             if not server.capabilities.has('completionProvider'):
                 continue
             server.notify.did_change_text_document({
