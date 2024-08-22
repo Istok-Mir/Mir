@@ -139,10 +139,8 @@ class DocumentListener(sublime_plugin.ViewEventListener):
                 content = res['contents']
                 if content:
                     content = minihtml(self.view, content, FORMAT_MARKED_STRING | FORMAT_MARKUP_CONTENT)
-                    print('content', content)
                     combined_content.append(content)
             if combined_content:
-                print('ovdeee')
                 self.view.show_popup(
                     f"<html style='border: 1px solid color(var(--foreground) blend(var(--background) 20%));'><body><div style='padding: 0.2rem 0.5rem; font-size: 1rem;'>{'<hr>'.join(combined_content)}</div></body></html>",
                     sublime.PopupFlags.HIDE_ON_MOUSE_MOVE_AWAY,
