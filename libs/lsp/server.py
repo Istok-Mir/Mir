@@ -154,9 +154,7 @@ class LanguageServer:
             return False
         matches_on_uri = self.matches_activation_event_on_uri(view)
         if not matches_on_uri:
-            print(view, self.name, 'eej')
             return False
-        print(view, self.name, 'applicable')
         return True
 
     def matches_activation_event_on_uri(self, view: sublime.View) -> bool:
@@ -165,7 +163,6 @@ class LanguageServer:
             uri = get_view_uri(view)
             for uri_pattern in on_uri:
                 if not globmatch(uri, uri_pattern, flags=GLOBSTAR | BRACE):
-                    print('pedja', uri, uri_pattern)
                     return False
         return True
 
