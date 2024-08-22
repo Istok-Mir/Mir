@@ -10,8 +10,10 @@ import asyncio
 import sublime
 import sublime_plugin
 
+
 def servers_for_view(view: sublime.View) -> list[LanguageServer]:
     return [s for s in Servers.started_servers if s.is_applicable_view(view)]
+
 
 async def open_document(view: sublime.View):
     for server in Servers.all_servers:
@@ -29,6 +31,7 @@ async def open_document(view: sublime.View):
             'textDocument': text_document
         })
 
+
 def close_document(view: sublime.View):
     for server in servers_for_view(view):
         server.notify.did_close_text_document({
@@ -41,29 +44,21 @@ def close_document(view: sublime.View):
             Servers.started_servers = [s for s in Servers.started_servers if s != server]
 
 
+def register_language_server(server: LanguageServer):
+    if server in Servers.all_servers:
+        print(f'register_language_server {server.name} is skipped because it was already registred.')
+        return
+    Servers.all_servers.append(server)
+
+
+def unregister_language_server(server: LanguageServer):
+    server.stop()
+    Servers.started_servers = [s for s in Servers.started_servers if s != server]
+    Servers.all_servers = [s for s in Servers.started_servers if s != server]
+
+
 class Servers(sublime_plugin.EventListener):
-    all_servers: list[LanguageServer] = [
-        LanguageServer('typescript-language-server', {
-            'cmd':'typescript-language-server --stdio',
-            'activation_events': {
-                'selector': 'source.js, source.jsx, source.ts, source.tsx'
-            }
-        }),
-        LanguageServer('package-version-server', {
-            'cmd': '/Users/predrag/Downloads/package-version-server',
-            'activation_events': {
-                'selector': 'source.json',
-                'on_uri': ['file://**/package.json'],
-            }
-        }),
-        LanguageServer('tailwindcss-language-server', {
-            'cmd':'tailwindcss-language-server --stdio',
-            'activation_events': {
-                'selector': 'source.jsx | source.js.react | source.js | source.tsx | source.ts | source.css | source.scss | source.less | text.html.vue | text.html.svelte | text.html.basic | text.html.twig | text.blade | text.html.blade | embedding.php | text.html.rails | text.html.erb | text.haml | text.jinja | text.django | text.html.elixir | source.elixir | text.html.ngx | source.astro',
-                'workspace_contains': ['**/tailwind.config.{ts,js,cjs,mjs}'],
-            }
-        })
-    ]
+    all_servers: list[LanguageServer] = []
     started_servers: list[LanguageServer] = []
 
     def on_init(self, views: list[sublime.View]):
@@ -151,14 +146,14 @@ class DocumentListener(sublime_plugin.ViewEventListener):
                     completions.append(sublime.CompletionItem(i['label']))
         completion_list.set_completions(completions, sublime.INHIBIT_WORD_COMPLETIONS)
 
-    def on_hover(self, point, hover_zone):
+    def on_hover(self, hover_point, hover_zone):
         if hover_zone == 1:
             run_future(self.do_hover({
-                'position': point_to_position(self.view, point),
+                'position': point_to_position(self.view, hover_point),
                 'textDocument': {
                     'uri': get_view_uri(self.view)
                 },
-            }, point))
+            }, hover_point))
 
     async def do_hover(self, params: HoverParams, hover_point):
         results = []

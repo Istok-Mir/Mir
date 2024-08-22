@@ -1,14 +1,15 @@
 from __future__ import annotations
+
+from lsp.server_request_and_notification_handlers import attach_server_request_and_notification_handlers
 from .capabilities import CLIENT_CAPABILITIES, ServerCapabilities
 from .lsp_requests import LspRequest, LspNotification
 from .types import ErrorCodes, MessageType
 from event_loop import run_future
 from lsp.communcation_logs import CommmunicationLogs, format_payload
-from lsp.handle_server_requests_and_notifications import OnNotificationPayload, OnRequestPayload, on_log_message, register_capability, unregister_capability,workspace_configuration
 from lsp.view_to_lsp import file_name_to_uri, get_view_uri
 from pathlib import Path
 from sublime_plugin import sublime
-from typing import  Any, Dict, Literal, Optional, TypedDict, cast
+from typing import  Any, Callable, Dict, Literal, Optional, TypedDict, cast
 from typing_extensions import NotRequired
 from wcmatch.glob import BRACE
 from wcmatch.glob import globmatch
@@ -20,6 +21,7 @@ import shutil
 
 
 ENCODING = "utf-8"
+
 
 class Error(Exception):
     def __init__(self, code: ErrorCodes, message: str) -> None:
@@ -88,6 +90,7 @@ class Request():
         async with self.cv:
             self.cv.notify()
 
+
 def content_length(line: bytes) -> Optional[int]:
     if line.startswith(b'Content-Length: '):
         _, value = line.split(b'Content-Length: ')
@@ -108,9 +111,16 @@ class ActivationEvents(TypedDict):
     '''
     workspace_contains: NotRequired[list[str]] # todo: implement
 
+
 class LanguageServerConfiguration(TypedDict):
     cmd: str
     activation_events: ActivationEvents
+
+
+class NotificationHandler(TypedDict):
+    method: str
+    cb: Callable[[dict|None],None]
+
 
 class LanguageServer:
     def __init__(self, name: str, configuration: LanguageServerConfiguration) -> None:
@@ -129,16 +139,13 @@ class LanguageServer:
         self._cancel_requests: list[Request] = []
         # requests and notifications sent from server
         self.on_request_handlers = {}
-        self.on_notification_handlers = {}
+        self.on_notification_handlers: list[NotificationHandler] = []
         # logs
         self._communcation_logs = CommmunicationLogs(name)
 
-        # respond to server requests and notifications
-        self.on_request('workspace/configuration', workspace_configuration)
-        self.on_request('client/registerCapability', register_capability)
-        self.on_request('client/unregisterCapability', unregister_capability)
-        self.on_notification('window/logMessage', on_log_message)
+        attach_server_request_and_notification_handlers(self)
 
+    # doesnt' belong here
     def is_applicable_view(self, view: sublime.View) -> bool:
         selector = self.configuration['activation_events']['selector']
         if selector == '*':
@@ -151,6 +158,7 @@ class LanguageServer:
             return False
         return True
 
+    # doesnt' belong here
     def matches_activation_event_on_uri(self, view: sublime.View) -> bool:
         on_uri = self.configuration['activation_events'].get('on_uri')
         if on_uri:
@@ -159,7 +167,6 @@ class LanguageServer:
                 if not globmatch(uri, uri_pattern, flags=GLOBSTAR | BRACE):
                     return False
         return True
-
 
     async def start(self):
         try:
@@ -322,7 +329,10 @@ class LanguageServer:
         self.on_request_handlers[method] = cb
 
     def on_notification(self, method: str, cb):
-        self.on_notification_handlers[method] = cb
+        self.on_notification_handlers.append({
+            'cb': cb,
+            'method': method
+        })
 
     async def _response_handler(self, response: dict) -> None:
         request = self._response_handlers.pop(response["id"])
@@ -345,7 +355,7 @@ class LanguageServer:
             return
         try:
             self._communcation_logs.append(f'Received request "{method}" ({request_id})\nParams: {format_payload(params)}')
-            res = await handler(OnRequestPayload(self, params))
+            res = await handler(params)
             self._communcation_logs.append(f'Sending response "{method}" ({request_id})\n{format_payload(res)}')
             await self.send_response(request_id, res)
         except Error as ex:
@@ -356,13 +366,14 @@ class LanguageServer:
     async def _notification_handler(self, response: dict) -> None:
         method = response.get("method", "")
         params = response.get("params")
-        handler = self.on_notification_handlers.get(method)
+        handlers = [ handler['cb'] for handler in self.on_notification_handlers if handler['method'] == method]
         self._communcation_logs.append(f'Received notification "{method}"\nParams: {format_payload(params)}')
-        if not handler:
+        if not handlers:
             self._log(f"unhandled {method}")
             return
         try:
-            handler(OnNotificationPayload(self, params))
+            for handler in handlers:
+                handler(params)
         except asyncio.CancelledError:
             return
         except Exception as ex:
