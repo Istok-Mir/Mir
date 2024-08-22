@@ -27,7 +27,7 @@ def on_log_message(payload: OnNotificationPayload[LogMessageParams]):
         MessageType.Debug: 'Debug',
         MessageType.Log: 'Log',
     }.get(payload.params.get('type', MessageType.Log))
-    print(f"Zenit: {message_type}: {payload.params.get('message')}")
+    print(f"Zenit | {message_type}: {payload.params.get('message')}")
 
 async def workspace_configuration(payload: OnRequestPayload):
     return []

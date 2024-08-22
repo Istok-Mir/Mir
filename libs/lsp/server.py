@@ -5,6 +5,7 @@ import json
 import shutil
 
 from event_loop import run_future
+from lsp.communcation_logs import CommmunicationLogs, format_payload
 from lsp.handle_server_requests_and_notifications import OnNotificationPayload, OnRequestPayload, on_log_message, register_capability, workspace_configuration
 from sublime_plugin import sublime
 import datetime
@@ -97,24 +98,6 @@ def content_length(line: bytes) -> Optional[int]:
             raise ValueError("Invalid Content-Length header: {}".format(value))
     return None
 
-class CommmunicationLogs:
-    def __init__(self, name: str):
-        self.name = name
-        self.logs: list[str] = []
-        self.panel = sublime.active_window().create_output_panel(name)
-
-    def append(self, log: str):
-        time = datetime.datetime.now().strftime('%H:%M:%S')
-        log_with_time = f"[{time}] {log}"
-        self.logs.append(log_with_time)
-        self.panel.set_read_only(False)
-        self.panel.run_command("append", {
-            'characters': log_with_time + '\n\n',
-            'force': False,
-            'scroll_to_end': True
-        })
-        self.panel.clear_undo_stack()
-        self.panel.set_read_only(True)
 
 class LanguageServer:
     def __init__(self, name: str, cmd: str) -> None:
@@ -123,8 +106,8 @@ class LanguageServer:
         self.notify = LspNotification(self.send_notification)
         self.capabilities = ServerCapabilities()
 
-        self.cmd = cmd
-        self.process = None
+        self._cmd = cmd
+        self._process = None
         self._received_shutdown = False
 
         self.request_id = 1
@@ -135,7 +118,7 @@ class LanguageServer:
         self.on_request_handlers = {}
         self.on_notification_handlers = {}
         # logs
-        self.communcation_logs = CommmunicationLogs(name)
+        self._communcation_logs = CommmunicationLogs(name)
 
         # respond to server requests and notifications
         self.on_request('workspace/configuration', workspace_configuration)
@@ -144,21 +127,21 @@ class LanguageServer:
 
     async def start(self):
         try:
-            if not shutil.which(self.cmd.split()[0]):
-                raise RuntimeError(f"Command not found: {self.cmd}")
+            if not shutil.which(self._cmd.split()[0]):
+                raise RuntimeError(f"Command not found: {self._cmd}")
 
-            self.process = await asyncio.create_subprocess_shell(
-                self.cmd,
+            self._process = await asyncio.create_subprocess_shell(
+                self._cmd,
                 stdout=asyncio.subprocess.PIPE,
                 stdin=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
-            run_future(self.run_forever())
+            run_future(self._run_forever())
 
             folders = sublime.active_window().folders()
             root_folder = folders[0] if folders else ''
             initialize_result = await self.send.initialize({
-                'processId': self.process.pid,
+                'processId': self._process.pid,
                 'rootUri': 'file://' + root_folder,
                 'rootPath': root_folder,
                 'workspaceFolders': [{'name': 'OLSP', 'uri': 'file://' + root_folder}],
@@ -168,28 +151,28 @@ class LanguageServer:
             self.capabilities.assign(cast(dict, initialize_result['capabilities']))
             self.notify.initialized({})
         except Exception as e:
-            print('Zenit: Error when creating the subprocess.', e)
+            print(f'Zenit ({self.name}) Error while creating subprocess.', e)
 
     def stop(self):
         run_future(self.shutdown())
-        if self.process:
-            self.process.kill()
+        if self._process:
+            self._process.kill()
 
     async def shutdown(self):
         await self.send.shutdown()
         self._received_shutdown = True
         self.notify.exit()
-        if self.process and self.process.stdout:
-            self.process.stdout.set_exception(StopLoopException())
+        if self._process and self._process.stdout:
+            self._process.stdout.set_exception(StopLoopException())
 
     def _log(self, message: str) -> None:
         self.send_notification("window/logMessage",
                      {"type": MessageType.Info, "message": message})
 
-    async def run_forever(self) -> bool:
+    async def _run_forever(self) -> bool:
         try:
-            while self.process and self.process.stdout and not self.process.stdout.at_eof():
-                line = await self.process.stdout.readline()
+            while self._process and self._process.stdout and not self._process.stdout.at_eof():
+                line = await self._process.stdout.readline()
                 if not line:
                     continue
                 try:
@@ -199,14 +182,13 @@ class LanguageServer:
                 if num_bytes is None:
                     continue
                 while line and line.strip():
-                    line = await self.process.stdout.readline()
+                    line = await self._process.stdout.readline()
                 if not line:
                     continue
-                body = await self.process.stdout.readexactly(num_bytes)
-
+                body = await self._process.stdout.readexactly(num_bytes)
                 run_future(self._handle_body(body))
         except (BrokenPipeError, ConnectionResetError, StopLoopException) as e:
-            print('Zenit: Error in run_forever.', e)
+            print(f'Zenit ({self.name}) Error in run_forever. ', e)
             pass
         return self._received_shutdown
 
@@ -214,13 +196,13 @@ class LanguageServer:
         try:
             await self._receive_payload(json.loads(body))
         except IOError as ex:
-            self._log(f"malformed {ENCODING}: {ex}")
+            self._log(f"Zenit ({self.name})  malformed {ENCODING}: {ex}")
         except UnicodeDecodeError as ex:
-            self._log(f"malformed {ENCODING}: {ex}")
+            self._log(f"Zenit ({self.name})  malformed {ENCODING}: {ex}")
         except json.JSONDecodeError as ex:
-            self._log(f"malformed JSON: {ex}")
+            self._log(f"Zenit ({self.name})  malformed JSON: {ex}")
         except Exception as e:
-            print(f"Zenit: Error in _handle_body. {e}")
+            print(f"Zenit ({self.name}) Error in _handle_body. ", e)
 
     async def _receive_payload(self, payload: StringDict) -> None:
         try:
@@ -237,7 +219,7 @@ class LanguageServer:
             self._log(f"Error handling server payload: {err}")
 
     def send_notification(self, method: str, params: Optional[dict] = None):
-        self.communcation_logs.append(f'Send notification "{method}"\nParams: {encode_json(params)}')
+        self._communcation_logs.append(f'Send notification "{method}"\nParams: {format_payload(params)}')
         self._send_payload_sync(
             make_notification(method, params))
 
@@ -246,12 +228,12 @@ class LanguageServer:
             make_response(request_id, params))
 
     async def send_error_response(self, request_id: Any, err: Error) -> None:
-        self.communcation_logs.append(f'Send error response ({request_id})\n{err}')
+        self._communcation_logs.append(f'Send error response ({request_id})\n{err}')
         try:
             await self._send_payload(
                 make_error_response(request_id, err))
         except Exception as e:
-            print('Zenit: Error in send_error_response.', e)
+            print(f'Zenit ({self.name}) Error in send_error_response.', e)
 
     async def send_request(self, method: str, params: Optional[dict] = None):
         for i, cancel_request in enumerate(list(self._cancel_requests)):
@@ -265,39 +247,39 @@ class LanguageServer:
         self._cancel_requests.append(request)
         start_of_req = datetime.datetime.now()
         async with request.cv:
-            self.communcation_logs.append(f'Sending request "{method}" ({request_id})\nParams: {encode_json(params)}')
+            self._communcation_logs.append(f'Sending request "{method}" ({request_id})\nParams: {format_payload(params)}')
             await self._send_payload(make_request(method, request_id, params))
             await request.cv.wait()
         end_of_req = datetime.datetime.now()
         duration = round((end_of_req-start_of_req).total_seconds(), 2)
         if isinstance(request.error, Error):
-            self.communcation_logs.append(f'Recieved error response "{method}" ({request_id}) - {duration}s\n{encode_json(request.error)}')
+            self._communcation_logs.append(f'Recieved error response "{method}" ({request_id}) - {duration}s\n{format_payload(request.error)}')
             raise request.error
-        self.communcation_logs.append(f'Recieved response "{method}" ({request_id}) - {duration}s\n{encode_json(request.result)}')
+        self._communcation_logs.append(f'Recieved response "{method}" ({request_id}) - {duration}s\n{format_payload(request.result)}')
         return request.result
 
     def _send_payload_sync(self, payload: StringDict) -> None:
-        if not self.process or not self.process.stdin:
+        if not self._process or not self._process.stdin:
             return
         msg = create_message(payload)
         try:
-            self.process.stdin.writelines(msg)
+            self._process.stdin.writelines(msg)
         except BrokenPipeError as e:
-            print(f"Zenit: BrokenPipeError | Error while writing (sync). {e}")
+            print(f"Zenit ({self.name}) BrokenPipeError | Error while writing (sync).", e)
         except Exception as e:
-            print('Zenit: Exception | Error while writing (sync).', e)
+            print(f'Zenit ({self.name}) Exception | Error while writing (sync).', e)
 
     async def _send_payload(self, payload: StringDict) -> None:
-        if not self.process or not self.process.stdin:
+        if not self._process or not self._process.stdin:
             return
         msg = create_message(payload)
         try:
-            self.process.stdin.writelines(msg)
-            await self.process.stdin.drain()
+            self._process.stdin.writelines(msg)
+            await self._process.stdin.drain()
         except BrokenPipeError as e:
-            print("Zenit: BrokenPipeError | Error while writing.", e)
+            print(f"Zenit ({self.name}) BrokenPipeError | Error while writing.", e)
         except Exception as e:
-            print('Zenit: Exception | Error while writing:', e)
+            print(f'Zenit ({self.name}) Exception | Error while writing:', e)
 
     def on_request(self, method: str, cb):
         self.on_request_handlers[method] = cb
@@ -325,9 +307,9 @@ class LanguageServer:
                     ErrorCodes.MethodNotFound, "method '{}' not handled on client.".format(method)))
             return
         try:
-            self.communcation_logs.append(f'Received request "{method}" ({request_id})\nParams: {encode_json(params)}')
+            self._communcation_logs.append(f'Received request "{method}" ({request_id})\nParams: {format_payload(params)}')
             res = await handler(OnRequestPayload(self, params))
-            self.communcation_logs.append(f'Sending response "{method}" ({request_id})\n{encode_json(res)}')
+            self._communcation_logs.append(f'Sending response "{method}" ({request_id})\n{format_payload(res)}')
             await self.send_response(request_id, res)
         except Error as ex:
             await self.send_error_response(request_id, ex)
@@ -338,7 +320,7 @@ class LanguageServer:
         method = response.get("method", "")
         params = response.get("params")
         handler = self.on_notification_handlers.get(method)
-        self.communcation_logs.append(f'Received notification "{method}"\nParams: {encode_json(params)}')
+        self._communcation_logs.append(f'Received notification "{method}"\nParams: {format_payload(params)}')
         if not handler:
             self._log(f"unhandled {method}")
             return
@@ -349,14 +331,3 @@ class LanguageServer:
         except Exception as ex:
             if not self._received_shutdown:
                 self.send_notification("window/logMessage", {"type": MessageType.Error, "message": str(ex)})
-
-
-def encode_json(value: Any):
-    return one_level_indent(sublime.encode_value(value))
-
-def one_level_indent(text):
-    return replace_last(text.replace('{', '{\n\t', 1).replace('[', '[\n\t', 1), '}', '\n}')
-
-def replace_last(text:str, old_char: str, new_char: str):
-    k = text.rfind(old_char)
-    return text[:k] + new_char
