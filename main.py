@@ -11,57 +11,34 @@ from html import escape
 import sublime_plugin
 from sublime_types import Point
 
-all_servers: list[LanguageServer] = []
-started_servers: list[LanguageServer] = []
-
-def servers_for_view(view: sublime.View) -> list[LanguageServer]:
-    global started_servers
-    return [s for s in started_servers if s.is_applicable_view(view)]
-
-async def main():
-    global all_servers
-    global started_servers
-    ts_ls = LanguageServer('typescript-language-server', {
+all_servers: list[LanguageServer] = [
+    LanguageServer('typescript-language-server', {
         'cmd':'typescript-language-server --stdio',
         'activation_events': {
             'selector': 'selector:source.js, source.jsx, source.ts, source.tsx'
         }
-    })
-    all_servers.append(ts_ls)
-    pvs_ls = LanguageServer('package-version-server', {
+    }),
+    LanguageServer('package-version-server', {
         'cmd': '/Users/predrag/Downloads/package-version-server',
         'activation_events': {
             'selector': 'source.json',
             'on_uri': ['file://**/package.json'],
         }
-    })
-    all_servers.append(pvs_ls)
-
-    tailwind_ls = LanguageServer('tailwindcss-language-server', {
+    }),
+    LanguageServer('tailwindcss-language-server', {
         'cmd':'tailwindcss-language-server --stdio',
         'activation_events': {
             'selector': 'source.jsx | source.js.react | source.js | source.tsx | source.ts | source.css | source.scss | source.less | text.html.vue | text.html.svelte | text.html.basic | text.html.twig | text.blade | text.html.blade | embedding.php | text.html.rails | text.html.erb | text.haml | text.jinja | text.django | text.html.elixir | source.elixir | text.html.ngx | source.astro',
             'workspace_contains': ['**/tailwind.config.{ts,js,cjs,mjs}'],
         }
     })
-    all_servers.append(tailwind_ls)
+]
+started_servers: list[LanguageServer] = []
 
-    # start servers that have selector "*"
-    for server in all_servers:
-        if server.configuration['activation_events']['selector'] == '*':
-            try:
-                await server.start()
-                started_servers.append(server)
-            except Exception as e:
-                print(f'Zenit ({server.name}) | Error while starting.', e)
+def servers_for_view(view: sublime.View) -> list[LanguageServer]:
+    global started_servers
+    return [s for s in started_servers if s.is_applicable_view(view)]
 
-    # notify ls of currenly open views
-    views = [v for w in sublime.windows() for v in w.views()]
-    for v in views:
-        await open_document(v)
-
-def plugin_loaded() -> None:
-    run_future(main())
 
 async def open_document(view: sublime.View):
     global all_servers
@@ -94,12 +71,24 @@ def close_document(view: sublime.View):
             started_servers = [s for s in started_servers if s != server]
 
 
-class DocumentListener3(sublime_plugin.EventListener):
-    def on_init(self, views):
-        print('EventListener onint', views)
+class TheTowerThatControlsTheLifeOfServers(sublime_plugin.EventListener):
+    def on_init(self, views: list[sublime.View]):
+        run_future(self.initialize(views))
 
-    def on_init(self, views):
-        print('EventListener onint', views)
+    async def initialize(self, views: list[sublime.View]):
+        global all_servers
+        global started_servers
+
+        # start servers that have selector "*"
+        for server in all_servers:
+            if server.configuration['activation_events']['selector'] == '*':
+                try:
+                    await server.start()
+                    started_servers.append(server)
+                except Exception as e:
+                    print(f'Zenit ({server.name}) | Error while starting.', e)
+            for v in views:
+                await open_document(v)
 
     def on_pre_move(self, view):
         print('EventListener on_pre_move', view)
@@ -132,6 +121,7 @@ class DocumentListener3(sublime_plugin.EventListener):
         global started_servers
         for server in started_servers:
             server.stop()
+
 
 class DocumentListener(sublime_plugin.ViewEventListener):
     def on_load(self):
