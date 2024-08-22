@@ -95,6 +95,39 @@ def close_document(view: sublime.View):
 
 
 class DocumentListener3(sublime_plugin.EventListener):
+    def on_init(self, views):
+        print('EventListener onint', views)
+
+    def on_init(self, views):
+        print('EventListener onint', views)
+
+    def on_pre_move(self, view):
+        print('EventListener on_pre_move', view)
+
+    def on_post_move(self, view):
+        print('EventListener on_post_move', view)
+
+    def on_reload(self, view):
+        print('EventListener on_reload', view)
+
+    def on_revert(self, view):
+        print('EventListener on_revert', view)
+
+    def on_load(self, view):
+        print('EventListener on_load', view)
+
+    def on_activated(self, view):
+        print('EventListener on_activated', view)
+
+    def on_close(self, view):
+        print('EventListener on_close', view)
+
+    def on_new_window(self, window):
+        print('EventListener on_new_window', window)
+
+    def on_pre_close_window(self, window):
+        print('EventListener on_pre_close_window', window)
+
     def on_exit(self):
         global started_servers
         for server in started_servers:
