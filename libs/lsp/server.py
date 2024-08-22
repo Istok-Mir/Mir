@@ -70,7 +70,9 @@ def create_message(payload: PayloadLike) :
 
 
 class Request():
-    def __init__(self) -> None:
+    def __init__(self, id, method='') -> None:
+        self.id: int = id
+        self.method = method
         self.cv = asyncio.Condition()
         self.result: Optional[PayloadLike] = None
         self.error: Optional[Error] = None
@@ -152,6 +154,7 @@ class LanguageServer:
 
         self.request_id = 1
         self._response_handlers: Dict[Any, Request] = {}
+        self._pending_requests: list[Request] = []
         self.on_request_handlers = {}
         self.on_notification_handlers = {}
         self.communcation_logs = CommmunicationLogs(name)
@@ -264,10 +267,15 @@ class LanguageServer:
             make_error_response(request_id, err)))
 
     async def send_request(self, method: str, params: Optional[dict] = None):
-        request = Request()
+        for i, pending_request in enumerate(list(self._pending_requests)):
+            if pending_request.method == method:
+                self.notify.cancel_request({ 'id': pending_request.id })
+                self._pending_requests.pop(i)
         request_id = self.request_id
+        request = Request(request_id, method)
         self.request_id += 1
         self._response_handlers[request_id] = request
+        self._pending_requests.append(request)
         start_of_req = datetime.datetime.now()
         async with request.cv:
             self.communcation_logs.append(f'Sending request "{method}" ({request_id})\nParams: {sublime.encode_value(params)}')
@@ -308,6 +316,7 @@ class LanguageServer:
 
     async def _response_handler(self, response: StringDict) -> None:
         request = self._response_handlers.pop(response["id"])
+        self._pending_requests = [r for r in self._pending_requests if r.id != response["id"]]
         if "result" in response and "error" not in response:
             await request.on_result(response["result"])
         elif "result" not in response and "error" in response:
@@ -372,7 +381,7 @@ def on_log_message(payload: OnNotificationPayload[LogMessageParams]):
         MessageType.Debug: 'Debug',
         MessageType.Log: 'Log',
     }.get(payload.params.get('type', MessageType.Log))
-    print(f"{message_type}: {payload.params.get('message')}")
+    print(f"Zenit: {message_type}: {payload.params.get('message')}")
 
 async def workspace_configuration(payload: OnRequestPayload):
     return []

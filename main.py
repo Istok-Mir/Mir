@@ -57,9 +57,6 @@ class DocumentListener3(sublime_plugin.EventListener):
             server.stop()
 
 class DocumentListener(sublime_plugin.ViewEventListener):
-    def __init__(self, view: sublime.View):
-        super().__init__(view)
-        self.pending_hover_requests: asyncio.Future | None=None
     def on_load(self):
         open_document(self.view)
 
@@ -78,9 +75,6 @@ class DocumentListener(sublime_plugin.ViewEventListener):
         return completion_list
 
     def on_hover(self, point, hover_zone):
-        if self.pending_hover_requests:
-            self.pending_hover_requests.cancel()
-            self.pending_hover_requests=None
         if hover_zone == 1:
             run_future(self.do_hover({
                 'position': point_to_position(self.view, point),
@@ -92,10 +86,7 @@ class DocumentListener(sublime_plugin.ViewEventListener):
     async def do_hover(self, params: HoverParams, hover_point):
         results = []
         try:
-            hover_requests = asyncio.gather(*[server.send.hover(params) for server in servers if server.capabilities.has('hoverProvider')])
-            self.pending_hover_requests=hover_requests
-            results = await hover_requests
-            self.pending_hover_requests=None
+            results = await asyncio.gather(*[server.send.hover(params) for server in servers if server.capabilities.has('hoverProvider')])
         except Exception as e:
             print('HoverError:', e)
         combined_content = []
