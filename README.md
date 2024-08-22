@@ -1,4 +1,4 @@
-# Zenit
+# ZENit
 
 Zenit is a Sublime Text package that implements LSP.
 Features:
