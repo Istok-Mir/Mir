@@ -247,8 +247,11 @@ class LanguageServer:
 
     async def send_error_response(self, request_id: Any, err: Error) -> None:
         self.communcation_logs.append(f'Send error response ({request_id})\n{err}')
-        await self._send_payload(
-            make_error_response(request_id, err))
+        try:
+            await self._send_payload(
+                make_error_response(request_id, err))
+        except Exception as e:
+            print('Zenit: Error in send_error_response.', e)
 
     async def send_request(self, method: str, params: Optional[dict] = None):
         for i, cancel_request in enumerate(list(self._cancel_requests)):
