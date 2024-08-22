@@ -16,7 +16,7 @@ class ExampleHoverProvider(HoverProvider):
                 'kind': MarkupKind.Markdown,
                 'value': '\n'.join([
                     '# Header',
-                    'Some text',
+                    f'Some text {view.file_name()}',
                     '```typescript',
                     'someCode();',
                     '```',
