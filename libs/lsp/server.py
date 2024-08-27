@@ -198,7 +198,7 @@ class LanguageServer:
             self.capabilities.assign(cast(dict, initialize_result['capabilities']))
             self.notify.initialized({})
         except Exception as e:
-            print(f'Zenit ({self.name}) Error while creating subprocess.', e)
+            print(f'Mir ({self.name}) Error while creating subprocess.', e)
 
     def stop(self):
         run_future(self.shutdown())
@@ -236,7 +236,7 @@ class LanguageServer:
                 body = await self._process.stdout.readexactly(num_bytes)
                 run_future(self._handle_body(body))
         except (BrokenPipeError, ConnectionResetError, StopLoopException) as e:
-            print(f'Zenit ({self.name}) Error in run_forever. ', e)
+            print(f'Mir ({self.name}) Error in run_forever. ', e)
             pass
         return self._received_shutdown
 
@@ -244,13 +244,13 @@ class LanguageServer:
         try:
             await self._receive_payload(json.loads(body))
         except IOError as ex:
-            self._log(f"Zenit ({self.name})  malformed {ENCODING}: {ex}")
+            self._log(f"Mir ({self.name})  malformed {ENCODING}: {ex}")
         except UnicodeDecodeError as ex:
-            self._log(f"Zenit ({self.name})  malformed {ENCODING}: {ex}")
+            self._log(f"Mir ({self.name})  malformed {ENCODING}: {ex}")
         except json.JSONDecodeError as ex:
-            self._log(f"Zenit ({self.name})  malformed JSON: {ex}")
+            self._log(f"Mir ({self.name})  malformed JSON: {ex}")
         except Exception as e:
-            print(f"Zenit ({self.name}) Error in _handle_body. ", e)
+            print(f"Mir ({self.name}) Error in _handle_body. ", e)
 
     async def _receive_payload(self, payload: dict) -> None:
         try:
@@ -281,7 +281,7 @@ class LanguageServer:
             await self._send_payload(
                 make_error_response(request_id, err))
         except Exception as e:
-            print(f'Zenit ({self.name}) Error in send_error_response.', e)
+            print(f'Mir ({self.name}) Error in send_error_response.', e)
 
     async def send_request(self, method: str, params: Optional[dict] = None):
         for i, cancel_request in enumerate(list(self._cancel_requests)):
@@ -313,9 +313,9 @@ class LanguageServer:
         try:
             self._process.stdin.writelines(msg)
         except BrokenPipeError as e:
-            print(f"Zenit ({self.name}) BrokenPipeError | Error while writing (sync).", e)
+            print(f"Mir ({self.name}) BrokenPipeError | Error while writing (sync).", e)
         except Exception as e:
-            print(f'Zenit ({self.name}) Exception | Error while writing (sync).', e)
+            print(f'Mir ({self.name}) Exception | Error while writing (sync).', e)
 
     async def _send_payload(self, payload: dict) -> None:
         if not self._process or not self._process.stdin:
@@ -325,9 +325,9 @@ class LanguageServer:
             self._process.stdin.writelines(msg)
             await self._process.stdin.drain()
         except BrokenPipeError as e:
-            print(f"Zenit ({self.name}) BrokenPipeError | Error while writing.", e)
+            print(f"Mir ({self.name}) BrokenPipeError | Error while writing.", e)
         except Exception as e:
-            print(f'Zenit ({self.name}) Exception | Error while writing:', e)
+            print(f'Mir ({self.name}) Exception | Error while writing:', e)
 
     def on_request(self, method: str, cb):
         self.on_request_handlers[method] = cb

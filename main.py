@@ -27,7 +27,7 @@ async def open_document(view: sublime.View):
                 await server.start()
                 ManageServers.started_servers.append(server)
             except Exception as e:
-                print(f'Zenit ({server.name}) | Error while starting.', e)
+                print(f'Mir ({server.name}) | Error while starting.', e)
                 continue
         text_document = view_to_text_document_item(view)
         server.notify.did_open_text_document({
@@ -76,7 +76,7 @@ class ManageServers(sublime_plugin.EventListener):
                     await server.start()
                     ManageServers.started_servers.append(server)
                 except Exception as e:
-                    print(f'Zenit ({server.name}) | Error while starting.', e)
+                    print(f'Mir ({server.name}) | Error while starting.', e)
             for v in views:
                 await open_document(v)
 

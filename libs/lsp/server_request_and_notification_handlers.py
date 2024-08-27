@@ -34,7 +34,7 @@ def attach_server_request_and_notification_handlers(server: LanguageServer):
             MessageType.Debug: 'Debug',
             MessageType.Log: 'Log',
         }.get(params.get('type', MessageType.Log))
-        print(f"Zenit | {message_type}: {params.get('message')}")
+        print(f"Mir | {message_type}: {params.get('message')}")
 
     server.on_request('workspace/configuration', workspace_configuration)
     server.on_request('client/registerCapability', register_capability)
