@@ -141,6 +141,7 @@ class LanguageServer:
         # equests sent from client
         self._response_handlers: Dict[Any, Response] = {}
         self._cache_responses: Dict[Any, Response] = {}
+        self._last_text_document = None
         # requests and notifications sent from server
         self.on_request_handlers = {}
         self.on_notification_handlers: list[NotificationHandler] = []
@@ -247,8 +248,11 @@ class LanguageServer:
             self._log(f"Error handling server payload: {err}")
 
     def send_notification(self, method: str, params: Optional[dict] = None):
-        if method == 'textDocument/didChange':
-            self._cache_responses = {}
+        if method == 'textDocument/didChange' and params:
+            if params['textDocument'] != self._last_text_document:
+                self._cache_responses = {}
+            self._last_text_document = params['textDocument']
+
         self._communcation_logs.append(f'Send notification "{method}"\nParams: {format_payload(params)}')
         self._send_payload_sync(
             make_notification(method, params))
