@@ -24,8 +24,6 @@ class Result(Generic[T]):
 
 
 class TextDocument:
-    document_symbols_cache: dict[CacheKey, List[SymbolInformation] | List[DocumentSymbol] | None] = {}
-
     def __init__(self, view: sublime.View | None):
         self.view = view
 
@@ -38,24 +36,12 @@ class TextDocument:
         servers = servers_for_view(self.view, 'documentSymbolProvider')
         results: list[Result[List[SymbolInformation] | List[DocumentSymbol] | None]] = []
         for s in servers:
-            cache_key = self._document_symbols_cache_key(s.name)
-            cache = TextDocument.document_symbols_cache.get(cache_key)
-            if cache:
-                s._log('cache hit textDocument/documentSymbol')
-                results.append(Result(s.name, cache))
-            else:
-                result = await s.send.document_symbol({
-                    'textDocument': {
-                        'uri': uri
-                    },
-                }).result
-                print('res', result)
-                results.append(Result(s.name, result))
-                TextDocument.document_symbols_cache[cache_key] = result
+            result = await s.send.document_symbol({
+                'textDocument': {
+                    'uri': uri
+                },
+            }).result
+            print('res', result)
+            results.append(Result(s.name, result))
         return results
-
-    def _document_symbols_cache_key(self, server_name: str):
-        if not self.view:
-            return ""
-        return f"server:{server_name};view_id:{self.view.id()};view_change_count:{self.view.change_count()}"
 

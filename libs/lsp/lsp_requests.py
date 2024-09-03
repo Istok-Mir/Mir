@@ -4,13 +4,31 @@ from . import types as lsp_types
 from typing import List, Union, TypeVar, Generic
 import asyncio
 import datetime
+import copy
+def make_hash(o):
+    """
+    Makes a hash from a dictionary, list, tuple or set to any level, that contains
+    only other hashable types (including any lists, tuples, sets, and
+    dictionaries).
+    """
+    if isinstance(o, (set, tuple, list)):
+        return tuple([make_hash(e) for e in o])
+    elif not isinstance(o, dict):
+        return hash(o)
+    new_o = copy.deepcopy(o)
+    for k, v in new_o.items():
+        new_o[k] = make_hash(v)
+    return hash(tuple(frozenset(sorted(new_o.items()))))
+
 
 T = TypeVar('T')
 class Response(Generic[T]):
-    def __init__(self, id, method='') -> None:
+    def __init__(self, id, method='', params=None) -> None:
         self.result: asyncio.Future[T] = asyncio.Future()
         self.request_id: int = id
         self.method = method
+        self.params = params
+        self.cache_key = 'method:'+ method + ';hash:'+ str(make_hash(params))
         self.request_start_time = datetime.datetime.now()
         self.request_end_time: datetime.datetime | None = None
 
