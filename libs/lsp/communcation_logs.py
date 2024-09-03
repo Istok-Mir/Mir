@@ -18,7 +18,6 @@ class CommmunicationLogs:
             'force': False,
             'scroll_to_end': True
         })
-        self.panel.run_command('fold_by_level', {"level": 1})
         self.panel.settings().set('scroll_past_end', False)
         self.panel.clear_undo_stack()
         self.panel.set_read_only(True)

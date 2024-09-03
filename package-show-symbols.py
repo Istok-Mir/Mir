@@ -5,7 +5,6 @@ from event_loop import run_future
 
 class ShowSymbolsCommand(sublime_plugin.WindowCommand):
 	def run(self):
-		print('eeej')
 		run_future(self.show_symbols())
 
 	async def show_symbols(self):

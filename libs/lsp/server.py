@@ -141,8 +141,7 @@ class LanguageServer:
         self.request_id = 1
         # equests sent from client
         self._response_handlers: Dict[Any, Response] = {}
-        self._cache_responses: Dict[Any, Response] = {}
-        self._last_text_document = None
+        self._cache_responses: Dict[str, Response] = {}
         # requests and notifications sent from server
         self.on_request_handlers = {}
         self.on_notification_handlers: list[NotificationHandler] = []
@@ -248,12 +247,16 @@ class LanguageServer:
         except Exception as err:
             self._log(f"Error handling server payload: {err}")
 
-    def send_notification(self, method: str, params: Optional[dict] = None):
-        if method == 'textDocument/didChange' and params:
-            if params['textDocument'] != self._last_text_document:
-                self._cache_responses = {}
-            self._last_text_document = params['textDocument']
+    def invalidete_cache(self, uri: str):
+        for key, _ in list(self._cache_responses.items()):
+            if f"uri:{uri};" in key:
+                del self._cache_responses[key]
 
+    def send_notification(self, method: str, params: Optional[dict] = None):
+        if method == 'textDocument/didChange' and params and 'textDocument' in params:
+            self.invalidete_cache(params['textDocument']['uri'])
+        if method == 'textDocument/didClose' and params and 'textDocument' in params:
+            self.invalidete_cache(params['textDocument']['uri'])
         self._communcation_logs.append(f'Send notification "{method}"\nParams: {format_payload(params)}')
         self._send_payload_sync(
             make_notification(method, params))
@@ -327,7 +330,8 @@ class LanguageServer:
         if "result" in server_response and "error" not in server_response:
             self._communcation_logs.append(f'Recieved response "{response.method}" ({response.request_id}) - {response.duration}s\n{format_payload(server_response["result"])}')
             response.result.set_result(server_response["result"])
-            self._cache_responses[response.cache_key] = server_response["result"]
+            if response.cache_key:
+                self._cache_responses[response.cache_key] = server_response["result"]
         elif "result" not in server_response and "error" in server_response:
             self._communcation_logs.append(f'Recieved error response "{response.method}" ({response.request_id}) - {response.duration}s\n{format_payload(server_response["error"])}')
             response.result.set_exception(Error.from_lsp(server_response["error"]))

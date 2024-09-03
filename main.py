@@ -1,12 +1,11 @@
 from __future__ import annotations
 from event_loop import run_future
-from lsp.capabilities import ServerCapability
 from lsp.manage_servers import ManageServers, servers_for_view
 from lsp.providers import Providers
 from lsp.minihtml import FORMAT_MARKED_STRING, FORMAT_MARKUP_CONTENT, minihtml
-from lsp.server import LanguageServer, is_applicable_view, matches_activation_event_on_uri
+from lsp.server import LanguageServer, is_applicable_view
 from lsp.types import CompletionParams, HoverParams
-from lsp.view_to_lsp import get_view_uri, point_to_position, view_to_text_document_item
+from lsp.view_to_lsp import get_view_uri, point_to_position
 from sublime_types import Point
 import asyncio
 import sublime
