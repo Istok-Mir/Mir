@@ -1,5 +1,5 @@
 from __future__ import annotations
-from lsp.text_document import mir
+from lsp.mir import mir
 import sublime_plugin
 from event_loop import run_future
 
