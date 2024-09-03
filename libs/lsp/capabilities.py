@@ -182,6 +182,7 @@ ServerCapability = Literal[
     'diagnosticProvider',
     'workspaceSymbolProvider',
     'workspace.workspaceFolders',
+    'textDocumentSync',
     'textDocumentSync.didOpen',
     'textDocumentSync.didClose',
     'textDocumentSync.change',
@@ -240,6 +241,9 @@ class ServerCapabilities(DottedDict):
     def has(self, server_capability: ServerCapability) -> bool:
         value = self.get(server_capability)
         return value is not False and value is not None
+
+    def get(self, server_capability: ServerCapability):
+        return super().get(server_capability)
 
     def register(
         self,

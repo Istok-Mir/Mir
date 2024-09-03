@@ -11,6 +11,7 @@ from sublime_types import Point
 import asyncio
 import sublime
 import sublime_plugin
+from lsp.text_change_listener import TextChangeListener
 
 
 def register_language_server(server: LanguageServer):
@@ -43,15 +44,6 @@ class DocumentListener(sublime_plugin.ViewEventListener):
     async def do_completions(self, completion_list: sublime.CompletionList, params: CompletionParams, point: int):
         completions: list[sublime.CompletionValue] = []
         for server in servers_for_view(self.view):
-            server.notify.did_change_text_document({
-                'textDocument': {
-                    'uri': params['textDocument']['uri'],
-                    'version': self.view.change_count()
-                },
-                'contentChanges': [{
-                    'text': self.view.substr(sublime.Region(0, self.view.size()))
-                }]
-            })
             if not server.capabilities.has('completionProvider'):
                 continue
             data=None

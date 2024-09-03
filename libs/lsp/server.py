@@ -3,7 +3,7 @@ from __future__ import annotations
 from lsp.server_request_and_notification_handlers import attach_server_request_and_notification_handlers
 from .capabilities import CLIENT_CAPABILITIES, ServerCapabilities
 from .lsp_requests import LspRequest, LspNotification, Response
-from .types import ErrorCodes, MessageType
+from .types import DidChangeTextDocumentParams, ErrorCodes, MessageType
 from event_loop import run_future
 from lsp.communcation_logs import CommmunicationLogs, format_payload
 from lsp.view_to_lsp import file_name_to_uri, get_view_uri
@@ -18,7 +18,7 @@ import asyncio
 import datetime
 import json
 import shutil
-
+from .types import TextDocumentContentChangeEvent
 
 ENCODING = "utf-8"
 
@@ -137,6 +137,7 @@ class LanguageServer:
         self._process = None
         self._received_shutdown = False
 
+        self.pending_changes: dict[int, DidChangeTextDocumentParams] = {}
         self.request_id = 1
         # equests sent from client
         self._response_handlers: Dict[Any, Response] = {}
@@ -270,6 +271,10 @@ class LanguageServer:
             print(f'Mir ({self.name}) Error in send_error_response.', e)
 
     def send_request(self, method: str, params: Optional[dict] = None):
+        pending_changes = list(self.pending_changes.items())
+        self.pending_changes = {}
+        for _, did_change_text_document_params in pending_changes:
+            self.notify.did_change_text_document(did_change_text_document_params)
         request_id = self.request_id
         self.request_id += 1
         response = Response(request_id, method, params)
