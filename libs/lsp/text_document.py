@@ -23,17 +23,15 @@ class Result(Generic[T]):
         return str((self.server_name, self.result))
 
 
-class TextDocument:
-    def __init__(self, view: sublime.View | None):
-        self.view = view
-
-    async def document_symbols(self) -> list[Result[List[SymbolInformation] | List[DocumentSymbol] | None]]:
-        if not self.view:
+class mir:
+    @staticmethod
+    async def document_symbols(view: sublime.View | None) -> list[Result[List[SymbolInformation] | List[DocumentSymbol] | None]]:
+        if not view:
             return []
-        if not self.view.is_valid():
+        if not view.is_valid():
             return []
-        uri = get_view_uri(self.view)
-        servers = servers_for_view(self.view, 'documentSymbolProvider')
+        uri = get_view_uri(view)
+        servers = servers_for_view(view, 'documentSymbolProvider')
         results: list[Result[List[SymbolInformation] | List[DocumentSymbol] | None]] = []
         for s in servers:
             result = await s.send.document_symbol({

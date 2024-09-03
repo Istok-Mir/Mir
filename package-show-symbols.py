@@ -1,5 +1,5 @@
 from __future__ import annotations
-from lsp.text_document import TextDocument
+from lsp.text_document import mir
 import sublime_plugin
 from event_loop import run_future
 
@@ -9,14 +9,14 @@ class ShowSymbolsCommand(sublime_plugin.WindowCommand):
 		run_future(self.show_symbols())
 
 	async def show_symbols(self):
-		document_symbols = await TextDocument(self.window.active_view()).document_symbols()
+		view = self.window.active_view()
+		document_symbols = await mir.document_symbols(view)
 		print('document_symbols', document_symbols)
+		document_symbols2 = await mir.document_symbols(view)
+		print('document_symbols2', document_symbols)
+		document_symbols3 = await mir.document_symbols(view)
+		print('document_symbols3', document_symbols)
+		document_symbols4 = await mir.document_symbols(view)
+		print('document_symbols4', document_symbols)
 
 
-class ShowSymbols2Command(sublime_plugin.WindowCommand):
-    def run(self):
-        run_future(self.show_symbols())
-
-    async def show_symbols(self):
-        document_symbols = await TextDocument(self.window.active_view()).document_symbols()
-        print('document_symbols', document_symbols)
