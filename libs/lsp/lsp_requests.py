@@ -28,7 +28,7 @@ class Response(Generic[T]):
         self.request_id: int = id
         self.method = method
         self.params = params
-        self.cache_key = 'method:'+ method + ';hash:'+ str(make_hash(params))
+        self.cache_key = 'method:'+ method + ';hashed_params:'+ str(make_hash(params))
         self.request_start_time = datetime.datetime.now()
         self.request_end_time: datetime.datetime | None = None
 

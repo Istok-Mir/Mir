@@ -7,10 +7,6 @@ import sublime
 from typing import TypeVar, Generic
 
 T = TypeVar('T')
-ServerName = str
-CacheKey = str
-
-
 class Result(Generic[T]):
     def __init__(self, name: str, result: T):
         self.server_name= name
@@ -39,7 +35,6 @@ class mir:
                     'uri': uri
                 },
             }).result
-            print('res', result)
             results.append(Result(s.name, result))
         return results
 
