@@ -13,7 +13,7 @@ class ExampleCompletionProvider(CompletionProvider):
 
 	async def provide_completion_items(self, view: sublime_api.View, point: int) -> Union[List[CompletionItem], CompletionList, None]:
 		return [{
-			'label': 'Helloo'
+			'label': 'Helloo',
 		}]
 
 example_completion_provider = ExampleCompletionProvider()

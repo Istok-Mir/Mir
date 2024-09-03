@@ -44,13 +44,14 @@ class TextDocument:
                 s._log('cache hit textDocument/documentSymbol')
                 results.append(Result(s.name, cache))
             else:
-                r = await s.send.document_symbol({
+                result = await s.send.document_symbol({
                     'textDocument': {
                         'uri': uri
                     },
-                })
-                results.append(Result(s.name, r))
-                TextDocument.document_symbols_cache[cache_key] = r
+                }).result
+                print('res', result)
+                results.append(Result(s.name, result))
+                TextDocument.document_symbols_cache[cache_key] = result
         return results
 
     def _document_symbols_cache_key(self, server_name: str):

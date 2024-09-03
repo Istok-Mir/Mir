@@ -5,6 +5,3 @@ x.addEventListener()
 x.addEventListener('click', () => {
 
 })
-
-Helloo
-aa

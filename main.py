@@ -54,21 +54,21 @@ class DocumentListener(sublime_plugin.ViewEventListener):
             })
             if not server.capabilities.has('completionProvider'):
                 continue
-            res=None
+            data=None
             try:
-                res = await server.send.completion(params)
+                data = await server.send.completion(params).result
             except Exception as e:
                 print('CompletionError:', e)
-            if isinstance(res, dict):
-                items = res['items']
+            if isinstance(data, dict):
+                items = data['items']
                 for i in items:
                     completions.append(sublime.CompletionItem(i['label']))
         try:
             completion_providers = [provider for provider in Providers.completion_providers if is_applicable_view(self.view, provider.activation_events)]
             providers_results = await asyncio.gather(*[provider.provide_completion_items(self.view, point) for provider in completion_providers])
-            for res in providers_results: # todo refactor this. this is just a POC
-              if isinstance(res, list):
-                items = res
+            for data in providers_results: # todo refactor this. this is just a POC
+              if isinstance(data, list):
+                items = data
                 for i in items:
                     completions.append(sublime.CompletionItem(i['label']))
         except Exception as e:
@@ -87,7 +87,7 @@ class DocumentListener(sublime_plugin.ViewEventListener):
     async def do_hover(self, params: HoverParams, hover_point):
         results = []
         try:
-            results = await asyncio.gather(*[server.send.hover(params) for server in servers_for_view(self.view, capability='hoverProvider')])
+            results = await asyncio.gather(*[server.send.hover(params).result for server in servers_for_view(self.view, capability='hoverProvider')])
         except Exception as e:
             print('HoverError:', e)
         try:

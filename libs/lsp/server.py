@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from lsp.server_request_and_notification_handlers import attach_server_request_and_notification_handlers
 from .capabilities import CLIENT_CAPABILITIES, ServerCapabilities
-from .lsp_requests import LspRequest, LspNotification
+from .lsp_requests import LspRequest, LspNotification, Response
 from .types import ErrorCodes, MessageType
 from event_loop import run_future
 from lsp.communcation_logs import CommmunicationLogs, format_payload
@@ -70,26 +70,6 @@ def create_message(payload: Any) :
         "Content-Type: application/vscode-jsonrpc; charset=utf-8\r\n\r\n".encode(ENCODING),
         body
     )
-
-
-class Request():
-    def __init__(self, id, method='') -> None:
-        self.id: int = id
-        self.method = method
-        self.cv = asyncio.Condition()
-        self.result: Optional[Any] = None
-        self.error: Optional[Error] = None
-
-    async def on_result(self, params: Any) -> None:
-        self.result = params
-        async with self.cv:
-            self.cv.notify()
-
-    async def on_error(self, err: Error) -> None:
-        self.error = err
-        async with self.cv:
-            self.cv.notify()
-
 
 def content_length(line: bytes) -> Optional[int]:
     if line.startswith(b'Content-Length: '):
@@ -159,8 +139,7 @@ class LanguageServer:
 
         self.request_id = 1
         # equests sent from client
-        self._response_handlers: Dict[Any, Request] = {}
-        self._cancel_requests: list[Request] = []
+        self._response_handlers: Dict[Any, Response] = {}
         # requests and notifications sent from server
         self.on_request_handlers = {}
         self.on_notification_handlers: list[NotificationHandler] = []
@@ -194,7 +173,7 @@ class LanguageServer:
                 'rootPath': first_foder,  # @deprecated in favour of `rootUri`.
                 'capabilities': CLIENT_CAPABILITIES,
                 'initializationOptions': {'completionDisableFilterText': True, 'disableAutomaticTypingAcquisition': False, 'locale': 'en', 'maxTsServerMemory': 0, 'npmLocation': '', 'plugins': [], 'preferences': {'allowIncompleteCompletions': True, 'allowRenameOfImportPath': True, 'allowTextChangesInNewFiles': True, 'autoImportFileExcludePatterns': [], 'disableSuggestions': False, 'displayPartsForJSDoc': True, 'excludeLibrarySymbolsInNavTo': True, 'generateReturnInDocTemplate': True, 'importModuleSpecifierEnding': 'auto', 'importModuleSpecifierPreference': 'shortest', 'includeAutomaticOptionalChainCompletions': True, 'includeCompletionsForImportStatements': True, 'includeCompletionsForModuleExports': True, 'includeCompletionsWithClassMemberSnippets': True, 'includeCompletionsWithInsertText': True, 'includeCompletionsWithObjectLiteralMethodSnippets': True, 'includeCompletionsWithSnippetText': True, 'includePackageJsonAutoImports': 'auto', 'interactiveInlayHints': True, 'jsxAttributeCompletionStyle': 'auto', 'lazyConfiguredProjectsFromExternalProject': False, 'organizeImportsAccentCollation': True, 'organizeImportsCaseFirst': False, 'organizeImportsCollation': 'ordinal', 'organizeImportsCollationLocale': 'en', 'organizeImportsIgnoreCase': 'auto', 'organizeImportsNumericCollation': False, 'providePrefixAndSuffixTextForRename': True, 'provideRefactorNotApplicableReason': True, 'quotePreference': 'auto', 'useLabelDetailsInCompletionEntries': True}, 'tsserver': {'fallbackPath': '', 'logDirectory': '', 'logVerbosity': 'off', 'path': '', 'trace': 'off', 'useSyntaxServer': 'auto'}}
-            })
+            }).result
             self.capabilities.assign(cast(dict, initialize_result['capabilities']))
             self.notify.initialized({})
         except Exception as e:
@@ -207,7 +186,7 @@ class LanguageServer:
             self._process = None
 
     async def shutdown(self):
-        await self.send.shutdown()
+        await self.send.shutdown().result
         self._received_shutdown = True
         self.notify.exit()
         if self._process and self._process.stdout:
@@ -283,28 +262,14 @@ class LanguageServer:
         except Exception as e:
             print(f'Mir ({self.name}) Error in send_error_response.', e)
 
-    async def send_request(self, method: str, params: Optional[dict] = None):
-        for i, cancel_request in enumerate(list(self._cancel_requests)):
-            if cancel_request.method == method:
-                self.notify.cancel_request({ 'id': cancel_request.id })
-                self._cancel_requests.pop(i)
+    def send_request(self, method: str, params: Optional[dict] = None):
         request_id = self.request_id
-        request = Request(request_id, method)
+        response = Response(request_id, method)
         self.request_id += 1
-        self._response_handlers[request_id] = request
-        self._cancel_requests.append(request)
-        start_of_req = datetime.datetime.now()
-        async with request.cv:
-            self._communcation_logs.append(f'Sending request "{method}" ({request_id})\nParams: {format_payload(params)}')
-            await self._send_payload(make_request(method, request_id, params))
-            await request.cv.wait()
-        end_of_req = datetime.datetime.now()
-        duration = round((end_of_req-start_of_req).total_seconds(), 2)
-        if isinstance(request.error, Error):
-            self._communcation_logs.append(f'Recieved error response "{method}" ({request_id}) - {duration}s\n{format_payload(request.error)}')
-            raise request.error
-        self._communcation_logs.append(f'Recieved response "{method}" ({request_id}) - {duration}s\n{format_payload(request.result)}')
-        return request.result
+        self._response_handlers[request_id] = response
+        self._communcation_logs.append(f'Sending request "{method}" ({request_id})\nParams: {format_payload(params)}')
+        run_future(self._send_payload(make_request(method, request_id, params)))
+        return response
 
     def _send_payload_sync(self, payload: dict) -> None:
         if not self._process or not self._process.stdin:
@@ -338,15 +303,18 @@ class LanguageServer:
             'method': method
         })
 
-    async def _response_handler(self, response: dict) -> None:
-        request = self._response_handlers.pop(response["id"])
-        self._cancel_requests = [r for r in self._cancel_requests if r.id != response["id"]]
-        if "result" in response and "error" not in response:
-            await request.on_result(response["result"])
-        elif "result" not in response and "error" in response:
-            await request.on_error(Error.from_lsp(response["error"]))
+    async def _response_handler(self, server_response: dict) -> None:
+        response = self._response_handlers.pop(server_response["id"])
+        response.request_end_time = datetime.datetime.now()
+        if "result" in server_response and "error" not in server_response:
+            self._communcation_logs.append(f'Recieved response "{response.method}" ({response.request_id}) - {response.duration}s\n{format_payload(server_response["result"])}')
+            response.result.set_result(server_response["result"])
+        elif "result" not in server_response and "error" in server_response:
+            self._communcation_logs.append(f'Recieved error response "{response.method}" ({response.request_id}) - {response.duration}s\n{format_payload(server_response["error"])}')
+            response.result.set_exception(Error.from_lsp(server_response["error"]))
         else:
-            await request.on_error(Error(ErrorCodes.InvalidRequest, ''))
+            self._communcation_logs.append(f'Recieved error response "{response.method}" ({response.request_id}) - {response.duration}s\n{format_payload(server_response["error"])}')
+            response.result.set_exception(Error(ErrorCodes.InvalidRequest, ''))
 
     async def _request_handler(self, response: dict) -> None:
         method = response.get("method", "")
