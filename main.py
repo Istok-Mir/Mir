@@ -23,8 +23,7 @@ def register_language_server(server: LanguageServer):
 
 def unregister_language_server(server: LanguageServer):
     server.stop()
-    ManageServers.started_servers = [s for s in ManageServers.started_servers if s != server]
-    ManageServers.all_servers = [s for s in ManageServers.started_servers if s != server]
+    ManageServers.all_servers = [s for s in ManageServers.all_servers if s != server]
 
 
 

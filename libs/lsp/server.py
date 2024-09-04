@@ -129,6 +129,7 @@ class NotificationHandler(TypedDict):
 class LanguageServer:
     def __init__(self, name: str, configuration: LanguageServerConfiguration) -> None:
         self.name = name
+        self.status: Literal['off', 'initializing','ready'] = 'off'
         self.send = LspRequest(self.send_request)
         self.notify = LspNotification(self.send_notification)
         self.capabilities = ServerCapabilities()
@@ -155,6 +156,7 @@ class LanguageServer:
 
     async def start(self):
         try:
+            self.status = 'initializing'
             if not shutil.which(self.configuration['cmd'].split()[0]):
                 raise RuntimeError(f"Command not found: {self.configuration['cmd']}")
 
@@ -178,14 +180,17 @@ class LanguageServer:
             }).result
             self.capabilities.assign(cast(dict, initialize_result['capabilities']))
             self.notify.initialized({})
+            self.status = 'ready'
         except Exception as e:
             print(f'Mir ({self.name}) Error while creating subprocess.', e)
+            self.status = 'off'
 
     def stop(self):
         run_future(self.shutdown())
         if self._process:
             self._process.kill()
             self._process = None
+        self.status = 'off'
 
     async def shutdown(self):
         await self.send.shutdown().result
@@ -285,7 +290,7 @@ class LanguageServer:
         if cache:
             self._communcation_logs.append(f'Sending request "{method}" ({request_id})\nParams: {format_payload(params)}')
             response.result.set_result(cache)
-            self._communcation_logs.append(f'Cache hit "{response.method}" ({response.id}) - {0}s\n{format_payload(cache)}')
+            self._communcation_logs.append(f'Cache hit "{response.method}" ({response.id}) - {0}s\nResponse: {format_payload(cache)}')
         else:
             self._response_handlers[request_id] = response
             self._communcation_logs.append(f'Sending request "{method}" ({request_id})\nParams: {format_payload(params)}')
@@ -328,15 +333,15 @@ class LanguageServer:
         response = self._response_handlers.pop(server_response["id"])
         response.request_end_time = datetime.datetime.now()
         if "result" in server_response and "error" not in server_response:
-            self._communcation_logs.append(f'Recieved response "{response.method}" ({response.id}) - {response.duration}s\n{format_payload(server_response["result"])}')
+            self._communcation_logs.append(f'Recieved response "{response.method}" ({response.id}) - {response.duration}s\nResponse: {format_payload(server_response["result"])}')
             response.result.set_result(server_response["result"])
             if response.cache_key:
                 self._cache_responses[response.cache_key] = server_response["result"]
         elif "result" not in server_response and "error" in server_response:
-            self._communcation_logs.append(f'Recieved error response "{response.method}" ({response.id}) - {response.duration}s\n{format_payload(server_response["error"])}')
+            self._communcation_logs.append(f'Recieved error response "{response.method}" ({response.id}) - {response.duration}s\nResponse:{format_payload(server_response["error"])}')
             response.result.set_exception(Error.from_lsp(server_response["error"]))
         else:
-            self._communcation_logs.append(f'Recieved error response "{response.method}" ({response.id}) - {response.duration}s\n{format_payload(server_response["error"])}')
+            self._communcation_logs.append(f'Recieved error response "{response.method}" ({response.id}) - {response.duration}s\nResponse:{format_payload(server_response["error"])}')
             response.result.set_exception(Error(ErrorCodes.InvalidRequest, ''))
 
     async def _request_handler(self, response: dict) -> None:

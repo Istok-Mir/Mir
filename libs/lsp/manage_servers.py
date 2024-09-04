@@ -42,9 +42,19 @@ def close_document(view: sublime.View):
             ManageServers.started_servers = [s for s in ManageServers.started_servers if s != server]
 
 
+
+class classproperty(property):
+  def __get__(self, owner_self, owner_cls):
+    return self.fget(owner_cls)
+
 class ManageServers(sublime_plugin.EventListener):
     all_servers: list[LanguageServer] = []
     started_servers: list[LanguageServer] = []
+
+    @classproperty
+    def started_servers(cls):
+        return [s for s in ManageServers.all_servers if s.status == 'ready']
+
 
     def on_init(self, views: list[sublime.View]):
         run_future(self.initialize(views))
@@ -56,7 +66,6 @@ class ManageServers(sublime_plugin.EventListener):
             if server.configuration['activation_events']['selector'] == '*':
                 try:
                     await server.start()
-                    ManageServers.started_servers.append(server)
                 except Exception as e:
                     print(f'Mir ({server.name}) | Error while starting.', e)
             for v in views:
