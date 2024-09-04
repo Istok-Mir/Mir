@@ -18,18 +18,26 @@ async def open_document(view: sublime.View):
     window = view.window()
     if not window:
         return
-    for server in ManageServers.all_servers:
-        if not server.is_applicable_view(view):
-            continue
-        if server.name not in [s.name for s in ManageServers.servers_for_view(view)]:
-            try:
-                new_server = copy.deepcopy(server)
-                server = new_server
-                await new_server.start(view)
-                ManageServers.attach_server_to_window(new_server, window)
-            except Exception as e:
-                print(f'Mir ({server.name}) | Error while starting.', e)
+    server_for_the_view = servers_for_view(view)
+    print('server_for_the_view', server_for_the_view)
+    if len(server_for_the_view) == 0: # start the servers if not started
+        for server in ManageServers.all_servers:
+            if not server.is_applicable_view(view):
                 continue
+            if server.name not in [s.name for s in ManageServers.servers_for_view(view)]:
+                try:
+                    new_server = copy.deepcopy(server)
+                    await new_server.start(view)
+                    ManageServers.attach_server_to_window(new_server, window)
+                except Exception as e:
+                    print(f'Mir ({server.name}) | Error while starting.', e)
+                    continue
+    for server in servers_for_view(view):
+        server.notify.did_close_text_document({
+            'textDocument': {
+                'uri': get_view_uri(view)
+            }
+        })
         text_document = view_to_text_document_item(view)
         server.notify.did_open_text_document({
             'textDocument': text_document
@@ -102,9 +110,6 @@ class ManageServers(sublime_plugin.EventListener):
 
     def on_load(self, view):
         run_future(open_document(view))
-
-    def on_activated(self, view):
-        print('EventListener on_activated', view)
 
     def on_pre_close(self, view):
         close_document(view)
