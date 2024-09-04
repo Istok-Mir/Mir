@@ -83,7 +83,7 @@ def content_length(line: bytes) -> Optional[int]:
 
 
 class ActivationEvents(TypedDict):
-    selector: str | Literal['*']
+    selector: str
     on_uri: NotRequired[list[str]]
     '''
     If specified the server will only start for the given uri.
@@ -94,14 +94,14 @@ class ActivationEvents(TypedDict):
 
 def is_applicable_view(view: sublime.View, activation_events: ActivationEvents) -> bool:
         selector = activation_events['selector']
-        if selector == '*':
-            return True
         matches_selector = view.match_selector(0,selector)
         if not matches_selector:
             return False
-        matches_on_uri = matches_activation_event_on_uri(view, activation_events)
-        if not matches_on_uri:
-            return False
+        on_uri = activation_events.get('on_uri')
+        if on_uri:
+            matches_on_uri = matches_activation_event_on_uri(view, activation_events)
+            if not matches_on_uri:
+                return False
         return True
 
 
@@ -112,7 +112,8 @@ def matches_activation_event_on_uri(view: sublime.View, activation_events: Activ
         for uri_pattern in on_uri:
             if not globmatch(uri, uri_pattern, flags=GLOBSTAR | BRACE):
                 return False
-    return True
+        return True
+    return False
 
 
 
@@ -133,6 +134,7 @@ class LanguageServer:
         self.send = LspRequest(self.send_request)
         self.notify = LspNotification(self.send_notification)
         self.capabilities = ServerCapabilities()
+        self.view: sublime.View = sublime.View(-1)
 
         self.configuration = configuration
         self._process = None
@@ -147,14 +149,18 @@ class LanguageServer:
         self.on_request_handlers = {}
         self.on_notification_handlers: list[NotificationHandler] = []
         # logs
-        self._communcation_logs = CommmunicationLogs(name)
+        self._communcation_logs: CommmunicationLogs | None = None
 
         attach_server_request_and_notification_handlers(self)
 
     def is_applicable_view(self, view: sublime.View) -> bool:
         return is_applicable_view(view, self.configuration['activation_events'])
 
-    async def start(self):
+    async def start(self, view: sublime.View):
+        self.view = view
+        window = view.window()
+        if window:
+            self._communcation_logs = CommmunicationLogs(self.name, window)
         try:
             self.status = 'initializing'
             if not shutil.which(self.configuration['cmd'].split()[0]):
@@ -167,7 +173,7 @@ class LanguageServer:
             )
             run_future(self._run_forever())
 
-            folders = sublime.active_window().folders()
+            folders = window.folders() if window else []
             first_foder = folders[0] if folders else ''
             first_folder_uri = file_name_to_uri(first_foder)
             initialize_result = await self.send.initialize({
@@ -187,10 +193,6 @@ class LanguageServer:
 
     def stop(self):
         run_future(self.shutdown())
-        if self._process:
-            self._process.kill()
-            self._process = None
-        self.status = 'off'
 
     async def shutdown(self):
         await self.send.shutdown().result
@@ -198,6 +200,10 @@ class LanguageServer:
         self.notify.exit()
         if self._process and self._process.stdout:
             self._process.stdout.set_exception(StopLoopException())
+        if self._process:
+            self._process.kill()
+            self._process = None
+        self.status = 'off'
 
     def _log(self, message: str) -> None:
         self.send_notification("window/logMessage",

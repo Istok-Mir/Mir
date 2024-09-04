@@ -9,17 +9,18 @@ import sublime_plugin
 
 def servers_for_view(view: sublime.View, capability: ServerCapability | None = None) -> list[LanguageServer]:
     if capability:
-        return [s for s in ManageServers.started_servers() if s.is_applicable_view(view) and s.capabilities.has(capability)]
-    return [s for s in ManageServers.started_servers() if s.is_applicable_view(view)]
+        return [s for s in ManageServers.servers_for_view(view) if s.is_applicable_view(view) and s.capabilities.has(capability)]
+    return [s for s in ManageServers.servers_for_view(view) if s.is_applicable_view(view)]
 
 
 async def open_document(view: sublime.View):
     for server in ManageServers.all_servers:
         if not server.is_applicable_view(view):
             continue
-        if server not in ManageServers.started_servers():
+        if server not in ManageServers.servers_for_view(view):
             try:
-                await server.start()
+                await server.start(view)
+                ManageServers.attach_server_by_view(view, server)
             except Exception as e:
                 print(f'Mir ({server.name}) | Error while starting.', e)
                 continue
@@ -30,40 +31,64 @@ async def open_document(view: sublime.View):
 
 
 def close_document(view: sublime.View):
-    print('eej', servers_for_view(view))
     for server in servers_for_view(view):
         server.notify.did_close_text_document({
             'textDocument': {
                 'uri': get_view_uri(view)
             }
         })
-        if matches_activation_event_on_uri(view, server.configuration['activation_events']): # close servers who specify on_uri activation event
-            server.stop()
-
+        if server.configuration['activation_events'].get('on_uri'): # close servers who specify on_uri activation event
+            window = view.window()
+            if not window:
+                continue
+            relevant_views = [matches_activation_event_on_uri(view, server.configuration['activation_events']) for view in window.views()]
+            if len(relevant_views) <= 1:
+                server.stop()
+                ManageServers.detach_server_by_view(view, server)
 
 
 class ManageServers(sublime_plugin.EventListener):
     all_servers: list[LanguageServer] = []
+    server_per_window: dict[int, list[LanguageServer]] = {}
 
     @classmethod
-    def started_servers(cls):
-        return [s for s in ManageServers.all_servers if s.status == 'ready']
+    def servers_for_view(cls, view: sublime.View):
+        window = view.window()
+        if not window:
+            return []
+        return [s for s in ManageServers.server_per_window.get(window.id(), [])]
 
+    @classmethod
+    def servers_for_window(cls, window: sublime.Window):
+        return [s for s in ManageServers.server_per_window.get(window.id(), [])]
+
+    @classmethod
+    def attach_server_by_view(cls, view: sublime.View, server: LanguageServer):
+        window = view.window()
+        if window:
+            ManageServers.server_per_window.setdefault(window.id(), [])
+            ManageServers.server_per_window[window.id()].append(server)
+        else:
+            raise Exception('Handle this Predrag')
+
+    @classmethod
+    def detach_server_by_view(cls, view: sublime.View, server: LanguageServer):
+        window = view.window()
+        if window:
+            ManageServers.server_per_window[window.id()] = [s for s in ManageServers.server_per_window[window.id()] if s != server]
+        else:
+            raise Exception('Handle this Predrag')
+
+    @classmethod
+    def detach_server_by_window(cls, window: sublime.Window):
+        del ManageServers.server_per_window[window.id()]
 
     def on_init(self, views: list[sublime.View]):
         run_future(self.initialize(views))
 
     async def initialize(self, views: list[sublime.View]):
-
-        # start servers that have selector "*"
-        for server in ManageServers.all_servers:
-            if server.configuration['activation_events']['selector'] == '*':
-                try:
-                    await server.start()
-                except Exception as e:
-                    print(f'Mir ({server.name}) | Error while starting.', e)
-            for v in views:
-                await open_document(v)
+        for v in views:
+            await open_document(v)
 
     def on_pre_move(self, view):
         print('EventListener on_pre_move', view)
@@ -83,15 +108,14 @@ class ManageServers(sublime_plugin.EventListener):
     def on_activated(self, view):
         print('EventListener on_activated', view)
 
-    def on_close(self, view):
+    def on_pre_close(self, view):
         close_document(view)
 
     def on_new_window(self, window):
         print('EventListener on_new_window', window)
 
     def on_pre_close_window(self, window):
-        print('EventListener on_pre_close_window', window)
-
-    def on_exit(self):
-        for server in ManageServers.started_servers():
+        for server in ManageServers.servers_for_window(window):
             server.stop()
+        ManageServers.detach_server_by_window(window)
+        print('EventListener on_pre_close_window', window)

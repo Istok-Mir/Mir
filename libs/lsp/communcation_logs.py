@@ -3,10 +3,10 @@ from typing import Any
 from sublime_plugin import sublime
 
 class CommmunicationLogs:
-    def __init__(self, name: str):
+    def __init__(self, name: str, window: sublime.Window):
         self.name = name
         self.logs: list[str] = []
-        self.panel = sublime.active_window().create_output_panel(name)
+        self.panel = window.create_output_panel(name)
 
     def append(self, log: str):
         time = datetime.datetime.now().strftime('%H:%M:%S')
