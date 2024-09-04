@@ -1,10 +1,13 @@
 from __future__ import annotations
+
 # Code generated. DO NOT EDIT.
 from . import types as lsp_types
-from typing import List, Union, TypeVar, Generic
+from typing import TYPE_CHECKING, List, Union, TypeVar, Generic
 import asyncio
 import datetime
 import copy
+if TYPE_CHECKING:
+    from .server import LanguageServer
 def make_hash(o):
     """
     Makes a hash from a dictionary, list, tuple or set to any level, that contains
@@ -22,10 +25,11 @@ def make_hash(o):
 
 
 T = TypeVar('T')
-class Response(Generic[T]):
-    def __init__(self, id, method='', params=None) -> None:
+class Request(Generic[T]):
+    def __init__(self, server: LanguageServer, id: int, method='', params=None) -> None:
+        self.server: LanguageServer = server
         self.result: asyncio.Future[T] = asyncio.Future()
-        self.request_id: int = id
+        self.id: int = id
         self.method = method
         self.params = params
         self.cache_key = ''
@@ -41,95 +45,100 @@ class Response(Generic[T]):
             return None
         return round((self.request_end_time-self.request_start_time).total_seconds(), 2)
 
+    def cancel(self):
+        self.server.notify.cancel_request({
+            'id': self.id
+        })
+
 class LspRequest:
     def __init__(self, send_request):
         self.send_request = send_request
 
-    def implementation(self,  params: lsp_types.ImplementationParams) -> Response[Union['lsp_types.Definition', List['lsp_types.LocationLink'], None]]:
+    def implementation(self,  params: lsp_types.ImplementationParams) -> Request[Union['lsp_types.Definition', List['lsp_types.LocationLink'], None]]:
         """ A request to resolve the implementation locations of a symbol at a given text
         document position. The request's parameter is of type {@link TextDocumentPositionParams}
         the response is of type {@link Definition} or a Thenable that resolves to such. """
         return self.send_request("textDocument/implementation", params)
 
-    def type_definition(self,  params: lsp_types.TypeDefinitionParams) -> Response[Union['lsp_types.Definition', List['lsp_types.LocationLink'], None]]:
+    def type_definition(self,  params: lsp_types.TypeDefinitionParams) -> Request[Union['lsp_types.Definition', List['lsp_types.LocationLink'], None]]:
         """ A request to resolve the type definition locations of a symbol at a given text
         document position. The request's parameter is of type {@link TextDocumentPositionParams}
         the response is of type {@link Definition} or a Thenable that resolves to such. """
         return self.send_request("textDocument/typeDefinition", params)
 
-    def document_color(self,  params: lsp_types.DocumentColorParams) -> Response[List['lsp_types.ColorInformation']]:
+    def document_color(self,  params: lsp_types.DocumentColorParams) -> Request[List['lsp_types.ColorInformation']]:
         """ A request to list all color symbols found in a given text document. The request's
         parameter is of type {@link DocumentColorParams} the
         response is of type {@link ColorInformation ColorInformation[]} or a Thenable
         that resolves to such. """
         return self.send_request("textDocument/documentColor", params)
 
-    def color_presentation(self,  params: lsp_types.ColorPresentationParams) -> Response[List['lsp_types.ColorPresentation']]:
+    def color_presentation(self,  params: lsp_types.ColorPresentationParams) -> Request[List['lsp_types.ColorPresentation']]:
         """ A request to list all presentation for a color. The request's
         parameter is of type {@link ColorPresentationParams} the
         response is of type {@link ColorInformation ColorInformation[]} or a Thenable
         that resolves to such. """
         return self.send_request("textDocument/colorPresentation", params)
 
-    def folding_range(self,  params: lsp_types.FoldingRangeParams) -> Response[Union[List['lsp_types.FoldingRange'], None]]:
+    def folding_range(self,  params: lsp_types.FoldingRangeParams) -> Request[Union[List['lsp_types.FoldingRange'], None]]:
         """ A request to provide folding ranges in a document. The request's
         parameter is of type {@link FoldingRangeParams}, the
         response is of type {@link FoldingRangeList} or a Thenable
         that resolves to such. """
         return self.send_request("textDocument/foldingRange", params)
 
-    def declaration(self,  params: lsp_types.DeclarationParams) -> Response[Union['lsp_types.Declaration', List['lsp_types.LocationLink'], None]]:
+    def declaration(self,  params: lsp_types.DeclarationParams) -> Request[Union['lsp_types.Declaration', List['lsp_types.LocationLink'], None]]:
         """ A request to resolve the type definition locations of a symbol at a given text
         document position. The request's parameter is of type {@link TextDocumentPositionParams}
         the response is of type {@link Declaration} or a typed array of {@link DeclarationLink}
         or a Thenable that resolves to such. """
         return self.send_request("textDocument/declaration", params)
 
-    def selection_range(self,  params: lsp_types.SelectionRangeParams) -> Response[Union[List['lsp_types.SelectionRange'], None]]:
+    def selection_range(self,  params: lsp_types.SelectionRangeParams) -> Request[Union[List['lsp_types.SelectionRange'], None]]:
         """ A request to provide selection ranges in a document. The request's
         parameter is of type {@link SelectionRangeParams}, the
         response is of type {@link SelectionRange SelectionRange[]} or a Thenable
         that resolves to such. """
         return self.send_request("textDocument/selectionRange", params)
 
-    def prepare_call_hierarchy(self,  params: lsp_types.CallHierarchyPrepareParams) -> Response[Union[List['lsp_types.CallHierarchyItem'], None]]:
+    def prepare_call_hierarchy(self,  params: lsp_types.CallHierarchyPrepareParams) -> Request[Union[List['lsp_types.CallHierarchyItem'], None]]:
         """ A request to result a `CallHierarchyItem` in a document at a given position.
         Can be used as an input to an incoming or outgoing call hierarchy.
 
         @since 3.16.0 """
         return self.send_request("textDocument/prepareCallHierarchy", params)
 
-    def incoming_calls(self,  params: lsp_types.CallHierarchyIncomingCallsParams) -> Response[Union[List['lsp_types.CallHierarchyIncomingCall'], None]]:
+    def incoming_calls(self,  params: lsp_types.CallHierarchyIncomingCallsParams) -> Request[Union[List['lsp_types.CallHierarchyIncomingCall'], None]]:
         """ A request to resolve the incoming calls for a given `CallHierarchyItem`.
 
         @since 3.16.0 """
         return self.send_request("callHierarchy/incomingCalls", params)
 
-    def outgoing_calls(self,  params: lsp_types.CallHierarchyOutgoingCallsParams) -> Response[Union[List['lsp_types.CallHierarchyOutgoingCall'], None]]:
+    def outgoing_calls(self,  params: lsp_types.CallHierarchyOutgoingCallsParams) -> Request[Union[List['lsp_types.CallHierarchyOutgoingCall'], None]]:
         """ A request to resolve the outgoing calls for a given `CallHierarchyItem`.
 
         @since 3.16.0 """
         return self.send_request("callHierarchy/outgoingCalls", params)
 
-    def semantic_tokens_full(self,  params: lsp_types.SemanticTokensParams) -> Response[Union['lsp_types.SemanticTokens', None]]:
+    def semantic_tokens_full(self,  params: lsp_types.SemanticTokensParams) -> Request[Union['lsp_types.SemanticTokens', None]]:
         """ @since 3.16.0 """
         return self.send_request("textDocument/semanticTokens/full", params)
 
-    def semantic_tokens_delta(self,  params: lsp_types.SemanticTokensDeltaParams) -> Response[Union['lsp_types.SemanticTokens', 'lsp_types.SemanticTokensDelta', None]]:
+    def semantic_tokens_delta(self,  params: lsp_types.SemanticTokensDeltaParams) -> Request[Union['lsp_types.SemanticTokens', 'lsp_types.SemanticTokensDelta', None]]:
         """ @since 3.16.0 """
         return self.send_request("textDocument/semanticTokens/full/delta", params)
 
-    def semantic_tokens_range(self,  params: lsp_types.SemanticTokensRangeParams) -> Response[Union['lsp_types.SemanticTokens', None]]:
+    def semantic_tokens_range(self,  params: lsp_types.SemanticTokensRangeParams) -> Request[Union['lsp_types.SemanticTokens', None]]:
         """ @since 3.16.0 """
         return self.send_request("textDocument/semanticTokens/range", params)
 
-    def linked_editing_range(self,  params: lsp_types.LinkedEditingRangeParams) -> Response[Union['lsp_types.LinkedEditingRanges', None]]:
+    def linked_editing_range(self,  params: lsp_types.LinkedEditingRangeParams) -> Request[Union['lsp_types.LinkedEditingRanges', None]]:
         """ A request to provide ranges that can be edited together.
 
         @since 3.16.0 """
         return self.send_request("textDocument/linkedEditingRange", params)
 
-    def will_create_files(self,  params: lsp_types.CreateFilesParams) -> Response[Union['lsp_types.WorkspaceEdit', None]]:
+    def will_create_files(self,  params: lsp_types.CreateFilesParams) -> Request[Union['lsp_types.WorkspaceEdit', None]]:
         """ The will create files request is sent from the client to the server before files are actually
         created as long as the creation is triggered from within the client.
 
@@ -140,46 +149,46 @@ class LspRequest:
         @since 3.16.0 """
         return self.send_request("workspace/willCreateFiles", params)
 
-    def will_rename_files(self,  params: lsp_types.RenameFilesParams) -> Response[Union['lsp_types.WorkspaceEdit', None]]:
+    def will_rename_files(self,  params: lsp_types.RenameFilesParams) -> Request[Union['lsp_types.WorkspaceEdit', None]]:
         """ The will rename files request is sent from the client to the server before files are actually
         renamed as long as the rename is triggered from within the client.
 
         @since 3.16.0 """
         return self.send_request("workspace/willRenameFiles", params)
 
-    def will_delete_files(self,  params: lsp_types.DeleteFilesParams) -> Response[Union['lsp_types.WorkspaceEdit', None]]:
+    def will_delete_files(self,  params: lsp_types.DeleteFilesParams) -> Request[Union['lsp_types.WorkspaceEdit', None]]:
         """ The did delete files notification is sent from the client to the server when
         files were deleted from within the client.
 
         @since 3.16.0 """
         return self.send_request("workspace/willDeleteFiles", params)
 
-    def moniker(self,  params: lsp_types.MonikerParams) -> Response[Union[List['lsp_types.Moniker'], None]]:
+    def moniker(self,  params: lsp_types.MonikerParams) -> Request[Union[List['lsp_types.Moniker'], None]]:
         """ A request to get the moniker of a symbol at a given text document position.
         The request parameter is of type {@link TextDocumentPositionParams}.
         The response is of type {@link Moniker Moniker[]} or `null`. """
         return self.send_request("textDocument/moniker", params)
 
-    def prepare_type_hierarchy(self,  params: lsp_types.TypeHierarchyPrepareParams) -> Response[Union[List['lsp_types.TypeHierarchyItem'], None]]:
+    def prepare_type_hierarchy(self,  params: lsp_types.TypeHierarchyPrepareParams) -> Request[Union[List['lsp_types.TypeHierarchyItem'], None]]:
         """ A request to result a `TypeHierarchyItem` in a document at a given position.
         Can be used as an input to a subtypes or supertypes type hierarchy.
 
         @since 3.17.0 """
         return self.send_request("textDocument/prepareTypeHierarchy", params)
 
-    def type_hierarchy_supertypes(self,  params: lsp_types.TypeHierarchySupertypesParams) -> Response[Union[List['lsp_types.TypeHierarchyItem'], None]]:
+    def type_hierarchy_supertypes(self,  params: lsp_types.TypeHierarchySupertypesParams) -> Request[Union[List['lsp_types.TypeHierarchyItem'], None]]:
         """ A request to resolve the supertypes for a given `TypeHierarchyItem`.
 
         @since 3.17.0 """
         return self.send_request("typeHierarchy/supertypes", params)
 
-    def type_hierarchy_subtypes(self,  params: lsp_types.TypeHierarchySubtypesParams) -> Response[Union[List['lsp_types.TypeHierarchyItem'], None]]:
+    def type_hierarchy_subtypes(self,  params: lsp_types.TypeHierarchySubtypesParams) -> Request[Union[List['lsp_types.TypeHierarchyItem'], None]]:
         """ A request to resolve the subtypes for a given `TypeHierarchyItem`.
 
         @since 3.17.0 """
         return self.send_request("typeHierarchy/subtypes", params)
 
-    def inline_value(self,  params: lsp_types.InlineValueParams) -> Response[Union[List['lsp_types.InlineValue'], None]]:
+    def inline_value(self,  params: lsp_types.InlineValueParams) -> Request[Union[List['lsp_types.InlineValue'], None]]:
         """ A request to provide inline values in a document. The request's parameter is of
         type {@link InlineValueParams}, the response is of type
         {@link InlineValue InlineValue[]} or a Thenable that resolves to such.
@@ -187,7 +196,7 @@ class LspRequest:
         @since 3.17.0 """
         return self.send_request("textDocument/inlineValue", params)
 
-    def inlay_hint(self,  params: lsp_types.InlayHintParams) -> Response[Union[List['lsp_types.InlayHint'], None]]:
+    def inlay_hint(self,  params: lsp_types.InlayHintParams) -> Request[Union[List['lsp_types.InlayHint'], None]]:
         """ A request to provide inlay hints in a document. The request's parameter is of
         type {@link InlayHintsParams}, the response is of type
         {@link InlayHint InlayHint[]} or a Thenable that resolves to such.
@@ -195,7 +204,7 @@ class LspRequest:
         @since 3.17.0 """
         return self.send_request("textDocument/inlayHint", params)
 
-    def resolve_inlay_hint(self,  params: lsp_types.InlayHint) -> Response['lsp_types.InlayHint']:
+    def resolve_inlay_hint(self,  params: lsp_types.InlayHint) -> Request['lsp_types.InlayHint']:
         """ A request to resolve additional properties for an inlay hint.
         The request's parameter is of type {@link InlayHint}, the response is
         of type {@link InlayHint} or a Thenable that resolves to such.
@@ -203,19 +212,19 @@ class LspRequest:
         @since 3.17.0 """
         return self.send_request("inlayHint/resolve", params)
 
-    def text_document_diagnostic(self,  params: lsp_types.DocumentDiagnosticParams) -> Response['lsp_types.DocumentDiagnosticReport']:
+    def text_document_diagnostic(self,  params: lsp_types.DocumentDiagnosticParams) -> Request['lsp_types.DocumentDiagnosticReport']:
         """ The document diagnostic request definition.
 
         @since 3.17.0 """
         return self.send_request("textDocument/diagnostic", params)
 
-    def workspace_diagnostic(self,  params: lsp_types.WorkspaceDiagnosticParams) -> Response['lsp_types.WorkspaceDiagnosticReport']:
+    def workspace_diagnostic(self,  params: lsp_types.WorkspaceDiagnosticParams) -> Request['lsp_types.WorkspaceDiagnosticReport']:
         """ The workspace diagnostic request definition.
 
         @since 3.17.0 """
         return self.send_request("workspace/diagnostic", params)
 
-    def inline_completion(self,  params: lsp_types.InlineCompletionParams) -> Response[Union['lsp_types.InlineCompletionList', List['lsp_types.InlineCompletionItem'], None]]:
+    def inline_completion(self,  params: lsp_types.InlineCompletionParams) -> Request[Union['lsp_types.InlineCompletionList', List['lsp_types.InlineCompletionItem'], None]]:
         """ A request to provide inline completions in a document. The request's parameter is of
         type {@link InlineCompletionParams}, the response is of type
         {@link InlineCompletion InlineCompletion[]} or a Thenable that resolves to such.
@@ -224,7 +233,7 @@ class LspRequest:
         @proposed """
         return self.send_request("textDocument/inlineCompletion", params)
 
-    def initialize(self,  params: lsp_types.InitializeParams) -> Response['lsp_types.InitializeResult']:
+    def initialize(self,  params: lsp_types.InitializeParams) -> Request['lsp_types.InitializeResult']:
         """ The initialize request is sent from the client to the server.
         It is sent once as the request after starting up the server.
         The requests parameter is of type {@link InitializeParams}
@@ -232,14 +241,14 @@ class LspRequest:
         resolves to such. """
         return self.send_request("initialize", params)
 
-    def shutdown(self) -> Response[None]:
+    def shutdown(self) -> Request[None]:
         """ A shutdown request is sent from the client to the server.
         It is sent once when the client decides to shutdown the
         server. The only notification that is sent after a shutdown request
         is the exit event. """
         return self.send_request("shutdown")
 
-    def will_save_wait_until(self,  params: lsp_types.WillSaveTextDocumentParams) -> Response[Union[List['lsp_types.TextEdit'], None]]:
+    def will_save_wait_until(self,  params: lsp_types.WillSaveTextDocumentParams) -> Request[Union[List['lsp_types.TextEdit'], None]]:
         """ A document will save request is sent from the client to the server before
         the document is actually saved. The request can return an array of TextEdits
         which will be applied to the text document before it is saved. Please note that
@@ -248,7 +257,7 @@ class LspRequest:
         reliable. """
         return self.send_request("textDocument/willSaveWaitUntil", params)
 
-    def completion(self,  params: lsp_types.CompletionParams) -> Response[Union[List['lsp_types.CompletionItem'], 'lsp_types.CompletionList', None]]:
+    def completion(self,  params: lsp_types.CompletionParams) -> Request[Union[List['lsp_types.CompletionItem'], 'lsp_types.CompletionList', None]]:
         """ Request to request completion at a given text document position. The request's
         parameter is of type {@link TextDocumentPosition} the response
         is of type {@link CompletionItem CompletionItem[]} or {@link CompletionList}
@@ -260,60 +269,60 @@ class LspRequest:
         `filterText`, `insertText`, and `textEdit`, must not be changed during resolve. """
         return self.send_request("textDocument/completion", params)
 
-    def resolve_completion_item(self,  params: lsp_types.CompletionItem) -> Response['lsp_types.CompletionItem']:
+    def resolve_completion_item(self,  params: lsp_types.CompletionItem) -> Request['lsp_types.CompletionItem']:
         """ Request to resolve additional information for a given completion item.The request's
         parameter is of type {@link CompletionItem} the response
         is of type {@link CompletionItem} or a Thenable that resolves to such. """
         return self.send_request("completionItem/resolve", params)
 
-    def hover(self,  params: lsp_types.HoverParams) -> Response[Union['lsp_types.Hover', None]]:
+    def hover(self,  params: lsp_types.HoverParams) -> Request[Union['lsp_types.Hover', None]]:
         """ Request to request hover information at a given text document position. The request's
         parameter is of type {@link TextDocumentPosition} the response is of
         type {@link Hover} or a Thenable that resolves to such. """
         return self.send_request("textDocument/hover", params)
 
-    def signature_help(self,  params: lsp_types.SignatureHelpParams) -> Response[Union['lsp_types.SignatureHelp', None]]:
+    def signature_help(self,  params: lsp_types.SignatureHelpParams) -> Request[Union['lsp_types.SignatureHelp', None]]:
         return self.send_request("textDocument/signatureHelp", params)
 
-    def definition(self,  params: lsp_types.DefinitionParams) -> Response[Union['lsp_types.Definition', List['lsp_types.LocationLink'], None]]:
+    def definition(self,  params: lsp_types.DefinitionParams) -> Request[Union['lsp_types.Definition', List['lsp_types.LocationLink'], None]]:
         """ A request to resolve the definition location of a symbol at a given text
         document position. The request's parameter is of type {@link TextDocumentPosition}
         the response is of either type {@link Definition} or a typed array of
         {@link DefinitionLink} or a Thenable that resolves to such. """
         return self.send_request("textDocument/definition", params)
 
-    def references(self,  params: lsp_types.ReferenceParams) -> Response[Union[List['lsp_types.Location'], None]]:
+    def references(self,  params: lsp_types.ReferenceParams) -> Request[Union[List['lsp_types.Location'], None]]:
         """ A request to resolve project-wide references for the symbol denoted
         by the given text document position. The request's parameter is of
         type {@link ReferenceParams} the response is of type
         {@link Location Location[]} or a Thenable that resolves to such. """
         return self.send_request("textDocument/references", params)
 
-    def document_highlight(self,  params: lsp_types.DocumentHighlightParams) -> Response[Union[List['lsp_types.DocumentHighlight'], None]]:
+    def document_highlight(self,  params: lsp_types.DocumentHighlightParams) -> Request[Union[List['lsp_types.DocumentHighlight'], None]]:
         """ Request to resolve a {@link DocumentHighlight} for a given
         text document position. The request's parameter is of type {@link TextDocumentPosition}
         the request response is an array of type {@link DocumentHighlight}
         or a Thenable that resolves to such. """
         return self.send_request("textDocument/documentHighlight", params)
 
-    def document_symbol(self,  params: lsp_types.DocumentSymbolParams) -> Response[Union[List['lsp_types.SymbolInformation'], List['lsp_types.DocumentSymbol'], None]]:
+    def document_symbol(self,  params: lsp_types.DocumentSymbolParams) -> Request[Union[List['lsp_types.SymbolInformation'], List['lsp_types.DocumentSymbol'], None]]:
         """ A request to list all symbols found in a given text document. The request's
         parameter is of type {@link TextDocumentIdentifier} the
         response is of type {@link SymbolInformation SymbolInformation[]} or a Thenable
         that resolves to such. """
         return self.send_request("textDocument/documentSymbol", params)
 
-    def code_action(self,  params: lsp_types.CodeActionParams) -> Response[Union[List[Union['lsp_types.Command', 'lsp_types.CodeAction']], None]]:
+    def code_action(self,  params: lsp_types.CodeActionParams) -> Request[Union[List[Union['lsp_types.Command', 'lsp_types.CodeAction']], None]]:
         """ A request to provide commands for the given text document and range. """
         return self.send_request("textDocument/codeAction", params)
 
-    def resolve_code_action(self,  params: lsp_types.CodeAction) -> Response['lsp_types.CodeAction']:
+    def resolve_code_action(self,  params: lsp_types.CodeAction) -> Request['lsp_types.CodeAction']:
         """ Request to resolve additional information for a given code action.The request's
         parameter is of type {@link CodeAction} the response
         is of type {@link CodeAction} or a Thenable that resolves to such. """
         return self.send_request("codeAction/resolve", params)
 
-    def workspace_symbol(self,  params: lsp_types.WorkspaceSymbolParams) -> Response[Union[List['lsp_types.SymbolInformation'], List['lsp_types.WorkspaceSymbol'], None]]:
+    def workspace_symbol(self,  params: lsp_types.WorkspaceSymbolParams) -> Request[Union[List['lsp_types.SymbolInformation'], List['lsp_types.WorkspaceSymbol'], None]]:
         """ A request to list project-wide symbols matching the query string given
         by the {@link WorkspaceSymbolParams}. The response is
         of type {@link SymbolInformation SymbolInformation[]} or a Thenable that
@@ -325,61 +334,61 @@ class LspRequest:
  """
         return self.send_request("workspace/symbol", params)
 
-    def resolve_workspace_symbol(self,  params: lsp_types.WorkspaceSymbol) -> Response['lsp_types.WorkspaceSymbol']:
+    def resolve_workspace_symbol(self,  params: lsp_types.WorkspaceSymbol) -> Request['lsp_types.WorkspaceSymbol']:
         """ A request to resolve the range inside the workspace
         symbol's location.
 
         @since 3.17.0 """
         return self.send_request("workspaceSymbol/resolve", params)
 
-    def code_lens(self,  params: lsp_types.CodeLensParams) -> Response[Union[List['lsp_types.CodeLens'], None]]:
+    def code_lens(self,  params: lsp_types.CodeLensParams) -> Request[Union[List['lsp_types.CodeLens'], None]]:
         """ A request to provide code lens for the given text document. """
         return self.send_request("textDocument/codeLens", params)
 
-    def resolve_code_lens(self,  params: lsp_types.CodeLens) -> Response['lsp_types.CodeLens']:
+    def resolve_code_lens(self,  params: lsp_types.CodeLens) -> Request['lsp_types.CodeLens']:
         """ A request to resolve a command for a given code lens. """
         return self.send_request("codeLens/resolve", params)
 
-    def document_link(self,  params: lsp_types.DocumentLinkParams) -> Response[Union[List['lsp_types.DocumentLink'], None]]:
+    def document_link(self,  params: lsp_types.DocumentLinkParams) -> Request[Union[List['lsp_types.DocumentLink'], None]]:
         """ A request to provide document links """
         return self.send_request("textDocument/documentLink", params)
 
-    def resolve_document_link(self,  params: lsp_types.DocumentLink) -> Response['lsp_types.DocumentLink']:
+    def resolve_document_link(self,  params: lsp_types.DocumentLink) -> Request['lsp_types.DocumentLink']:
         """ Request to resolve additional information for a given document link. The request's
         parameter is of type {@link DocumentLink} the response
         is of type {@link DocumentLink} or a Thenable that resolves to such. """
         return self.send_request("documentLink/resolve", params)
 
-    def formatting(self,  params: lsp_types.DocumentFormattingParams) -> Response[Union[List['lsp_types.TextEdit'], None]]:
+    def formatting(self,  params: lsp_types.DocumentFormattingParams) -> Request[Union[List['lsp_types.TextEdit'], None]]:
         """ A request to format a whole document. """
         return self.send_request("textDocument/formatting", params)
 
-    def range_formatting(self,  params: lsp_types.DocumentRangeFormattingParams) -> Response[Union[List['lsp_types.TextEdit'], None]]:
+    def range_formatting(self,  params: lsp_types.DocumentRangeFormattingParams) -> Request[Union[List['lsp_types.TextEdit'], None]]:
         """ A request to format a range in a document. """
         return self.send_request("textDocument/rangeFormatting", params)
 
-    def ranges_formatting(self,  params: lsp_types.DocumentRangesFormattingParams) -> Response[Union[List['lsp_types.TextEdit'], None]]:
+    def ranges_formatting(self,  params: lsp_types.DocumentRangesFormattingParams) -> Request[Union[List['lsp_types.TextEdit'], None]]:
         """ A request to format ranges in a document.
 
         @since 3.18.0
         @proposed """
         return self.send_request("textDocument/rangesFormatting", params)
 
-    def on_type_formatting(self,  params: lsp_types.DocumentOnTypeFormattingParams) -> Response[Union[List['lsp_types.TextEdit'], None]]:
+    def on_type_formatting(self,  params: lsp_types.DocumentOnTypeFormattingParams) -> Request[Union[List['lsp_types.TextEdit'], None]]:
         """ A request to format a document on type. """
         return self.send_request("textDocument/onTypeFormatting", params)
 
-    def rename(self,  params: lsp_types.RenameParams) -> Response[Union['lsp_types.WorkspaceEdit', None]]:
+    def rename(self,  params: lsp_types.RenameParams) -> Request[Union['lsp_types.WorkspaceEdit', None]]:
         """ A request to rename a symbol. """
         return self.send_request("textDocument/rename", params)
 
-    def prepare_rename(self,  params: lsp_types.PrepareRenameParams) -> Response[Union['lsp_types.PrepareRenameResult', None]]:
+    def prepare_rename(self,  params: lsp_types.PrepareRenameParams) -> Request[Union['lsp_types.PrepareRenameResult', None]]:
         """ A request to test and perform the setup necessary for a rename.
 
         @since 3.16 - support for default behavior """
         return self.send_request("textDocument/prepareRename", params)
 
-    def execute_command(self,  params: lsp_types.ExecuteCommandParams) -> Response[Union['lsp_types.LSPAny', None]]:
+    def execute_command(self,  params: lsp_types.ExecuteCommandParams) -> Request[Union['lsp_types.LSPAny', None]]:
         """ A request send from the client to the server to execute a command. The request might return
         a workspace edit which the client will apply to the workspace. """
         return self.send_request("workspace/executeCommand", params)

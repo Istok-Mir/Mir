@@ -10,7 +10,7 @@ class CommmunicationLogs:
 
     def append(self, log: str):
         time = datetime.datetime.now().strftime('%H:%M:%S')
-        log_with_time = f"[{time}] {log}"
+        log_with_time = f"({time}) {log}"
         self.logs.append(log_with_time)
         self.panel.set_read_only(False)
         self.panel.run_command("append", {
@@ -18,6 +18,10 @@ class CommmunicationLogs:
             'force': False,
             'scroll_to_end': True
         })
+        last_bracket_point = self.panel.find(r'^(})', self.panel.size(), sublime.FindFlags.REVERSE)
+        start_bracket_point = self.panel.find(r'^({|Params: {)', last_bracket_point.end(), sublime.FindFlags.REVERSE)
+        if last_bracket_point is not None and start_bracket_point is not None:
+            self.panel.fold(sublime.Region(start_bracket_point.end(), last_bracket_point.begin() - 1))
         self.panel.settings().set('scroll_past_end', False)
         self.panel.clear_undo_stack()
         self.panel.set_read_only(True)

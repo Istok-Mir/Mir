@@ -1,5 +1,8 @@
 from __future__ import annotations
+import asyncio
 from typing import List
+
+from lsp.lsp_requests import Request
 from .manage_servers import servers_for_view
 from .types import DocumentSymbol, SymbolInformation
 from .view_to_lsp import get_view_uri
@@ -20,21 +23,34 @@ class Result(Generic[T]):
 
 
 class mir:
+    _document_symbols_requests: List[Request] = []
+
     @staticmethod
     async def document_symbols(view: sublime.View | None) -> list[Result[List[SymbolInformation] | List[DocumentSymbol] | None]]:
         if not view:
             return []
         if not view.is_valid():
             return []
+        if mir._document_symbols_requests:
+            for request in mir._document_symbols_requests:
+                request.cancel()
+            mir._document_symbols_requests = []
         uri = get_view_uri(view)
         servers = servers_for_view(view, 'documentSymbolProvider')
         results: list[Result[List[SymbolInformation] | List[DocumentSymbol] | None]] = []
         for s in servers:
-            result = await s.send.document_symbol({
+            req = s.send.document_symbol({
                 'textDocument': {
                     'uri': uri
                 },
-            }).result
-            results.append(Result(s.name, result))
+            })
+            mir._document_symbols_requests.append(req)
+
+        async def handle(req: Request):
+            result = await req.result
+            return Result(req.server.name, result)
+
+        results = await asyncio.gather(*[handle(future) for future in mir._document_symbols_requests])
+        mir._document_symbols_requests = []
         return results
 
