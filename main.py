@@ -1,5 +1,6 @@
 from __future__ import annotations
 from event_loop import run_future
+from lsp.lsp_requests import Request
 from lsp.manage_servers import ManageServers, servers_for_view
 from lsp.providers import Providers
 from lsp.minihtml import FORMAT_MARKED_STRING, FORMAT_MARKUP_CONTENT, minihtml
@@ -28,6 +29,8 @@ def unregister_language_server(server: LanguageServer):
 
 
 class DocumentListener(sublime_plugin.ViewEventListener):
+    _hover_requests: list[Request] = []
+
     def on_query_completions(self, _prefix: str, locations: list[Point]):
         completion_list = sublime.CompletionList()
         point = locations[0]
@@ -77,8 +80,16 @@ class DocumentListener(sublime_plugin.ViewEventListener):
 
     async def do_hover(self, params: HoverParams, hover_point):
         results = []
+        if DocumentListener._hover_requests:
+            for req in DocumentListener._hover_requests:
+                req.cancel()
+            DocumentListener._hover_requests = []
+        for server in servers_for_view(self.view, capability='hoverProvider'):
+            req = server.send.hover(params)
+            DocumentListener._hover_requests.append(req)
         try:
-            results = await asyncio.gather(*[server.send.hover(params).result for server in servers_for_view(self.view, capability='hoverProvider')])
+            results = await asyncio.gather(*[req.result for req in DocumentListener._hover_requests])
+            DocumentListener._hover_requests = []
         except Exception as e:
             print('HoverError:', e)
         try:
