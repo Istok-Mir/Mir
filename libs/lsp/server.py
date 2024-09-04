@@ -1,4 +1,5 @@
 from __future__ import annotations
+import os
 
 from lsp.server_request_and_notification_handlers import attach_server_request_and_notification_handlers
 from .capabilities import CLIENT_CAPABILITIES, ServerCapabilities
@@ -165,11 +166,11 @@ class LanguageServer:
             self.status = 'initializing'
             if not shutil.which(self.configuration['cmd'].split()[0]):
                 raise RuntimeError(f"Command not found: {self.configuration['cmd']}")
-
             self._process = await asyncio.create_subprocess_shell(
                 self.configuration['cmd'],
                 stdout=asyncio.subprocess.PIPE,
                 stdin=asyncio.subprocess.PIPE,
+                env=os.environ.copy()
             )
             run_future(self._run_forever())
 

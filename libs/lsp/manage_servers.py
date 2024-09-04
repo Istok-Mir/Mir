@@ -5,6 +5,7 @@ from .server import LanguageServer, matches_activation_event_on_uri
 from .capabilities import ServerCapability
 import sublime
 import sublime_plugin
+import copy
 
 
 def servers_for_view(view: sublime.View, capability: ServerCapability | None = None) -> list[LanguageServer]:
@@ -20,10 +21,12 @@ async def open_document(view: sublime.View):
     for server in ManageServers.all_servers:
         if not server.is_applicable_view(view):
             continue
-        if server not in ManageServers.servers_for_view(view):
+        if server.name not in [s.name for s in ManageServers.servers_for_view(view)]:
             try:
-                await server.start(view)
-                ManageServers.attach_server_to_window(server, window)
+                new_server = copy.deepcopy(server)
+                server = new_server
+                await new_server.start(view)
+                ManageServers.attach_server_to_window(new_server, window)
             except Exception as e:
                 print(f'Mir ({server.name}) | Error while starting.', e)
                 continue
