@@ -9,18 +9,17 @@ import sublime_plugin
 
 def servers_for_view(view: sublime.View, capability: ServerCapability | None = None) -> list[LanguageServer]:
     if capability:
-        return [s for s in ManageServers.started_servers if s.is_applicable_view(view) and s.capabilities.has(capability)]
-    return [s for s in ManageServers.started_servers if s.is_applicable_view(view)]
+        return [s for s in ManageServers.started_servers() if s.is_applicable_view(view) and s.capabilities.has(capability)]
+    return [s for s in ManageServers.started_servers() if s.is_applicable_view(view)]
 
 
 async def open_document(view: sublime.View):
     for server in ManageServers.all_servers:
         if not server.is_applicable_view(view):
             continue
-        if server not in ManageServers.started_servers:
+        if server not in ManageServers.started_servers():
             try:
                 await server.start()
-                ManageServers.started_servers.append(server)
             except Exception as e:
                 print(f'Mir ({server.name}) | Error while starting.', e)
                 continue
@@ -31,6 +30,7 @@ async def open_document(view: sublime.View):
 
 
 def close_document(view: sublime.View):
+    print('eej', servers_for_view(view))
     for server in servers_for_view(view):
         server.notify.did_close_text_document({
             'textDocument': {
@@ -39,18 +39,13 @@ def close_document(view: sublime.View):
         })
         if matches_activation_event_on_uri(view, server.configuration['activation_events']): # close servers who specify on_uri activation event
             server.stop()
-            ManageServers.started_servers = [s for s in ManageServers.started_servers if s != server]
 
 
-
-class classproperty(property):
-  def __get__(self, owner_self, owner_cls):
-    return self.fget(owner_cls)
 
 class ManageServers(sublime_plugin.EventListener):
     all_servers: list[LanguageServer] = []
 
-    @classproperty
+    @classmethod
     def started_servers(cls):
         return [s for s in ManageServers.all_servers if s.status == 'ready']
 
@@ -98,5 +93,5 @@ class ManageServers(sublime_plugin.EventListener):
         print('EventListener on_pre_close_window', window)
 
     def on_exit(self):
-        for server in ManageServers.started_servers:
+        for server in ManageServers.started_servers():
             server.stop()
