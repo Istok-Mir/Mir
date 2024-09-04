@@ -49,7 +49,6 @@ class classproperty(property):
 
 class ManageServers(sublime_plugin.EventListener):
     all_servers: list[LanguageServer] = []
-    started_servers: list[LanguageServer] = []
 
     @classproperty
     def started_servers(cls):
