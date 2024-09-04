@@ -1,14 +1,19 @@
+from __future__ import annotations
 import datetime
 from typing import Any
 from sublime_plugin import sublime
 
 class CommmunicationLogs:
-    def __init__(self, name: str, window: sublime.Window):
+    def __init__(self, name: str, window: sublime.Window | None = None):
         self.name = name
         self.logs: list[str] = []
-        self.panel = window.create_output_panel(name)
+        self.panel: sublime.View | None = None
+        if window:
+            self.panel = window.create_output_panel(name)
 
     def append(self, log: str):
+        if not self.panel:
+            return
         time = datetime.datetime.now().strftime('%H:%M:%S')
         log_with_time = f"({time}) {log}"
         self.logs.append(log_with_time)

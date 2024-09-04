@@ -150,7 +150,7 @@ class LanguageServer:
         self.on_request_handlers = {}
         self.on_notification_handlers: list[NotificationHandler] = []
         # logs
-        self._communcation_logs: CommmunicationLogs | None = None
+        self._communcation_logs: CommmunicationLogs = CommmunicationLogs(self.name)
 
         attach_server_request_and_notification_handlers(self)
 

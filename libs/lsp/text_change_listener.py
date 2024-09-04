@@ -8,8 +8,6 @@ import sublime_plugin
 import sublime
 
 class TextChangeListener(sublime_plugin.TextChangeListener):
-    ids_to_servers: dict[int, TextChangeListener] = {}
-
     @classmethod
     def is_applicable(cls, buffer: sublime.Buffer) -> bool:
         v = buffer.primary_view()
@@ -23,7 +21,6 @@ class TextChangeListener(sublime_plugin.TextChangeListener):
         if changes is None:
             return
         incremental_changes = [text_change_to_text_document_content_change_event(text_change) for text_change in changes]
-
         for server in servers_for_view(view):
             # get sync kind for server
             textDocumentSyncKind = 0
@@ -65,8 +62,8 @@ def text_change_to_text_document_content_change_event(change: sublime.TextChange
 
 def is_regular_view(v: sublime.View) -> bool:
     # Not from the quick panel (CTRL+P), and not a special view like a console, output panel or find-in-files panels.
-    if v.window() is None: # detect hover popup
-        return False
+    # if v.window() is None: # detect hover popup
+    #     return False
     if v.element() is not None:
         return False
     if v.settings().get('is_widget'):
