@@ -14,13 +14,16 @@ def servers_for_view(view: sublime.View, capability: ServerCapability | None = N
 
 
 async def open_document(view: sublime.View):
+    window = view.window()
+    if not window:
+        return
     for server in ManageServers.all_servers:
         if not server.is_applicable_view(view):
             continue
         if server not in ManageServers.servers_for_view(view):
             try:
                 await server.start(view)
-                ManageServers.attach_server_by_view(view, server)
+                ManageServers.attach_server_to_window(server, window)
             except Exception as e:
                 print(f'Mir ({server.name}) | Error while starting.', e)
                 continue
@@ -44,7 +47,7 @@ def close_document(view: sublime.View):
             relevant_views = [matches_activation_event_on_uri(view, server.configuration['activation_events']) for view in window.views()]
             if len(relevant_views) <= 1:
                 server.stop()
-                ManageServers.detach_server_by_view(view, server)
+                ManageServers.detach_server_from_window(server, window)
 
 
 class ManageServers(sublime_plugin.EventListener):
@@ -63,24 +66,16 @@ class ManageServers(sublime_plugin.EventListener):
         return [s for s in ManageServers.server_per_window.get(window.id(), [])]
 
     @classmethod
-    def attach_server_by_view(cls, view: sublime.View, server: LanguageServer):
-        window = view.window()
-        if window:
-            ManageServers.server_per_window.setdefault(window.id(), [])
-            ManageServers.server_per_window[window.id()].append(server)
-        else:
-            raise Exception('Handle this Predrag')
+    def attach_server_to_window(cls, server: LanguageServer, window: sublime.Window):
+        ManageServers.server_per_window.setdefault(window.id(), [])
+        ManageServers.server_per_window[window.id()].append(server)
 
     @classmethod
-    def detach_server_by_view(cls, view: sublime.View, server: LanguageServer):
-        window = view.window()
-        if window:
-            ManageServers.server_per_window[window.id()] = [s for s in ManageServers.server_per_window[window.id()] if s != server]
-        else:
-            raise Exception('Handle this Predrag')
+    def detach_server_from_window(cls, server: LanguageServer, window: sublime.Window):
+        ManageServers.server_per_window[window.id()] = [s for s in ManageServers.server_per_window[window.id()] if s != server]
 
     @classmethod
-    def detach_server_by_window(cls, window: sublime.Window):
+    def detach_all_servers_from_window(cls, window: sublime.Window):
         del ManageServers.server_per_window[window.id()]
 
     def on_init(self, views: list[sublime.View]):
@@ -117,5 +112,5 @@ class ManageServers(sublime_plugin.EventListener):
     def on_pre_close_window(self, window):
         for server in ManageServers.servers_for_window(window):
             server.stop()
-        ManageServers.detach_server_by_window(window)
+        ManageServers.detach_all_servers_from_window(window)
         print('EventListener on_pre_close_window', window)
