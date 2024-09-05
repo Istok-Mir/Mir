@@ -9,7 +9,37 @@ if TYPE_CHECKING:
 
 def attach_server_request_and_notification_handlers(server: LanguageServer):
     async def workspace_configuration(payload):
-        return []
+        return [{
+            "statusText": "{% set parts = [] %}{% if server_version %}{% do parts.append('v' + server_version) %}{% endif %}{% if venv %}{% do parts.append('venv: ' + venv.venv_prompt) %}{% do parts.append('py: ' + venv.python_version) %}{% do parts.append('by: ' + venv.finder_name) %}{% endif %}{{ parts|join('; ') }}",
+            "venvStrategies": [
+                "local_dot_venv",
+                "env_var_conda_prefix",
+                "env_var_virtual_env",
+                "rye",
+                "poetry",
+                "pdm",
+                "hatch",
+                "pipenv",
+                "pyenv",
+                "any_subdirectory",
+            ],
+            "pyright.dev_environment": "",
+            "python.analysis.autoImportCompletions": True,
+            "python.analysis.autoSearchPaths": True,
+            "python.analysis.extraPaths": [],
+            "python.analysis.stubPath": "./typings",
+            "python.analysis.diagnosticMode": "openFilesOnly",
+            "python.analysis.diagnosticSeverityOverrides": {
+            },
+            "python.analysis.logLevel": "Information",
+            "python.analysis.typeCheckingMode": "standard",
+            "python.analysis.typeshedPaths": [],
+            "python.analysis.useLibraryCodeForTypes": True,
+            "pyright.disableLanguageServices": False,
+            "pyright.disableOrganizeImports": False,
+            "python.pythonPath": "",
+            "python.venvPath": "",
+        }]
 
     async def register_capability(params: RegistrationParams):
         registrations = params["registrations"]

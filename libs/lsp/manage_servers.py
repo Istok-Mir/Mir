@@ -33,14 +33,8 @@ async def open_document(view: sublime.View):
                     print(f'Mir ({server.name}) | Error while starting.', e)
                     continue
     for server in servers_for_view(view):
-        server.notify.did_close_text_document({
-            'textDocument': {
-                'uri': get_view_uri(view)
-            }
-        })
-        text_document = view_to_text_document_item(view)
         server.notify.did_open_text_document({
-            'textDocument': text_document
+            'textDocument': view_to_text_document_item(view)
         })
 
 
@@ -109,9 +103,11 @@ class ManageServers(sublime_plugin.EventListener):
         print('EventListener on_revert', view)
 
     def on_load(self, view):
+        print('on_load', view.file_name())
         run_future(open_document(view))
 
     def on_pre_close(self, view):
+        print('on_pre_close', view.file_name())
         close_document(view)
 
     def on_new_window(self, window):

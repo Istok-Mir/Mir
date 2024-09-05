@@ -103,7 +103,7 @@ class DocumentListener(sublime_plugin.ViewEventListener):
                     combined_content.append(content)
             if combined_content:
                 self.view.show_popup(
-                    f"""<html style='border: 1px solid color(var(--foreground) blend(var(--background) 20%));'><body><div style='padding: 0.2rem 0.5rem; font-size: 1rem;'>{'<hr style="border: 1px solid color(var(--foreground) blend(var(--background) 20%)); display:block"/>'.join(combined_content)}</div></body></html>""",
+                    f"""<html style='border: 1px solid color(var(--foreground) blend(var(--background) 20%));'><body><div style='padding: 0.0rem 0.2rem; font-size: 0.9rem;'>{'<hr style="border: 1px solid color(var(--foreground) blend(var(--background) 20%)); display:block"/>'.join(combined_content)}</div></body></html>""",
                     sublime.PopupFlags.HIDE_ON_MOUSE_MOVE_AWAY,
                     hover_point,
                     max_width=800,
