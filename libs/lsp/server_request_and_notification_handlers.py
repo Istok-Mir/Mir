@@ -1,45 +1,20 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from .capabilities import method_to_capability
-from .types import RegistrationParams, UnregistrationParams, LogMessageParams, LogMessageParams, MessageType
+from .types import RegistrationParams, UnregistrationParams, LogMessageParams, LogMessageParams, MessageType, ConfigurationParams
 
 if TYPE_CHECKING:
 	from .server import LanguageServer
 
 def attach_server_request_and_notification_handlers(server: LanguageServer):
-    async def workspace_configuration(payload):
-        return [{
-            "statusText": "{% set parts = [] %}{% if server_version %}{% do parts.append('v' + server_version) %}{% endif %}{% if venv %}{% do parts.append('venv: ' + venv.venv_prompt) %}{% do parts.append('py: ' + venv.python_version) %}{% do parts.append('by: ' + venv.finder_name) %}{% endif %}{{ parts|join('; ') }}",
-            "venvStrategies": [
-                "local_dot_venv",
-                "env_var_conda_prefix",
-                "env_var_virtual_env",
-                "rye",
-                "poetry",
-                "pdm",
-                "hatch",
-                "pipenv",
-                "pyenv",
-                "any_subdirectory",
-            ],
-            "pyright.dev_environment": "",
-            "python.analysis.autoImportCompletions": True,
-            "python.analysis.autoSearchPaths": True,
-            "python.analysis.extraPaths": [],
-            "python.analysis.stubPath": "./typings",
-            "python.analysis.diagnosticMode": "openFilesOnly",
-            "python.analysis.diagnosticSeverityOverrides": {
-            },
-            "python.analysis.logLevel": "Information",
-            "python.analysis.typeCheckingMode": "standard",
-            "python.analysis.typeshedPaths": [],
-            "python.analysis.useLibraryCodeForTypes": True,
-            "pyright.disableLanguageServices": False,
-            "pyright.disableOrganizeImports": False,
-            "python.pythonPath": "",
-            "python.venvPath": "",
-        }]
+    async def workspace_configuration(payload: ConfigurationParams):
+        items: list[Any] = []
+        requested_items = payload["items"]
+        for requested_item in requested_items:
+            configuration = server.settings.copy(requested_item.get('section') or None)
+            items.append(configuration)
+        return items
 
     async def register_capability(params: RegistrationParams):
         registrations = params["registrations"]

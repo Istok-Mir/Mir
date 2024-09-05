@@ -15,13 +15,16 @@ class SomeExample(TypedDict):
 def custom_request_handler(params: SomeExample):
     print(params['name'])
 
+class TypescriptVersionParams(TypedDict):
+    source: str
+    version: str
 
-def custom_notification_handler(params: SomeExample):
-    print(params['name'])
+def on_typescript_version(params: TypescriptVersionParams):
+    print(params['source'] + f"({params['version']})")
 
 
 server.on_request('custom_request', custom_request_handler)
-server.on_notification('some_custom_notification', custom_notification_handler)
+server.on_notification('$/typescriptVersion', on_typescript_version)
 
 
 def plugin_loaded() -> None:

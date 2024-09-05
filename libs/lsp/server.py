@@ -13,6 +13,7 @@ from sublime_plugin import sublime
 from typing import  Any, Callable, Dict, Literal, Optional, TypedDict, cast
 from typing_extensions import NotRequired
 from wcmatch.glob import BRACE
+from .dotted_dict import DottedDict
 from wcmatch.glob import globmatch
 from wcmatch.glob import GLOBSTAR
 import asyncio
@@ -140,6 +141,7 @@ class LanguageServer:
         self.notify = LspNotification(self.send_notification)
         self.capabilities = ServerCapabilities()
         self.view: sublime.View = sublime.View(-1)
+        self.settings = DottedDict()
 
         self.configuration = configuration
         self._process = None
@@ -156,13 +158,12 @@ class LanguageServer:
         # logs
         self._communcation_logs: CommmunicationLogs = CommmunicationLogs(self.name)
 
-        attach_server_request_and_notification_handlers(self)
-
     def is_applicable_view(self, view: sublime.View) -> bool:
         return is_applicable_view(view, self.configuration['activation_events'])
 
     async def start(self, view: sublime.View):
         self.view = view
+        self.settings.update(view.settings().to_dict())
         window = view.window()
         if window:
             self._communcation_logs = CommmunicationLogs(self.name, window)
@@ -192,12 +193,18 @@ class LanguageServer:
             self.capabilities.assign(cast(dict, initialize_result['capabilities']))
             self.notify.initialized({})
             self.status = 'ready'
-            self.notify.workspace_did_change_configuration({'settings': {'pyright': {'dev_environment': 'sublime_text_38', 'disableLanguageServices': False, 'disableOrganizeImports': False}, 'python': {'analysis': {'autoImportCompletions': True, 'autoSearchPaths': True, 'diagnosticMode': 'openFilesOnly', 'diagnosticSeverityOverrides': {'reportDeprecated': True}, 'extraPaths': ['/Users/predrag/Library/Application Support/Sublime Text/Packages/OLSP/libs', '/Applications/Sublime Text.app/Contents/MacOS/Lib/python38', '/Applications/Sublime Text.app/Contents/MacOS/Lib/python3', '/Users/predrag/Library/Application Support/Sublime Text/Lib/python38', '/Applications/Sublime Text.app/Contents/MacOS/Packages', '/Users/predrag/Library/Application Support/Sublime Text/Packages'], 'logLevel': 'Information', 'stubPath': './typings', 'typeCheckingMode': 'standard', 'typeshedPaths': [], 'useLibraryCodeForTypes': True}, 'pythonPath': '', 'venvPath': ''}, 'statusText': "{% set parts = [] %}{% if server_version %}{% do parts.append('v' + server_version) %}{% endif %}{% if venv %}{% do parts.append('venv: ' + venv.venv_prompt) %}{% do parts.append('py: ' + venv.python_version) %}{% do parts.append('by: ' + venv.finder_name) %}{% endif %}{{ parts|join('; ') }}", 'venvStrategies': ['local_dot_venv', 'env_var_conda_prefix', 'env_var_virtual_env', 'rye', 'poetry', 'pdm', 'hatch', 'pipenv', 'pyenv', 'any_subdirectory']}})
+
+            def update_settings_on_change():
+                self.settings.update(view.settings().to_dict())
+
+            self.view.settings().add_on_change('', update_settings_on_change)
+            self.notify.workspace_did_change_configuration({'settings': self.settings.get()})
         except Exception as e:
             print(f'Mir ({self.name}) Error while creating subprocess.', e)
             self.status = 'off'
 
     def stop(self):
+        self.view.settings().clear_on_change('')
         run_future(self.shutdown())
 
     async def shutdown(self):
@@ -368,7 +375,7 @@ class LanguageServer:
         try:
             self._communcation_logs.append(f'Received request "{method}" ({request_id})\nParams: {format_payload(params)}')
             res = await handler(params)
-            self._communcation_logs.append(f'Sending response "{method}" ({request_id})\n{format_payload(res)}')
+            self._communcation_logs.append(f'Sending response "{method}" ({request_id})\nResponse: {format_payload(res)}')
             await self.send_response(request_id, res)
         except Error as ex:
             await self.send_error_response(request_id, ex)

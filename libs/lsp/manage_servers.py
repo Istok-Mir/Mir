@@ -2,6 +2,7 @@ from __future__ import annotations
 from ..event_loop import run_future
 from .view_to_lsp import get_view_uri, view_to_text_document_item
 from .server import LanguageServer, matches_activation_event_on_uri
+from .server_request_and_notification_handlers import attach_server_request_and_notification_handlers
 from .capabilities import ServerCapability
 import sublime
 import sublime_plugin
@@ -21,12 +22,13 @@ async def open_document(view: sublime.View):
     server_for_the_view = servers_for_view(view)
     print('server_for_the_view', server_for_the_view)
     if len(server_for_the_view) == 0: # start the servers if not started
-        for server in ManageServers.all_servers:
+        for server in ManageServers.all_servers_configuration:
             if not server.is_applicable_view(view):
                 continue
             if server.name not in [s.name for s in ManageServers.servers_for_view(view)]:
                 try:
                     new_server = copy.deepcopy(server)
+                    attach_server_request_and_notification_handlers(new_server)
                     await new_server.start(view)
                     ManageServers.attach_server_to_window(new_server, window)
                 except Exception as e:

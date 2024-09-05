@@ -15,15 +15,15 @@ from .libs.lsp.text_change_listener import TextChangeListener
 
 
 def register_language_server(server: LanguageServer):
-    if server in ManageServers.all_servers:
+    if server in ManageServers.all_servers_configuration:
         print(f'register_language_server {server.name} is skipped because it was already registred.')
         return
-    ManageServers.all_servers.append(server)
+    ManageServers.all_servers_configuration.append(server)
 
 
 def unregister_language_server(server: LanguageServer):
     server.stop()
-    ManageServers.all_servers = [s for s in ManageServers.all_servers if s != server]
+    ManageServers.all_servers_configuration = [s for s in ManageServers.all_servers_configuration if s.name != server.name]
 
 
 
