@@ -11,7 +11,6 @@ class MirGotoDefinitionCommand(sublime_plugin.TextCommand):
 
     async def goto_definition(self):
         definitions = await mir.definitions(self.view)
-        print('definitions', definitions)
         window = self.view.window()
         if not window:
             return
