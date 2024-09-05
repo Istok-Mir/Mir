@@ -4,8 +4,8 @@ from typing import List
 
 from .lsp_requests import Request
 from .manage_servers import servers_for_view
-from .types import DocumentSymbol, SymbolInformation
-from .view_to_lsp import get_view_uri
+from .types import Definition, DocumentSymbol, SymbolInformation, LocationLink
+from .view_to_lsp import get_view_uri, point_to_position
 import sublime
 from typing import TypeVar, Generic
 
@@ -23,10 +23,45 @@ class Result(Generic[T]):
 
 
 class mir:
+    _definition_requests: List[Request] = []
     _document_symbols_requests: List[Request] = []
 
     @staticmethod
-    async def document_symbols(view: sublime.View | None) -> list[Result[List[SymbolInformation] | List[DocumentSymbol] | None]]:
+    async def definitions(view: sublime.View | None) -> list[Result[Definition | list[LocationLink] | None]]:
+        if not view:
+            return []
+        if not view.is_valid():
+            return []
+        sel = view.sel()
+        if not sel:
+            return
+        point = sel[0].b
+        if mir._definition_requests:
+            for request in mir._definition_requests:
+                request.cancel()
+            mir._definition_requests = []
+        uri = get_view_uri(view)
+        servers = servers_for_view(view, 'definitionProvider')
+        results: list[Result[Definition | list[LocationLink] | None]] = []
+        for s in servers:
+            req = s.send.definition({
+                'textDocument': {
+                    'uri': uri
+                },
+                'position': point_to_position(view, point)
+            })
+            mir._definition_requests.append(req)
+
+        async def handle(req: Request):
+            result = await req.result
+            return Result(req.server.name, result)
+
+        results = await asyncio.gather(*[handle(future) for future in mir._definition_requests])
+        mir._definition_requests = []
+        return results
+
+    @staticmethod
+    async def document_symbols(view: sublime.View | None) -> list[Result[list[SymbolInformation] | list[DocumentSymbol] | None]]:
         if not view:
             return []
         if not view.is_valid():

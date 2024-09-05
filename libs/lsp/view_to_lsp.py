@@ -1,7 +1,10 @@
 from __future__ import annotations
 from typing import cast
-from .types import LanguageKind, Position, TextDocumentItem
-from sublime_plugin import sublime
+from .types import LanguageKind, Position, TextDocumentItem, Range
+import sublime
+from urllib.parse import urlparse
+from urllib.request import url2pathname
+import os
 
 
 def view_to_text_document_item(view: sublime.View) -> TextDocumentItem :
@@ -24,6 +27,17 @@ def point_to_position(view: sublime.View, point: int) -> Position:
         "character": col
     }
 
+def position_to_point(view: sublime.View, position: Position) -> int:
+    point = view.text_point(position['line'], position['character'],clamp_column=True)
+    return point
+
+
+def range_to_region(view: sublime.View, range: Range) -> sublime.Region:
+    a = position_to_point(view, range['start'])
+    b = position_to_point(view, range['end'])
+    return sublime.Region(a, b)
+
+
 def view_to_uri(view) -> str:
     file_name = view.file_name()
     if not file_name:
@@ -33,12 +47,50 @@ def view_to_uri(view) -> str:
 def file_name_to_uri(file_name: str) -> str:
     return 'file://' + file_name
 
+def open_view_with_uri(uri: str, lsp_range: Range, window: sublime.Window) -> sublime.View:
+    schema, parsed_uri = parse_uri(uri)
+    for v in window.views():
+        view_uri = get_view_uri(v)
+        schema, parsed_view_uri_uri = parse_uri(view_uri)
+        if parsed_view_uri_uri == parsed_uri:
+            window.focus_view(v)
+            region = range_to_region(v, lsp_range)
+            v.sel().clear()
+            v.sel().add(region.end())
+            v.show_at_center(region)
+            return v
+    return window.open_file(parsed_uri+f":{lsp_range['end']['line']+1}:{lsp_range['end']['character']+1}", sublime.ENCODED_POSITION)
+
+def parse_uri(uri: str) -> tuple[str, str]:
+    """
+    Parses an URI into a tuple where the first element is the URI scheme. The
+    second element is the local filesystem path if the URI is a file URI,
+    otherwise the second element is the original URI.
+    """
+    parsed = urlparse(uri)
+    if parsed.scheme == "file":
+        path = url2pathname(parsed.path)
+        if os.name == 'nt':
+            netloc = url2pathname(parsed.netloc)
+            path = path.lstrip("\\")
+            path = re.sub(r"^/([a-zA-Z]:)", r"\1", path)  # remove slash preceding drive letter
+            path = re.sub(r"^([a-z]):", _uppercase_driveletter, path)
+            if netloc:
+                # Convert to UNC path
+                return parsed.scheme, f"\\\\{netloc}\\{path}"
+            else:
+                return parsed.scheme, path
+        return parsed.scheme, path
+    elif parsed.scheme == '' and ':' in parsed.path.split('/')[0]:
+        # workaround for bug in urllib.parse.urlparse
+        return parsed.path.split(':')[0], uri
+    return parsed.scheme, uri
 
 def get_view_uri(view) -> str:
-    uri = view.settings().get("cn_uri")
+    uri = view.settings().get("mir_text_document_uri")
     if not uri:
         uri = view_to_uri(view)
-        view.settings().set("lsp_uri", uri)
+        view.settings().set("mir_text_document_uri", uri)
     return uri
 
 
