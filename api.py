@@ -1,5 +1,5 @@
-from lsp.server import LanguageServer
-from lsp.providers import HoverProvider, CompletionProvider, register_provider, unregister_provider
+from .libs.lsp.server import LanguageServer
+from .libs.lsp.providers import HoverProvider, CompletionProvider, register_provider, unregister_provider
 from .main import register_language_server, unregister_language_server
 
 __all__ = (

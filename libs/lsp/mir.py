@@ -2,7 +2,7 @@ from __future__ import annotations
 import asyncio
 from typing import List
 
-from lsp.lsp_requests import Request
+from .lsp_requests import Request
 from .manage_servers import servers_for_view
 from .types import DocumentSymbol, SymbolInformation
 from .view_to_lsp import get_view_uri

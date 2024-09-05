@@ -1,7 +1,7 @@
 from __future__ import annotations
-from lsp.mir import mir
+from .libs.lsp.mir import mir
 import sublime_plugin
-from event_loop import run_future
+from .libs.event_loop import run_future
 
 class ShowSymbolsCommand(sublime_plugin.WindowCommand):
 	def run(self):

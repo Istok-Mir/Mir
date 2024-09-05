@@ -1,5 +1,5 @@
 from __future__ import annotations
-from event_loop import run_future
+from ..event_loop import run_future
 from .view_to_lsp import get_view_uri, view_to_text_document_item
 from .server import LanguageServer, matches_activation_event_on_uri
 from .capabilities import ServerCapability

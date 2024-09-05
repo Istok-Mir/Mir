@@ -1,17 +1,17 @@
 from __future__ import annotations
-from event_loop import run_future
-from lsp.lsp_requests import Request
-from lsp.manage_servers import ManageServers, servers_for_view
-from lsp.providers import Providers
-from lsp.minihtml import FORMAT_MARKED_STRING, FORMAT_MARKUP_CONTENT, minihtml
-from lsp.server import LanguageServer, is_applicable_view
-from lsp.types import CompletionParams, HoverParams
-from lsp.view_to_lsp import get_view_uri, point_to_position
+from .libs.event_loop import run_future
+from .libs.lsp.lsp_requests import Request
+from .libs.lsp.manage_servers import ManageServers, servers_for_view
+from .libs.lsp.providers import Providers
+from .libs.lsp.minihtml import FORMAT_MARKED_STRING, FORMAT_MARKUP_CONTENT, minihtml
+from .libs.lsp.server import LanguageServer, is_applicable_view
+from .libs.lsp.types import CompletionParams, HoverParams
+from .libs.lsp.view_to_lsp import get_view_uri, point_to_position
 from sublime_types import Point
 import asyncio
 import sublime
 import sublime_plugin
-from lsp.text_change_listener import TextChangeListener
+from .libs.lsp.text_change_listener import TextChangeListener
 
 
 def register_language_server(server: LanguageServer):

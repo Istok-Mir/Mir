@@ -1,6 +1,6 @@
 from __future__ import annotations
-from lsp.dotted_dict import DottedDict
-from lsp.types import ClientCapabilities, CompletionItemKind, CompletionItemTag, InsertTextMode, MarkupKind
+from .dotted_dict import DottedDict
+from .types import ClientCapabilities, CompletionItemKind, CompletionItemTag, InsertTextMode, MarkupKind
 from typing import Any, Literal, cast
 
 CLIENT_CAPABILITIES: ClientCapabilities = {

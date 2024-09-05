@@ -1,8 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from lsp.capabilities import method_to_capability
-from lsp.types import RegistrationParams, UnregistrationParams, LogMessageParams, LogMessageParams, MessageType
+from .capabilities import method_to_capability
+from .types import RegistrationParams, UnregistrationParams, LogMessageParams, LogMessageParams, MessageType
 
 if TYPE_CHECKING:
 	from .server import LanguageServer

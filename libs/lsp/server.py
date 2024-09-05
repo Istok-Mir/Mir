@@ -1,13 +1,13 @@
 from __future__ import annotations
 import os
 
-from lsp.server_request_and_notification_handlers import attach_server_request_and_notification_handlers
+from .server_request_and_notification_handlers import attach_server_request_and_notification_handlers
 from .capabilities import CLIENT_CAPABILITIES, ServerCapabilities
 from .lsp_requests import LspRequest, LspNotification, Request
 from .types import DidChangeTextDocumentParams, ErrorCodes, MessageType
-from event_loop import run_future
-from lsp.communcation_logs import CommmunicationLogs, format_payload
-from lsp.view_to_lsp import file_name_to_uri, get_view_uri
+from ..event_loop import run_future
+from .communcation_logs import CommmunicationLogs, format_payload
+from .view_to_lsp import file_name_to_uri, get_view_uri
 from pathlib import Path
 from sublime_plugin import sublime
 from typing import  Any, Callable, Dict, Literal, Optional, TypedDict, cast

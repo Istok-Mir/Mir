@@ -1,5 +1,5 @@
 # this is just a concept
-from lsp.types import Hover, MarkupKind
+from .libs.lsp.types import Hover, MarkupKind
 from .api import register_provider, unregister_provider, HoverProvider
 import sublime
 

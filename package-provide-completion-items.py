@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import List, Union
-from lsp.providers import register_provider, unregister_provider
-from lsp.types import CompletionItem, CompletionList
+from .libs.lsp.providers import register_provider, unregister_provider
+from .libs.lsp.types import CompletionItem, CompletionList
 from sublime import sublime_api
 from .api import CompletionProvider
 

@@ -1,9 +1,9 @@
 from __future__ import annotations
 from typing import Iterable
 
-from lsp.manage_servers import servers_for_view
+from .manage_servers import servers_for_view
 from .types import TextDocumentContentChangeEvent, TextDocumentSyncKind, TextDocumentSyncOptions
-from lsp.view_to_lsp import get_view_uri
+from .view_to_lsp import get_view_uri
 import sublime_plugin
 import sublime
 

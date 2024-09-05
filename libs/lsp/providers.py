@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import List, Union
-from lsp.server import ActivationEvents
-from lsp.types import CompletionItem, Hover, CompletionList
+from .server import ActivationEvents
+from .types import CompletionItem, Hover, CompletionList
 import sublime
 
 class Providers:

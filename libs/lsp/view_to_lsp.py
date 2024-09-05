@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import cast
-from lsp.types import LanguageKind, Position, TextDocumentItem
+from .types import LanguageKind, Position, TextDocumentItem
 from sublime_plugin import sublime
 
 
