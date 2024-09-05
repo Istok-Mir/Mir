@@ -49,10 +49,14 @@ def make_error_response(request_id: Any, err: Error) -> dict:
 
 
 def make_notification(method: str, params: Any) -> dict:
+    if params is None:
+        return {"jsonrpc": "2.0", "method": method }
     return {"jsonrpc": "2.0", "method": method, "params": params}
 
 
 def make_request(method: str, request_id: Any, params: Any) -> dict:
+    if params is None:
+        return {"jsonrpc": "2.0", "method": method, "id": request_id }
     return {"jsonrpc": "2.0", "method": method, "id": request_id, "params": params}
 
 
