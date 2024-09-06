@@ -33,16 +33,4 @@ class MirHoverListener(sublime_plugin.ViewEventListener):
                 )
 
 
-        for name, defintion in definitions:
-            if isinstance(defintion, list):
-                for d in defintion:
-                    if 'targetUri' in d:
-                        open_view_with_uri(d['targetUri'], d['targetSelectionRange'], window)
-                    else:
-                        open_view_with_uri(d['uri'], d['range'], window)
-                    return
-            if isinstance(defintion, dict):
-                open_view_with_uri(defintion['uri'], defintion['range'], window)
-                return
-
 

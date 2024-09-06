@@ -78,15 +78,18 @@ class mir:
             result = await req.result
             return (req.server.name, result)
 
-        results = await asyncio.gather(*[handle(future) for future in mir._hover_requests])
+        try:
+            results = await asyncio.gather(*[handle(future) for future in mir._hover_requests])
 
-        async def handle_provider(provider: HoverProvider):
-            result = await req.provide_hover(view, hover_point)
-            return (provider.name, result)
+            async def handle_provider(provider: HoverProvider):
+                result = await provider.provide_hover(view, hover_point)
+                return (provider.name, result)
 
-        hover_providers = [provider for provider in Providers.hover_providers if is_applicable_view(view, provider.activation_events)]
-        providers_results = await asyncio.gather(*[handle_provider(provider) for provider in hover_providers])
-        results.extend(providers_results)
+            hover_providers = [provider for provider in Providers.hover_providers if is_applicable_view(view, provider.activation_events)]
+            providers_results = await asyncio.gather(*[handle_provider(provider) for provider in hover_providers])
+            results.extend(providers_results)
+        except Exception as e:
+            print('HoverProvidersError:', e)
 
         mir._hover_requests = []
         return results
