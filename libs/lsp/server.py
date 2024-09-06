@@ -160,6 +160,9 @@ class LanguageServer:
     def cleanup(cls):
         unregister_language_server(cls)
 
+    def before_initialize(self):
+        ...
+
     def __init__(self) -> None:
         self.status: Literal['off', 'initializing','ready'] = 'off'
         self.send = LspRequest(self.send_request)
@@ -187,8 +190,11 @@ class LanguageServer:
         self.view = view
         self.settings.update(view.settings().to_dict())
         window = view.window()
-        if window:
-            self._communcation_logs = CommmunicationLogs(self.name, window)
+        if not window:
+            raise Exception('A window must exists now')
+        self._communcation_logs = CommmunicationLogs(self.name, window)
+
+        self.before_initialize()
         try:
             self.status = 'initializing'
             if not shutil.which(self.cmd.split()[0]):

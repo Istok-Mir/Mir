@@ -8,8 +8,6 @@ class PackageVersionServer(LanguageServer):
         'on_uri': ['file://**/package.json'],
     }
 
-    def before_initialize(self, server: LanguageServer):
-        server.on_notification()
 
 def plugin_loaded() -> None:
     PackageVersionServer.setup()

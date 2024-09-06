@@ -6,4 +6,4 @@ hello.addEventListener('')
 hello.addEventListener('click')
 
 
-hello.
+hello.addEventListener('click')
