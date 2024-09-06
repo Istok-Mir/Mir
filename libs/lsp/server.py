@@ -129,16 +129,16 @@ class NotificationHandler(TypedDict):
 
 def register_language_server(server: LanguageServer):
     from .manage_servers import ManageServers
-    if server.name in [s.name for s in ManageServers.all_servers_configuration]:
+    if server.name in [s.name for s in ManageServers.language_servers_pluguins]:
         print(f'register_language_server {server.name} is skipped because it was already registred.')
         return
-    ManageServers.all_servers_configuration.append(server)
+    ManageServers.language_servers_pluguins.append(server)
 
 
 def unregister_language_server(server: LanguageServer):
     from .manage_servers import ManageServers
-    [s.stop() for servers in ManageServers.server_per_window.values() for s in servers if s.name == server.name]
-    ManageServers.all_servers_configuration = [s for s in ManageServers.all_servers_configuration if s.name != server.name]
+    [s.stop() for servers in ManageServers.language_servers_per_window.values() for s in servers if s.name == server.name]
+    ManageServers.language_servers_pluguins = [s for s in ManageServers.language_servers_pluguins if s.name != server.name]
 
 
 class LanguageServer:

@@ -22,7 +22,7 @@ async def open_document(view: sublime.View):
     server_for_the_view = servers_for_view(view)
     print('server_for_the_view', server_for_the_view)
     if len(server_for_the_view) == 0: # start the servers if not started
-        for server in ManageServers.all_servers_configuration:
+        for server in ManageServers.language_servers_pluguins:
             if not is_applicable_view(view, server.activation_events):
                 continue
             if server.name not in [s.name for s in ManageServers.servers_for_view(view)]:
@@ -57,32 +57,32 @@ def close_document(view: sublime.View):
 
 
 class ManageServers(sublime_plugin.EventListener):
-    all_servers_configuration: list[LanguageServer] = []
-    server_per_window: dict[int, list[LanguageServer]] = {}
+    language_servers_pluguins: list[LanguageServer] = []
+    language_servers_per_window: dict[int, list[LanguageServer]] = {}
 
     @classmethod
     def servers_for_view(cls, view: sublime.View):
         window = view.window()
         if not window:
             return []
-        return [s for s in ManageServers.server_per_window.get(window.id(), [])]
+        return [s for s in ManageServers.language_servers_per_window.get(window.id(), [])]
 
     @classmethod
     def servers_for_window(cls, window: sublime.Window):
-        return [s for s in ManageServers.server_per_window.get(window.id(), [])]
+        return [s for s in ManageServers.language_servers_per_window.get(window.id(), [])]
 
     @classmethod
     def attach_server_to_window(cls, server: LanguageServer, window: sublime.Window):
-        ManageServers.server_per_window.setdefault(window.id(), [])
-        ManageServers.server_per_window[window.id()].append(server)
+        ManageServers.language_servers_per_window.setdefault(window.id(), [])
+        ManageServers.language_servers_per_window[window.id()].append(server)
 
     @classmethod
     def detach_server_from_window(cls, server: LanguageServer, window: sublime.Window):
-        ManageServers.server_per_window[window.id()] = [s for s in ManageServers.server_per_window[window.id()] if s != server]
+        ManageServers.language_servers_per_window[window.id()] = [s for s in ManageServers.language_servers_per_window[window.id()] if s != server]
 
     @classmethod
     def detach_all_servers_from_window(cls, window: sublime.Window):
-        del ManageServers.server_per_window[window.id()]
+        del ManageServers.language_servers_per_window[window.id()]
 
     def on_init(self, views: list[sublime.View]):
         run_future(self.initialize(views))
