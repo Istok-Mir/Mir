@@ -5,6 +5,7 @@ import sublime_plugin
 from .libs.event_loop import run_future
 from .libs.lsp.view_to_lsp import open_view_with_uri, range_to_region
 
+
 class MirGotoDefinitionCommand(sublime_plugin.TextCommand):
     def run(self, edit):
         run_future(self.goto_definition())
@@ -14,8 +15,7 @@ class MirGotoDefinitionCommand(sublime_plugin.TextCommand):
         window = self.view.window()
         if not window:
             return
-        for name, response in definitions:
-            defintion = response.result
+        for name, defintion in definitions:
             if isinstance(defintion, list):
                 for d in defintion:
                     if 'targetUri' in d:
