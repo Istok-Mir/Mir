@@ -14,7 +14,7 @@ class MirGotoDefinitionCommand(sublime_plugin.TextCommand):
         window = self.view.window()
         if not window:
             return
-        for response in definitions:
+        for name, response in definitions:
             defintion = response.result
             if isinstance(defintion, list):
                 for d in defintion:

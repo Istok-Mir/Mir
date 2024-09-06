@@ -9,25 +9,14 @@ from .view_to_lsp import get_view_uri, point_to_position
 import sublime
 from typing import TypeVar, Generic
 
-T = TypeVar('T')
-class Result(Generic[T]):
-    def __init__(self, name: str, result: T):
-        self.server_name= name
-        self.result= result
-
-    def __str__(self):
-        return str((self.server_name, self.result))
-
-    def __repr__(self):
-        return str((self.server_name, self.result))
-
+SourceName = str
 
 class mir:
     _definition_requests: List[Request] = []
     _document_symbols_requests: List[Request] = []
 
     @staticmethod
-    async def definitions(view: sublime.View | None) -> list[Result[Definition | list[LocationLink] | None]]:
+    async def definitions(view: sublime.View | None) -> list[tuple[SourceName, Definition | list[LocationLink] | None]]:
         if not view:
             return []
         if not view.is_valid():
@@ -42,7 +31,7 @@ class mir:
             mir._definition_requests = []
         uri = get_view_uri(view)
         servers = servers_for_view(view, 'definitionProvider')
-        results: list[Result[Definition | list[LocationLink] | None]] = []
+        results: list[tuple[SourceName, Definition | list[LocationLink] | None]] = []
         for s in servers:
             req = s.send.definition({
                 'textDocument': {
@@ -54,14 +43,14 @@ class mir:
 
         async def handle(req: Request):
             result = await req.result
-            return Result(req.server.name, result)
+            return (req.server.name, result)
 
         results = await asyncio.gather(*[handle(future) for future in mir._definition_requests])
         mir._definition_requests = []
         return results
 
     @staticmethod
-    async def document_symbols(view: sublime.View | None) -> list[Result[list[SymbolInformation] | list[DocumentSymbol] | None]]:
+    async def document_symbols(view: sublime.View | None) -> list[tuple[SourceName, list[SymbolInformation] | list[DocumentSymbol] | None]]:
         if not view:
             return []
         if not view.is_valid():
@@ -72,7 +61,7 @@ class mir:
             mir._document_symbols_requests = []
         uri = get_view_uri(view)
         servers = servers_for_view(view, 'documentSymbolProvider')
-        results: list[Result[List[SymbolInformation] | List[DocumentSymbol] | None]] = []
+        results: list[tuple[SourceName, List[SymbolInformation] | List[DocumentSymbol] | None]] = []
         for s in servers:
             req = s.send.document_symbol({
                 'textDocument': {
@@ -83,7 +72,7 @@ class mir:
 
         async def handle(req: Request):
             result = await req.result
-            return Result(req.server.name, result)
+            return (req.server.name, result)
 
         results = await asyncio.gather(*[handle(future) for future in mir._document_symbols_requests])
         mir._document_symbols_requests = []
