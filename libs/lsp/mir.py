@@ -12,6 +12,7 @@ import sublime
 from typing import TypeVar, Generic
 
 SourceName = str
+""" The language server name or the provider name """
 
 class mir:
     _definition_requests: List[Request] = []
