@@ -20,7 +20,6 @@ async def open_document(view: sublime.View):
     if not window:
         return
     server_for_the_view = servers_for_view(view)
-    print('server_for_the_view', server_for_the_view)
     if len(server_for_the_view) == 0: # start the servers if not started
         for server in ManageServers.language_servers_pluguins:
             if not is_applicable_view(view, server.activation_events):
@@ -104,11 +103,9 @@ class ManageServers(sublime_plugin.EventListener):
         print('EventListener on_revert', view)
 
     def on_load(self, view):
-        print('on_load', view.file_name())
         run_future(open_document(view))
 
     def on_pre_close(self, view):
-        print('on_pre_close', view.file_name())
         close_document(view)
 
     def on_new_window(self, window):
@@ -118,4 +115,3 @@ class ManageServers(sublime_plugin.EventListener):
         for server in ManageServers.servers_for_window(window):
             server.stop()
         ManageServers.detach_all_servers_from_window(window)
-        print('EventListener on_pre_close_window', window)
