@@ -14,9 +14,6 @@ class MirHoverListener(sublime_plugin.ViewEventListener):
 
     async def do_hover(self, hover_point: int):
         hovers = await mir.hover(self.view, hover_point)
-        window = self.view.window()
-        if not window:
-            return
         combined_content: list[str] = []
         for name, hover in hovers:
             if isinstance(hover, dict):
