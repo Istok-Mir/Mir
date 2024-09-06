@@ -20,6 +20,7 @@ import asyncio
 import datetime
 import json
 import shutil
+from .diagnostic_collection import DiagnosticCollection
 from .types import TextDocumentContentChangeEvent, LSPAny
 
 ENCODING = "utf-8"
@@ -89,7 +90,7 @@ def content_length(line: bytes) -> Optional[int]:
 
 
 class ActivationEvents(TypedDict):
-    selector: str
+    selector: str | Literal['*']
     on_uri: NotRequired[list[str]]
     '''
     If specified the server will only start for the given uri.
@@ -100,6 +101,8 @@ class ActivationEvents(TypedDict):
 
 def is_applicable_view(view: sublime.View, activation_events: ActivationEvents) -> bool:
         selector = activation_events['selector']
+        if selector == '*':
+            return True
         matches_selector = view.match_selector(0,selector)
         if not matches_selector:
             return False
@@ -171,7 +174,7 @@ class LanguageServer:
         self.view: sublime.View = sublime.View(-1)
         self.settings = DottedDict()
         self.initialization_options = DottedDict()
-
+        self.diagnostics = DiagnosticCollection()
         self._process = None
         self._received_shutdown = False
 

@@ -42,9 +42,9 @@ def register_provider(provider: HoverProvider | CompletionProvider):
 
 
 def unregister_provider(provider: HoverProvider | CompletionProvider):
-    if provider == HoverProvider:
+    if HoverProvider in provider.__bases__:
         Providers.hover_providers = [p for p in Providers.hover_providers if p.name != provider.name]
-    elif provider == CompletionProvider:
+    elif CompletionProvider in provider.__bases__:
         Providers.completion_providers = [p for p in Providers.completion_providers if p.name != provider.name]
     else:
-        raise Exception('Got a unusported provider')
+        raise Exception(f'Got a unusported provider {provider.__name__}')

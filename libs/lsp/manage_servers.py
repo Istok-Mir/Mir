@@ -15,6 +15,12 @@ def servers_for_view(view: sublime.View, capability: ServerCapability | None = N
     return [s for s in ManageServers.servers_for_view(view) if is_applicable_view(view, s.activation_events)]
 
 
+def servers_for_window(window: sublime.Window, capability: ServerCapability | None = None) -> list[LanguageServer]:
+    if capability:
+        return [s for s in ManageServers.servers_for_window(window) if s.capabilities.has(capability)]
+    return [s for s in ManageServers.servers_for_window(window)]
+
+
 async def open_document(view: sublime.View):
     window = view.window()
     if not window:

@@ -4,6 +4,7 @@ from .types import LanguageKind, Position, TextDocumentItem, Range
 import sublime
 from urllib.parse import urlparse
 from urllib.request import url2pathname
+from urllib.request import pathname2url
 import os
 
 
@@ -38,14 +39,14 @@ def range_to_region(view: sublime.View, range: Range) -> sublime.Region:
     return sublime.Region(a, b)
 
 
-def view_to_uri(view) -> str:
+def _view_to_uri(view) -> str:
     file_name = view.file_name()
     if not file_name:
         return f"buffer:{view.buffer_id()}"
     return file_name_to_uri(file_name)
 
 def file_name_to_uri(file_name: str) -> str:
-    return 'file://' + file_name
+    return 'file://' + pathname2url(file_name)
 
 def open_view_with_uri(uri: str, lsp_range: Range, window: sublime.Window) -> sublime.View:
     schema, parsed_uri = parse_uri(uri)
@@ -89,7 +90,7 @@ def parse_uri(uri: str) -> tuple[str, str]:
 def get_view_uri(view) -> str:
     uri = view.settings().get("mir_text_document_uri")
     if not uri:
-        uri = view_to_uri(view)
+        uri = _view_to_uri(view)
         view.settings().set("mir_text_document_uri", uri)
     return uri
 

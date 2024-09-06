@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from .capabilities import method_to_capability
-from .types import RegistrationParams, UnregistrationParams, LogMessageParams, LogMessageParams, MessageType, ConfigurationParams
+from .types import RegistrationParams, UnregistrationParams, LogMessageParams, LogMessageParams, MessageType, ConfigurationParams, PublishDiagnosticsParams
 
 if TYPE_CHECKING:
 	from .server import LanguageServer
@@ -41,7 +41,12 @@ def attach_server_request_and_notification_handlers(server: LanguageServer):
         }.get(params.get('type', MessageType.Log))
         # print(f"Mir | {message_type}: {params.get('message')}")
 
+    def publish_diagnostics(params: PublishDiagnosticsParams):
+        server.diagnostics.set(params['uri'], params['diagnostics'])
+
     server.on_request('workspace/configuration', workspace_configuration)
     server.on_request('client/registerCapability', register_capability)
     server.on_request('client/unregisterCapability', unregister_capability)
     server.on_notification('window/logMessage', on_log_message)
+    server.on_notification('textDocument/publishDiagnostics', publish_diagnostics)
+

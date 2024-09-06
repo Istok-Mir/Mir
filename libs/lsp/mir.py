@@ -6,7 +6,7 @@ from .lsp_requests import Request
 from .manage_servers import servers_for_view
 from .providers import Providers, HoverProvider, CompletionProvider
 from .server import is_applicable_view
-from .types import Definition, DocumentSymbol, SymbolInformation, LocationLink, Hover, CompletionItem, CompletionList
+from .types import Definition, DocumentSymbol, SymbolInformation, LocationLink, Hover, CompletionItem, CompletionList, DocumentUri, Diagnostic
 from .view_to_lsp import get_view_uri, point_to_position
 import sublime
 from typing import TypeVar, Generic
@@ -167,3 +167,16 @@ class mir:
         mir._document_symbols_requests = []
         return results
 
+
+    @staticmethod
+    def get_diagnostics(view_or_window: sublime.View | sublime.Window) -> list[tuple[DocumentUri, list[Diagnostic]]]:
+        result: list[tuple[DocumentUri, list[Diagnostic]]] = []
+        servers = servers_for_view(view_or_window)
+        if isinstance(view_or_window, sublime.View):
+            for server in servers:
+                uri = get_view_uri(view_or_window)
+                result.append((uri, server.diagnostics.get(uri)))
+        elif isinstance(view_or_window, sublime.Window):
+            for server in servers:
+                result.append(list(server.diagnostics.items()))
+        return result

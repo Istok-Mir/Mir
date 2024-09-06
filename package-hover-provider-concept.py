@@ -1,42 +1,29 @@
 # this is just a concept
-from .api.types import Hover, MarkupKind
-from .api import HoverProvider
+from .api.types import Hover, MarkupKind, Diagnostic
+from .api import HoverProvider, mir
+from .api.helpers import range_to_region
 import sublime
 
-class ExampleHoverProvider(HoverProvider):
+
+#Example of a hover provider
+class DiagnosticsHoverProvider(HoverProvider):
     name= 'Package Json Enhancer'
     activation_events = {
-        'selector': 'source.json',
-        'on_uri': ['file://**/package.json'],
+        'selector': '*',
     }
     async def provide_hover(self, view: sublime.View, hover_point: int) -> Hover:
-        if hover_point % 2 == 0:
-            return {
-            'contents': {
-                'kind': MarkupKind.Markdown,
-                'value': '\n'.join([
-                    '# Header',
-                    f'Some text {view.file_name()}',
-                    '```typescript',
-                    'someCode();',
-                    '```',
-                    'Or this:',
-                    '```diff',
-                    '- someCode();',
-                    '+ someCodeAsd();',
-                    '// some comment',
-                    '```'
-                 ])
-            }
-        }
+        all_diagnostics = mir.get_diagnostics(view)
+        diagnostics_under_cursor: list[Diagnostic] = []
+        for uri, diagnostics in all_diagnostics:
+            diagnostics_under_cursor.extend([d for d in diagnostics if range_to_region(view, d['range']).contains(hover_point)])
         return {
-          'contents': ['Hover Content ']
+          'contents': [f"<p style='color: var(--redish)'>Diagnostics: {d['message']}</p>" for d in diagnostics_under_cursor]
         }
 
 
 def plugin_loaded() -> None:
-    ExampleHoverProvider.setup()
+    DiagnosticsHoverProvider.setup()
 
 
 def plugin_unloaded() -> None:
-    ExampleHoverProvider.cleanup()
+    DiagnosticsHoverProvider.cleanup()
