@@ -35,8 +35,8 @@ class ExampleHoverProvider(HoverProvider):
 
 
 def plugin_loaded() -> None:
-    HoverProvider.setup()
+    ExampleHoverProvider.setup()
 
 
 def plugin_unloaded() -> None:
-    HoverProvider.cleanup()
+    ExampleHoverProvider.cleanup()
