@@ -1,11 +1,11 @@
 import asyncio
 from threading import Thread
-from typing import Optional
+from typing import Optional, Awaitable
 
 __loop: Optional[asyncio.AbstractEventLoop] = None
 __thread: Optional[Thread] = None
 
-def run_future(future):
+def run_future(future: Awaitable):
     global __loop
     if __loop:
         f = asyncio.ensure_future(future, loop=__loop)
