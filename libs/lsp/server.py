@@ -93,7 +93,7 @@ class ActivationEvents(TypedDict):
     on_uri: NotRequired[list[str]]
     '''
     If specified the server will only start for the given uri.
-    and will shutdown as soon as the view is closed.
+    and will shutdown as soon as the last view that matches the uri is closed.
     '''
     workspace_contains: NotRequired[list[str]] # todo: implement
 
