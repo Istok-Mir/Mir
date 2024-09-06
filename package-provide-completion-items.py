@@ -6,7 +6,7 @@ from sublime import sublime_api
 from .api import CompletionProvider
 
 class ExampleCompletionProvider(CompletionProvider):
-	name= 'HellooCompletionsGoodbyeMyTime'
+	name='HellooCompletionsGoodbyeMyTime'
 	activation_events={
 		'selector': 'source.js'
 	}
@@ -16,10 +16,10 @@ class ExampleCompletionProvider(CompletionProvider):
 			'label': 'Helloo',
 		}]
 
-example_completion_provider = ExampleCompletionProvider()
+
 def plugin_loaded() -> None:
-    register_provider(example_completion_provider)
+    ExampleCompletionProvider.setup()
 
 
 def plugin_unloaded() -> None:
-    unregister_provider(example_completion_provider)
+    ExampleCompletionProvider.cleanup()

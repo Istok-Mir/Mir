@@ -122,20 +122,45 @@ def matches_activation_event_on_uri(view: sublime.View, activation_events: Activ
     return False
 
 
-
-class LanguageServerConfiguration(TypedDict):
-    cmd: str
-    activation_events: ActivationEvents
-
-
 class NotificationHandler(TypedDict):
     method: str
     cb: Callable[[dict|None],None]
 
 
+def register_language_server(server: LanguageServer):
+    from .manage_servers import ManageServers
+    if server.name in [s.name for s in ManageServers.all_servers_configuration]:
+        print(f'register_language_server {server.name} is skipped because it was already registred.')
+        return
+    ManageServers.all_servers_configuration.append(server)
+
+
+def unregister_language_server(server: LanguageServer):
+    from .manage_servers import ManageServers
+    [s.stop() for servers in ManageServers.server_per_window.values() for s in servers if s.name == server.name]
+    ManageServers.all_servers_configuration = [s for s in ManageServers.all_servers_configuration if s.name != server.name]
+
+
 class LanguageServer:
-    def __init__(self, name: str, configuration: LanguageServerConfiguration) -> None:
-        self.name = name
+    name: str
+    cmd: str
+    activation_events: ActivationEvents
+
+    @classmethod
+    def setup(cls):
+        if not hasattr(cls, 'name'):
+            raise Exception(f'Specify a `name` static property for {cls.__name__}.')
+        if not hasattr(cls, 'cmd'):
+            raise Exception(f'Specify a `cmd` static property` for {cls.__name__}.')
+        if not hasattr(cls, 'activation_events'):
+            raise Exception(f'Specify a `activation_events` static property` for {cls.__name__}.')
+        register_language_server(cls)
+
+    @classmethod
+    def cleanup(cls):
+        unregister_language_server(cls)
+
+    def __init__(self) -> None:
         self.status: Literal['off', 'initializing','ready'] = 'off'
         self.send = LspRequest(self.send_request)
         self.notify = LspNotification(self.send_notification)
@@ -143,7 +168,6 @@ class LanguageServer:
         self.view: sublime.View = sublime.View(-1)
         self.settings = DottedDict()
 
-        self.configuration = configuration
         self._process = None
         self._received_shutdown = False
 
@@ -157,9 +181,7 @@ class LanguageServer:
         self.on_notification_handlers: list[NotificationHandler] = []
         # logs
         self._communcation_logs: CommmunicationLogs = CommmunicationLogs(self.name)
-
-    def is_applicable_view(self, view: sublime.View) -> bool:
-        return is_applicable_view(view, self.configuration['activation_events'])
+        attach_server_request_and_notification_handlers(self)
 
     async def start(self, view: sublime.View):
         self.view = view
@@ -169,10 +191,10 @@ class LanguageServer:
             self._communcation_logs = CommmunicationLogs(self.name, window)
         try:
             self.status = 'initializing'
-            if not shutil.which(self.configuration['cmd'].split()[0]):
-                raise RuntimeError(f"Command not found: {self.configuration['cmd']}")
+            if not shutil.which(self.cmd.split()[0]):
+                raise RuntimeError(f"Command not found: {self.cmd}")
             self._process = await asyncio.create_subprocess_shell(
-                self.configuration['cmd'],
+                self.cmd,
                 stdout=asyncio.subprocess.PIPE,
                 stdin=asyncio.subprocess.PIPE,
                 env=os.environ.copy()
@@ -196,9 +218,10 @@ class LanguageServer:
 
             def update_settings_on_change():
                 self.settings.update(view.settings().to_dict())
+                self.notify.workspace_did_change_configuration({'settings': {}}) # https://github.com/microsoft/language-server-protocol/issues/567#issuecomment-420589320
 
             self.view.settings().add_on_change('', update_settings_on_change)
-            self.notify.workspace_did_change_configuration({'settings': self.settings.get()})
+            self.notify.workspace_did_change_configuration({'settings': {}}) # https://github.com/microsoft/language-server-protocol/issues/567#issuecomment-420589320
         except Exception as e:
             print(f'Mir ({self.name}) Error while creating subprocess.', e)
             self.status = 'off'

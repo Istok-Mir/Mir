@@ -1,7 +1,7 @@
 from __future__ import annotations
 from ..event_loop import run_future
 from .view_to_lsp import get_view_uri, view_to_text_document_item
-from .server import LanguageServer, matches_activation_event_on_uri
+from .server import LanguageServer, matches_activation_event_on_uri, is_applicable_view
 from .server_request_and_notification_handlers import attach_server_request_and_notification_handlers
 from .capabilities import ServerCapability
 import sublime
@@ -11,8 +11,8 @@ import copy
 
 def servers_for_view(view: sublime.View, capability: ServerCapability | None = None) -> list[LanguageServer]:
     if capability:
-        return [s for s in ManageServers.servers_for_view(view) if s.is_applicable_view(view) and s.capabilities.has(capability)]
-    return [s for s in ManageServers.servers_for_view(view) if s.is_applicable_view(view)]
+        return [s for s in ManageServers.servers_for_view(view) if is_applicable_view(view, s.activation_events) and s.capabilities.has(capability)]
+    return [s for s in ManageServers.servers_for_view(view) if is_applicable_view(view, s.activation_events)]
 
 
 async def open_document(view: sublime.View):
@@ -23,12 +23,11 @@ async def open_document(view: sublime.View):
     print('server_for_the_view', server_for_the_view)
     if len(server_for_the_view) == 0: # start the servers if not started
         for server in ManageServers.all_servers_configuration:
-            if not server.is_applicable_view(view):
+            if not is_applicable_view(view, server.activation_events):
                 continue
             if server.name not in [s.name for s in ManageServers.servers_for_view(view)]:
                 try:
-                    new_server = copy.deepcopy(server)
-                    attach_server_request_and_notification_handlers(new_server)
+                    new_server = server()
                     await new_server.start(view)
                     ManageServers.attach_server_to_window(new_server, window)
                 except Exception as e:
@@ -47,18 +46,18 @@ def close_document(view: sublime.View):
                 'uri': get_view_uri(view)
             }
         })
-        if server.configuration['activation_events'].get('on_uri'): # close servers who specify on_uri activation event
+        if server.activation_events.get('on_uri'): # close servers who specify on_uri activation event
             window = view.window()
             if not window:
                 continue
-            relevant_views = [matches_activation_event_on_uri(view, server.configuration['activation_events']) for view in window.views()]
+            relevant_views = [matches_activation_event_on_uri(view, server.activation_events) for view in window.views()]
             if len(relevant_views) <= 1:
                 server.stop()
                 ManageServers.detach_server_from_window(server, window)
 
 
 class ManageServers(sublime_plugin.EventListener):
-    all_servers: list[LanguageServer] = []
+    all_servers_configuration: list[LanguageServer] = []
     server_per_window: dict[int, list[LanguageServer]] = {}
 
     @classmethod
