@@ -5,9 +5,10 @@ from typing import Any
 import mdpopups
 import re
 
-FORMAT_STRING = 0x1
-FORMAT_MARKED_STRING = 0x2
-FORMAT_MARKUP_CONTENT = 0x4
+class MinihtmlKind:
+    FORMAT_STRING = 0x1
+    FORMAT_MARKED_STRING = 0x2
+    FORMAT_MARKUP_CONTENT = 0x4
 
 
 REPLACEMENT_MAP = {
@@ -65,9 +66,9 @@ def minihtml(
     """
     if allowed_formats == 0:
         raise ValueError("Must specify at least one format")
-    parse_string = bool(allowed_formats & FORMAT_STRING)
-    parse_marked_string = bool(allowed_formats & FORMAT_MARKED_STRING)
-    parse_markup_content = bool(allowed_formats & FORMAT_MARKUP_CONTENT)
+    parse_string = bool(allowed_formats & MinihtmlKind.FORMAT_STRING)
+    parse_marked_string = bool(allowed_formats & MinihtmlKind.FORMAT_MARKED_STRING)
+    parse_markup_content = bool(allowed_formats & MinihtmlKind.FORMAT_MARKUP_CONTENT)
     if parse_string and parse_marked_string:
         raise ValueError("Not allowed to specify FORMAT_STRING and FORMAT_MARKED_STRING at the same time")
     is_plain_text = True

@@ -1,10 +1,7 @@
 from __future__ import annotations
 import sublime
-from .libs.lsp.mir import mir
 import sublime_plugin
-from .libs.event_loop import run_future
-from .libs.lsp.view_to_lsp import open_view_with_uri, range_to_region
-from .libs.lsp.minihtml import FORMAT_MARKED_STRING, FORMAT_MARKUP_CONTENT, minihtml
+from .api import mir, run_future
 
 
 class MirCompletionListener(sublime_plugin.ViewEventListener):

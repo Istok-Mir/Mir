@@ -1,9 +1,8 @@
 from __future__ import annotations
 import sublime
-from .libs.lsp.mir import mir
 import sublime_plugin
-from .libs.event_loop import run_future
-from .libs.lsp.view_to_lsp import open_view_with_uri, range_to_region
+from .api import mir, run_future
+from .api.helpers import open_view_with_uri
 
 
 class MirGotoDefinitionCommand(sublime_plugin.TextCommand):

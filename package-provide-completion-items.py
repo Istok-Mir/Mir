@@ -1,9 +1,8 @@
 from __future__ import annotations
+import sublime
 from typing import List, Union
-from .libs.lsp.providers import register_provider, unregister_provider
-from .libs.lsp.types import CompletionItem, CompletionList
-from sublime import sublime_api
 from .api import CompletionProvider
+from .api.types import CompletionItem, CompletionList
 
 class ExampleCompletionProvider(CompletionProvider):
 	name='HellooCompletionsGoodbyeMyTime'
@@ -11,7 +10,7 @@ class ExampleCompletionProvider(CompletionProvider):
 		'selector': 'source.js'
 	}
 
-	async def provide_completion_items(self, view: sublime_api.View, point: int) -> Union[List[CompletionItem], CompletionList, None]:
+	async def provide_completion_items(self, view: sublime.View, point: int) -> Union[List[CompletionItem], CompletionList, None]:
 		return [{
 			'label': 'Helloo',
 		}]
