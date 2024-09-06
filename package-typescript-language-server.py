@@ -4,8 +4,8 @@ import sublime
 
 class VtslsLanguageServer(LanguageServer):
     name='vtsls'
-    # cmd='vtsls --stdio'
-    cmd='typescript-language-server --stdio'
+    cmd='vtsls --stdio'
+    # cmd='typescript-language-server --stdio'
     activation_events={
         'selector': 'source.js, source.jsx, source.ts, source.tsx',
     }

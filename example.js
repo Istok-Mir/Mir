@@ -5,5 +5,4 @@ hello.addEventListener('')
 
 hello.addEventListener('click')
 
-
 hello.addEventListener('click')

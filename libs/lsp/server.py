@@ -20,7 +20,7 @@ import asyncio
 import datetime
 import json
 import shutil
-from .types import TextDocumentContentChangeEvent
+from .types import TextDocumentContentChangeEvent, LSPAny
 
 ENCODING = "utf-8"
 
@@ -170,6 +170,7 @@ class LanguageServer:
         self.capabilities = ServerCapabilities()
         self.view: sublime.View = sublime.View(-1)
         self.settings = DottedDict()
+        self.initialization_options = DottedDict()
 
         self._process = None
         self._received_shutdown = False
@@ -216,7 +217,7 @@ class LanguageServer:
                 'rootUri': first_folder_uri,  # @deprecated in favour of `workspaceFolders`
                 'rootPath': first_foder,  # @deprecated in favour of `rootUri`.
                 'capabilities': CLIENT_CAPABILITIES,
-                'initializationOptions': {'completionDisableFilterText': True, 'disableAutomaticTypingAcquisition': False, 'locale': 'en', 'maxTsServerMemory': 0, 'npmLocation': '', 'plugins': [], 'preferences': {'allowIncompleteCompletions': True, 'allowRenameOfImportPath': True, 'allowTextChangesInNewFiles': True, 'autoImportFileExcludePatterns': [], 'disableSuggestions': False, 'displayPartsForJSDoc': True, 'excludeLibrarySymbolsInNavTo': True, 'generateReturnInDocTemplate': True, 'importModuleSpecifierEnding': 'auto', 'importModuleSpecifierPreference': 'shortest', 'includeAutomaticOptionalChainCompletions': True, 'includeCompletionsForImportStatements': True, 'includeCompletionsForModuleExports': True, 'includeCompletionsWithClassMemberSnippets': True, 'includeCompletionsWithInsertText': True, 'includeCompletionsWithObjectLiteralMethodSnippets': True, 'includeCompletionsWithSnippetText': True, 'includePackageJsonAutoImports': 'auto', 'interactiveInlayHints': True, 'jsxAttributeCompletionStyle': 'auto', 'lazyConfiguredProjectsFromExternalProject': False, 'organizeImportsAccentCollation': True, 'organizeImportsCaseFirst': False, 'organizeImportsCollation': 'ordinal', 'organizeImportsCollationLocale': 'en', 'organizeImportsIgnoreCase': 'auto', 'organizeImportsNumericCollation': False, 'providePrefixAndSuffixTextForRename': True, 'provideRefactorNotApplicableReason': True, 'quotePreference': 'auto', 'useLabelDetailsInCompletionEntries': True}, 'tsserver': {'fallbackPath': '', 'logDirectory': '', 'logVerbosity': 'off', 'path': '', 'trace': 'off', 'useSyntaxServer': 'auto'}}
+                'initializationOptions': self.initialization_options.get()
             }).result
             self.capabilities.assign(cast(dict, initialize_result['capabilities']))
             self.notify.initialized({})
