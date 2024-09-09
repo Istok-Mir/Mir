@@ -27,5 +27,3 @@ class MirHoverListener(sublime_plugin.ViewEventListener):
                     max_width=800,
                 )
 
-
-

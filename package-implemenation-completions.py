@@ -25,6 +25,3 @@ class MirCompletionListener(sublime_plugin.ViewEventListener):
         completion_list.set_completions(completions, sublime.INHIBIT_WORD_COMPLETIONS)
 
 
-
-
-
