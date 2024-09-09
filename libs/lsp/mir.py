@@ -17,7 +17,6 @@ SourceName = str
 class mir:
     _definition_requests: List[Request] = []
     _hover_requests: List[Request] = []
-    _completion_requests: List[Request] = []
     _document_symbols_requests: List[Request] = []
 
     @staticmethod
@@ -96,19 +95,35 @@ class mir:
         mir._hover_requests = []
         return results
 
+
+    _completion_requests: List[Request] = []
     @staticmethod
     async def completions(view: sublime.View | None, point=int) -> list[tuple[SourceName, list[CompletionItem] | CompletionList | None]]:
         if not view:
             return []
         if not view.is_valid():
             return []
+        # STEP 1:
+        # - Cancel LSP Requests
+        # - Cancel Providers
+
+        # Cancel LSP Requests
         if mir._completion_requests:
             for request in mir._completion_requests:
                 request.cancel()
             mir._completion_requests = []
-        uri = get_view_uri(view)
-        servers = servers_for_view(view, 'completionProvider')
+        # Trigger Canceling Providers
+        providers = [provider for provider in Providers.completion_providers if is_applicable_view(view, provider.activation_events)]
+        for provider in providers:
+            await provider.cancel()
+
+        # STEP 2 define return value
         results: list[tuple[SourceName, list[CompletionItem] | CompletionList | None]] = []
+
+        # STEP 3:
+        # Send completion requests to LSP, but don't await them
+        servers = servers_for_view(view, 'completionProvider')
+        uri = get_view_uri(view)
         for s in servers:
             req = s.send.completion({
                 'textDocument': {
@@ -122,20 +137,21 @@ class mir:
             result = await req.result
             return (req.server.name, result)
 
+        async def handle_provider(provider: CompletionProvider):
+            try:
+                result = await provider.provide_completion_items(view, point)
+            except Exception as e:
+                print(f'Error happened in provider {provider.name}', e)
+                return (provider.name, None)
+            return (provider.name, result)
+
+        # STEP 4:
+        # await all futures and handle them appropriately
         try:
-            results = await asyncio.gather(*[handle(future) for future in mir._completion_requests])
-
-            async def handle_provider(provider: CompletionProvider):
-                try:
-                    result = await provider.provide_completion_items(view, point)
-                except Exception as e:
-                    print(f'Error happened in provider {provider.name}', e)
-                    return (provider.name, None)
-                return (provider.name, result)
-
-            completion_providers = [provider for provider in Providers.completion_providers if is_applicable_view(view, provider.activation_events)]
-            providers_results = await asyncio.gather(*[handle_provider(provider) for provider in completion_providers])
-            results.extend(providers_results)
+            results = await asyncio.gather(
+                *[handle(future) for future in mir._completion_requests],
+                *[handle_provider(provider) for provider in completion_providers]
+            )
         except Exception as e:
             print('CompletionError:', e)
 

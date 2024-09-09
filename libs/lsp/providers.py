@@ -13,6 +13,11 @@ class BaseProvider:
     def cleanup(cls):
         unregister_provider(cls)
 
+
+    async def cancel(self) -> None:
+        ...
+
+
 class Providers:
     hover_providers: List[HoverProvider]=[]
     completion_providers: List[CompletionProvider]=[]
