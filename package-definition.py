@@ -10,7 +10,11 @@ class MirGotoDefinitionCommand(sublime_plugin.TextCommand):
         run_future(self.goto_definition())
 
     async def goto_definition(self):
-        definitions = await mir.definitions(self.view)
+        sel = self.view.sel()
+        if sel is None:
+            return
+        point = sel[0].b
+        definitions = await mir.definitions(self.view, point)
         window = self.view.window()
         if not window:
             return

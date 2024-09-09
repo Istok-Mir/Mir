@@ -4,7 +4,7 @@ from typing import List
 
 from .lsp_requests import Request
 from .manage_servers import servers_for_view
-from .providers import Providers, HoverProvider, CompletionProvider
+from .providers import Providers, HoverProvider, CompletionProvider, DefinitionProvider
 from .server import is_applicable_view
 from .types import Definition, DocumentSymbol, SymbolInformation, LocationLink, Hover, CompletionItem, CompletionList, DocumentUri, Diagnostic
 from .view_to_lsp import get_view_uri, point_to_position
@@ -16,26 +16,26 @@ SourceName = str
 
 class mir:
     _definition_requests: List[Request] = []
-    _hover_requests: List[Request] = []
-    _document_symbols_requests: List[Request] = []
-
     @staticmethod
-    async def definitions(view: sublime.View | None) -> list[tuple[SourceName, Definition | list[LocationLink] | None]]:
-        if not view:
-            return []
-        if not view.is_valid():
-            return []
-        sel = view.sel()
-        if not sel:
-            return
-        point = sel[0].b
+    async def definitions(view: sublime.View, point: int) -> list[tuple[SourceName, Definition | list[LocationLink] | None]]:
+        # STEP 1:
+        # - Cancel LSP Requests
+        # - Cancel Providers
         if mir._definition_requests:
             for request in mir._definition_requests:
                 request.cancel()
             mir._definition_requests = []
-        uri = get_view_uri(view)
-        servers = servers_for_view(view, 'definitionProvider')
+        providers = [provider for provider in Providers.definition_providers if is_applicable_view(view, provider.activation_events)]
+        for provider in providers:
+            await provider.cancel()
+
+        # STEP 2 define return value
         results: list[tuple[SourceName, Definition | list[LocationLink] | None]] = []
+
+        # STEP 3:
+        # Send completion requests to LSP, but don't await them
+        servers = servers_for_view(view, 'definitionProvider')
+        uri = get_view_uri(view)
         for s in servers:
             req = s.send.definition({
                 'textDocument': {
@@ -49,23 +49,54 @@ class mir:
             result = await req.result
             return (req.server.name, result)
 
-        results = await asyncio.gather(*[handle(future) for future in mir._definition_requests])
+        async def handle_provider(provider: DefinitionProvider):
+            try:
+                result = await provider.provide_definition(view, point)
+            except Exception as e:
+                print(f'Error happened in provider {provider.name}', e)
+                return (provider.name, None)
+            return (provider.name, result)
+
+        try:
+            results = await asyncio.gather(
+                *[handle(future) for future in mir._definition_requests],
+                *[handle_provider(provider) for provider in providers]
+            )
+        except Exception as e:
+            print('Mir (DefinitionError):', e)
         mir._definition_requests = []
         return results
 
+    _hover_requests: List[Request] = []
     @staticmethod
-    async def hover(view: sublime.View | None, hover_point: int) -> list[tuple[SourceName, Hover | None]]:
+    async def hover(view: sublime.View, hover_point: int) -> list[tuple[SourceName, Hover | None]]:
+        # Step 0
+        # Return empty results if things are not valid
         if not view:
             return []
         if not view.is_valid():
             return []
+        # STEP 1:
+        # - Cancel LSP Requests
+        # - Cancel Providers
+
+        # Cancel LSP Requests
         if mir._hover_requests:
             for request in mir._hover_requests:
                 request.cancel()
             mir._hover_requests = []
-        uri = get_view_uri(view)
-        servers = servers_for_view(view, 'hoverProvider')
+        # Trigger Canceling Providers
+        providers = [provider for provider in Providers.hover_providers if is_applicable_view(view, provider.activation_events)]
+        for provider in providers:
+            await provider.cancel()
+
+        # STEP 2 define return value
         results: list[tuple[SourceName, Hover | None]] = []
+
+        # STEP 3:
+        # Send completion requests to LSP, but don't await them
+        servers = servers_for_view(view, 'hoverProvider')
+        uri = get_view_uri(view)
         for s in servers:
             req = s.send.hover({
                 'textDocument': {
@@ -79,30 +110,28 @@ class mir:
             result = await req.result
             return (req.server.name, result)
 
-        try:
-            results = await asyncio.gather(*[handle(future) for future in mir._hover_requests])
-
-            async def handle_provider(provider: HoverProvider):
+        async def handle_provider(provider: HoverProvider):
+            try:
                 result = await provider.provide_hover(view, hover_point)
-                return (provider.name, result)
+            except Exception as e:
+                print(f'Error happened in provider {provider.name}', e)
+                return (provider.name, None)
+            return (provider.name, result)
 
-            hover_providers = [provider for provider in Providers.hover_providers if is_applicable_view(view, provider.activation_events)]
-            providers_results = await asyncio.gather(*[handle_provider(provider) for provider in hover_providers])
-            results.extend(providers_results)
+        try:
+            results = await asyncio.gather(
+                *[handle(future) for future in mir._hover_requests],
+                *[handle_provider(provider) for provider in providers]
+            )
         except Exception as e:
-            print('HoverError:', e)
-
+            print('Mir (HoverError):', e)
         mir._hover_requests = []
         return results
 
 
     _completion_requests: List[Request] = []
     @staticmethod
-    async def completions(view: sublime.View | None, point=int) -> list[tuple[SourceName, list[CompletionItem] | CompletionList | None]]:
-        if not view:
-            return []
-        if not view.is_valid():
-            return []
+    async def completions(view: sublime.View, point=int) -> list[tuple[SourceName, list[CompletionItem] | CompletionList | None]]:
         # STEP 1:
         # - Cancel LSP Requests
         # - Cancel Providers
@@ -150,14 +179,14 @@ class mir:
         try:
             results = await asyncio.gather(
                 *[handle(future) for future in mir._completion_requests],
-                *[handle_provider(provider) for provider in completion_providers]
+                *[handle_provider(provider) for provider in providers]
             )
         except Exception as e:
-            print('CompletionError:', e)
-
+            print('Mir (CompletionError):', e)
         mir._completion_requests = []
         return results
 
+    _document_symbols_requests: List[Request] = []
     @staticmethod
     async def document_symbols(view: sublime.View | None) -> list[tuple[SourceName, list[SymbolInformation] | list[DocumentSymbol] | None]]:
         if not view:
