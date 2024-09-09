@@ -1,11 +1,13 @@
 from __future__ import annotations
-from typing import Iterable
+from typing import Iterable, TYPE_CHECKING
 
 from .manage_servers import servers_for_view
 from .types import TextDocumentContentChangeEvent, TextDocumentSyncKind, TextDocumentSyncOptions
 from .view_to_lsp import get_view_uri
 import sublime_plugin
 import sublime
+if TYPE_CHECKING:
+    from .server import LanguageServer
 
 class TextChangeListener(sublime_plugin.TextChangeListener):
     @classmethod
@@ -49,6 +51,12 @@ class TextChangeListener(sublime_plugin.TextChangeListener):
                 server.pending_changes[view.id()]['contentChanges'] = full_file_changes
             else:
                 raise Exception(f'TextChangeListener. ${server.name} somehow managed to get here. textDocumentSyncKind is {textDocumentSyncKind}.')
+            sublime.set_timeout(lambda: self.debounce_sending_changes(server, view, last_change_count=view.change_count()), 100)
+
+    def debounce_sending_changes(self, server: LanguageServer, view:sublime.View, last_change_count: int):
+        if view.change_count() == last_change_count and server.status == 'ready':
+            server.send_did_change_text_document()
+
 
 def text_change_to_text_document_content_change_event(change: sublime.TextChange) -> TextDocumentContentChangeEvent:
     return {

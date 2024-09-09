@@ -22,7 +22,7 @@ class Providers:
     definition_providers: List[DefinitionProvider]=[]
     hover_providers: List[HoverProvider]=[]
     completion_providers: List[CompletionProvider]=[]
-    document_symbols_providers = List[DocumentSymbolProvider]=[]
+    document_symbols_providers: List[DocumentSymbolProvider]=[]
 
 
 class DefinitionProvider(BaseProvider):

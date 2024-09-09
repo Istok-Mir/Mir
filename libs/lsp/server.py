@@ -330,11 +330,14 @@ class LanguageServer:
         except Exception as e:
             print(f'Mir ({self.name}) Error in send_error_response.', e)
 
-    def send_request(self, method: str, params: Optional[dict] = None):
+    def send_did_change_text_document(self):
         pending_changes = list(self.pending_changes.items())
         self.pending_changes = {}
         for _, did_change_text_document_params in pending_changes:
             self.notify.did_change_text_document(did_change_text_document_params)
+
+    def send_request(self, method: str, params: Optional[dict] = None):
+        self.send_did_change_text_document()
         request_id = self.request_id
         self.request_id += 1
         response = Request(self, request_id, method, params)
