@@ -4,7 +4,7 @@ from typing import List
 
 from .lsp_requests import Request
 from .manage_servers import servers_for_view
-from .providers import Providers, HoverProvider, CompletionProvider, DefinitionProvider
+from .providers import Providers, HoverProvider, CompletionProvider, DefinitionProvider, DocumentSymbolProvider
 from .server import is_applicable_view
 from .types import Definition, DocumentSymbol, SymbolInformation, LocationLink, Hover, CompletionItem, CompletionList, DocumentUri, Diagnostic
 from .view_to_lsp import get_view_uri, point_to_position
@@ -118,6 +118,8 @@ class mir:
                 return (provider.name, None)
             return (provider.name, result)
 
+        # STEP 4:
+        # await all futures and handle them appropriately
         try:
             results = await asyncio.gather(
                 *[handle(future) for future in mir._hover_requests],
@@ -188,18 +190,25 @@ class mir:
 
     _document_symbols_requests: List[Request] = []
     @staticmethod
-    async def document_symbols(view: sublime.View | None) -> list[tuple[SourceName, list[SymbolInformation] | list[DocumentSymbol] | None]]:
-        if not view:
-            return []
-        if not view.is_valid():
-            return []
+    async def document_symbols(view: sublime.View) -> list[tuple[SourceName, list[SymbolInformation] | list[DocumentSymbol] | None]]:
+        # STEP 1:
+        # - Cancel LSP Requests
+        # - Cancel Providers
         if mir._document_symbols_requests:
             for request in mir._document_symbols_requests:
                 request.cancel()
             mir._document_symbols_requests = []
-        uri = get_view_uri(view)
-        servers = servers_for_view(view, 'documentSymbolProvider')
+        providers = [provider for provider in Providers.document_symbols_providers if is_applicable_view(view, provider.activation_events)]
+        for provider in providers:
+            await provider.cancel()
+
+        # STEP 2 define return value
         results: list[tuple[SourceName, List[SymbolInformation] | List[DocumentSymbol] | None]] = []
+
+        # STEP 3:
+        # Send completion requests to LSP, but don't await them
+        servers = servers_for_view(view, 'documentSymbolProvider')
+        uri = get_view_uri(view)
         for s in servers:
             req = s.send.document_symbol({
                 'textDocument': {
@@ -212,10 +221,25 @@ class mir:
             result = await req.result
             return (req.server.name, result)
 
-        results = await asyncio.gather(*[handle(future) for future in mir._document_symbols_requests])
+        async def handle_provider(provider: DocumentSymbolProvider):
+            try:
+                result = await provider.provide_document_symbol(view)
+            except Exception as e:
+                print(f'Error happened in provider {provider.name}', e)
+                return (provider.name, None)
+            return (provider.name, result)
+
+        # STEP 4:
+        # await all futures and handle them appropriately
+        try:
+            results = await asyncio.gather(
+                *[handle(future) for future in mir._document_symbols_requests],
+                *[handle_provider(provider) for provider in providers]
+            )
+        except Exception as e:
+            print('Mir (DocumentSymbolError):', e)
         mir._document_symbols_requests = []
         return results
-
 
     @staticmethod
     def get_diagnostics(view_or_window: sublime.View | sublime.Window) -> list[tuple[DocumentUri, list[Diagnostic]]]:
