@@ -126,7 +126,11 @@ class mir:
             results = await asyncio.gather(*[handle(future) for future in mir._completion_requests])
 
             async def handle_provider(provider: CompletionProvider):
-                result = await provider.provide_completion_items(view, point)
+                try:
+                    result = await provider.provide_completion_items(view, point)
+                except Exception as e:
+                    print(f'Error happened in provider {provider.name}', e)
+                    return (provider.name, None)
                 return (provider.name, result)
 
             completion_providers = [provider for provider in Providers.completion_providers if is_applicable_view(view, provider.activation_events)]
