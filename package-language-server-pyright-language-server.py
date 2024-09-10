@@ -12,7 +12,7 @@ class PyrightLanguageServer(LanguageServer):
         'selector': 'source.python',
     }
 
-    def before_initialize(self):
+    def on_settings_change(self):
         dev_environment = self.settings.get("pyright.dev_environment")
         extraPaths: list[str] = self.settings.get("python.analysis.extraPaths") or []
         # if dev_environment in {"sublime_text_33", "sublime_text_38"}:

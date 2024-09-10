@@ -168,6 +168,9 @@ class LanguageServer:
     def before_initialize(self):
         ...
 
+    def on_settings_change(self):
+        ...
+
     def __init__(self) -> None:
         self.status: Literal['off', 'initializing','ready'] = 'off'
         self.send = LspRequest(self.send_request)
@@ -232,8 +235,10 @@ class LanguageServer:
 
             def update_settings_on_change():
                 self.settings.update(view.settings().to_dict())
+                self.on_settings_change()
                 self.notify.workspace_did_change_configuration({'settings': {}}) # https://github.com/microsoft/language-server-protocol/issues/567#issuecomment-420589320
 
+            self.on_settings_change()
             self.view.settings().add_on_change('', update_settings_on_change)
             self.notify.workspace_did_change_configuration({'settings': {}}) # https://github.com/microsoft/language-server-protocol/issues/567#issuecomment-420589320
         except Exception as e:
