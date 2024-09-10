@@ -42,8 +42,8 @@ def attach_server_request_and_notification_handlers(server: LanguageServer):
             if not isinstance(options, dict):
                 options = {}
             if capability_path == 'workspace.didChangeWatchedFiles':
-                options = cast(DidChangeWatchedFilesRegistrationOptions, options)
-                watchers = options['watchers']
+                wacher_options = cast(DidChangeWatchedFilesRegistrationOptions, options)
+                watchers = wacher_options['watchers']
                 for folder in server.workspace_folders:
                     _, folder_name = parse_uri(folder['uri'])
                     glob_patterns = [watcher['globPattern'] for watcher in watchers if isinstance(watcher['globPattern'], str)]

@@ -6,6 +6,8 @@ import sublime
 from wcmatch.glob import globmatch, GLOBSTAR
 from .types import CreateFilesParams, RenameFilesParams, DeleteFilesParams, DidChangeWatchedFilesParams, FileChangeType
 from .view_to_lsp import file_name_to_uri
+from typing import TypedDict, Callable
+from typing_extensions import NotRequired
 
 file_watchers = []
 def create_file_watcher(folder_name: str):
@@ -31,6 +33,12 @@ def remove_file_watcher(folder_name: str):
             file_watcher.stop()
             file_watchers.pop(i)
 
+class FileWatcherRegistrationOptions(TypedDict):
+    glob_patterns: list[str]
+    on_did_create_files: NotRequired[Callable[[CreateFilesParams], None]]
+    on_did_rename_files: NotRequired[Callable[[RenameFilesParams], None]]
+    on_did_delete_files: NotRequired[Callable[[DeleteFilesParams], None]]
+    on_did_change_watched_files: NotRequired[Callable[[DidChangeWatchedFilesParams], None]]
 
 class FileWatcher(FileSystemEventHandler):
     def __init__(self, folder_name, ignore_patterns):
@@ -39,9 +47,9 @@ class FileWatcher(FileSystemEventHandler):
         self.ignore_patterns: list[str] = [sublime_pattern_to_glob(p, False, folder_name) for p in ignore_patterns]
         self.observer = Observer()
         self.observer.schedule(self, folder_name, recursive=True)
-        self.registar = {}
+        self.registar: dict[str, FileWatcherRegistrationOptions] = {}
 
-    def register(self, key: str, config: dict):
+    def register(self, key: str, config: FileWatcherRegistrationOptions):
         self.registar[key] = config
         self.registar[key]['glob_patterns'] = [sublime_pattern_to_glob(p, False, self.folder_name) for p in config['glob_patterns']]
 
@@ -62,7 +70,7 @@ class FileWatcher(FileSystemEventHandler):
             if self.matches_patterns(event.src_path, config['glob_patterns']) and not self.matches_patterns(event.src_path, self.ignore_patterns):
                 self.handle_event(event, config)
 
-    def handle_event(self, event, config):
+    def handle_event(self, event, config: FileWatcherRegistrationOptions):
         """Handle the file system event (customize this method)."""
         if event.event_type == 'deleted':
             uri = file_name_to_uri(event.src_path)
@@ -71,14 +79,18 @@ class FileWatcher(FileSystemEventHandler):
                     'uri': uri
                 }]
             }
-            config['on_did_delete_files'](delete_params)
+            on_did_delete_files = config.get('on_did_delete_files')
+            if on_did_delete_files:
+                on_did_delete_files(delete_params)
             did_change_params: DidChangeWatchedFilesParams = {
                 'changes': [{
                     'uri': uri,
                     'type': FileChangeType.Deleted
                 }]
             }
-            config['on_did_change_watched_files'](did_change_params)
+            on_did_change_watched_files = config.get('on_did_change_watched_files')
+            if on_did_change_watched_files:
+                on_did_change_watched_files(did_change_params)
 
         elif event.event_type == 'created':
             uri = file_name_to_uri(event.src_path)
@@ -87,14 +99,18 @@ class FileWatcher(FileSystemEventHandler):
                     'uri': uri
                 }]
             }
-            config['on_did_create_files'](create_params)
+            on_did_create_files = config.get('on_did_create_files')
+            if on_did_create_files:
+                on_did_create_files(create_params)
             did_change_params: DidChangeWatchedFilesParams = {
                 'changes': [{
                     'uri': uri,
                     'type': FileChangeType.Created
                 }]
             }
-            config['on_did_change_watched_files'](did_change_params)
+            on_did_change_watched_files = config.get('on_did_change_watched_files')
+            if on_did_change_watched_files:
+                on_did_change_watched_files(did_change_params)
 
         elif event.event_type == 'modified':
             uri = file_name_to_uri(event.src_path)
@@ -104,7 +120,9 @@ class FileWatcher(FileSystemEventHandler):
                     'type': FileChangeType.Changed
                 }]
             }
-            config['on_did_change_watched_files'](did_change_params)
+            on_did_change_watched_files = config.get('on_did_change_watched_files')
+            if on_did_change_watched_files:
+                on_did_change_watched_files(did_change_params)
         elif event.event_type == 'moved':
             old_uri = file_name_to_uri(event.src_path)
             new_uri = file_name_to_uri(event.dest_path)
@@ -114,7 +132,9 @@ class FileWatcher(FileSystemEventHandler):
                     'newUri': new_uri,
                 }]
             }
-            config['on_did_rename_files'](rename_params)
+            on_did_rename_files = config.get('on_did_rename_files')
+            if on_did_rename_files:
+                on_did_rename_files(rename_params)
 
     def matches_patterns(self, file_path, patterns):
         """Check if the file path matches any of the given patterns using wcmatch."""
