@@ -1,9 +1,11 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from .capabilities import method_to_capability
-from .types import RegistrationParams, UnregistrationParams, LogMessageParams, LogMessageParams, MessageType, ConfigurationParams, PublishDiagnosticsParams
-
+from .view_to_lsp import parse_uri
+from .types import RegistrationParams, UnregistrationParams, LogMessageParams, LogMessageParams, MessageType, ConfigurationParams, PublishDiagnosticsParams, DidChangeWatchedFilesRegistrationOptions, CreateFilesParams, RenameFilesParams, DeleteFilesParams, DidChangeWatchedFilesParams
+from .file_watcher import get_file_watcher
+import sublime
 if TYPE_CHECKING:
 	from .server import LanguageServer
 
@@ -16,6 +18,22 @@ def attach_server_request_and_notification_handlers(server: LanguageServer):
             items.append(configuration)
         return items
 
+    def on_did_create_files(params: CreateFilesParams):
+        if server.capabilities.has('workspace.fileOperations.didCreate'):
+            server.notify.did_create_files(params)
+
+    def on_did_rename_files(params: RenameFilesParams):
+        if server.capabilities.has('workspace.fileOperations.didRename'):
+            server.notify.did_rename_files(params)
+
+    def on_did_delete_files(params: DeleteFilesParams):
+        if server.capabilities.has('workspace.fileOperations.didDelete'):
+            server.notify.did_delete_files(params)
+
+    def on_did_change_watched_files(params: DidChangeWatchedFilesParams):
+        server.notify.did_change_watched_files(params)
+
+
     async def register_capability(params: RegistrationParams):
         registrations = params["registrations"]
         for registration in registrations:
@@ -23,6 +41,20 @@ def attach_server_request_and_notification_handlers(server: LanguageServer):
             options = registration.get("registerOptions")
             if not isinstance(options, dict):
                 options = {}
+            if capability_path == 'workspace.didChangeWatchedFiles':
+                options = cast(DidChangeWatchedFilesRegistrationOptions, options)
+                watchers = options['watchers']
+                for folder in server.workspace_folders:
+                    _, folder_name = parse_uri(folder['uri'])
+                    glob_patterns = [watcher['globPattern'] for watcher in watchers if isinstance(watcher['globPattern'], str)]
+                    watcher = get_file_watcher(folder_name)
+                    watcher.register(server.name, {
+                        'glob_patterns': glob_patterns,
+                        'on_did_create_files': on_did_create_files,
+                        'on_did_rename_files': on_did_rename_files,
+                        'on_did_delete_files': on_did_delete_files,
+                        'on_did_change_watched_files': on_did_change_watched_files,
+                    })
             server.capabilities.register(capability_path, options)
 
     async def unregister_capability(params: UnregistrationParams):

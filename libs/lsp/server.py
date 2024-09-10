@@ -4,13 +4,13 @@ import os
 from .server_request_and_notification_handlers import attach_server_request_and_notification_handlers
 from .capabilities import CLIENT_CAPABILITIES, ServerCapabilities
 from .lsp_requests import LspRequest, LspNotification, Request
-from .types import DidChangeTextDocumentParams, ErrorCodes, MessageType
+from .types import DidChangeTextDocumentParams, ErrorCodes, MessageType, WorkspaceFolder, CreateFilesParams, RenameFilesParams, DeleteFilesParams, DidChangeWatchedFilesParams
 from ..event_loop import run_future
 from .communcation_logs import CommmunicationLogs, format_payload
 from .view_to_lsp import file_name_to_uri, get_view_uri
 from pathlib import Path
 from sublime_plugin import sublime
-from typing import  Any, Callable, Dict, Literal, Optional, TypedDict, cast
+from typing import TYPE_CHECKING, Any, Callable, Dict, Literal, Optional, TypedDict, cast
 from typing_extensions import NotRequired
 from wcmatch.glob import BRACE
 from .dotted_dict import DottedDict
@@ -22,6 +22,8 @@ import json
 import shutil
 from .diagnostic_collection import DiagnosticCollection
 from .types import TextDocumentContentChangeEvent, LSPAny
+if TYPE_CHECKING:
+    from .file_watcher import FileWatcher
 
 ENCODING = "utf-8"
 
@@ -177,6 +179,7 @@ class LanguageServer:
         self.diagnostics = DiagnosticCollection()
         self._process = None
         self._received_shutdown = False
+        self.workspace_folders: list[WorkspaceFolder] = []
 
         self.pending_changes: dict[int, DidChangeTextDocumentParams] = {}
         self.request_id = 1
@@ -213,10 +216,11 @@ class LanguageServer:
 
             folders = window.folders() if window else []
             first_foder = folders[0] if folders else ''
-            first_folder_uri = file_name_to_uri(first_foder)
+            self.workspace_folders = [{'name': Path(f).name, 'uri':file_name_to_uri(f)} for f in folders]
+            first_folder_uri = self.workspace_folders[0]['uri'] if self.workspace_folders else None
             initialize_result = await self.send.initialize({
                 'processId': self._process.pid,
-                'workspaceFolders': [{'name': Path(f).name, 'uri':file_name_to_uri(f)} for f in folders],
+                'workspaceFolders': self.workspace_folders,
                 'rootUri': first_folder_uri,  # @deprecated in favour of `workspaceFolders`
                 'rootPath': first_foder,  # @deprecated in favour of `rootUri`.
                 'capabilities': CLIENT_CAPABILITIES,
@@ -330,12 +334,6 @@ class LanguageServer:
         except Exception as e:
             print(f'Mir ({self.name}) Error in send_error_response.', e)
 
-    def send_did_change_text_document(self):
-        pending_changes = list(self.pending_changes.items())
-        self.pending_changes = {}
-        for _, did_change_text_document_params in pending_changes:
-            self.notify.did_change_text_document(did_change_text_document_params)
-
     def send_request(self, method: str, params: Optional[dict] = None):
         self.send_did_change_text_document()
         request_id = self.request_id
@@ -434,3 +432,9 @@ class LanguageServer:
         except Exception as ex:
             if not self._received_shutdown:
                 self.send_notification("window/logMessage", {"type": MessageType.Error, "message": str(ex)})
+
+    def send_did_change_text_document(self):
+        pending_changes = list(self.pending_changes.items())
+        self.pending_changes = {}
+        for _, did_change_text_document_params in pending_changes:
+            self.notify.did_change_text_document(did_change_text_document_params)

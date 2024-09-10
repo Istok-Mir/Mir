@@ -4,7 +4,8 @@
             "bracex",
             "mdpopups",
             "typing_extensions",
-            "wcmatch"
+            "wcmatch",
+            "watchdog"
         ]
     }
 }

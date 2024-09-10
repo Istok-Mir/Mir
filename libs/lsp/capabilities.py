@@ -140,7 +140,9 @@ CLIENT_CAPABILITIES: ClientCapabilities = {
         'codeLens': {'refreshSupport': True},
         'inlayHint': {'refreshSupport': True},
         'semanticTokens': {'refreshSupport': True},
-        'didChangeWatchedFiles': {'dynamicRegistration': True}
+        'didChangeWatchedFiles': {
+            'dynamicRegistration': True,
+        }
     },
     'window': {
         'showDocument': {'support': True},
@@ -189,7 +191,10 @@ ServerCapability = Literal[
     'textDocumentSync.save',
     'textDocumentSync.willSave',
     'textDocumentSync.willSaveWaitUntil',
-    'workspace.didChangeWatchedFiles'
+    'workspace.didChangeWatchedFiles',
+    'workspace.fileOperations.didDelete',
+    'workspace.fileOperations.didRename',
+    'workspace.fileOperations.didCreate',
 ]
 
 _METHOD_TO_CAPABILITY: dict[str, ServerCapability] = {
