@@ -21,9 +21,6 @@ import datetime
 import json
 import shutil
 from .diagnostic_collection import DiagnosticCollection
-from .types import TextDocumentContentChangeEvent, LSPAny
-if TYPE_CHECKING:
-    from .file_watcher import FileWatcher
 
 ENCODING = "utf-8"
 

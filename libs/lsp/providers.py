@@ -56,8 +56,8 @@ class DocumentSymbolProvider(BaseProvider):
     async def provide_document_symbol(self, view: sublime.View) -> list[SymbolInformation, DocumentSymbol] | list[DocumentSymbol] | None:
         ...
 
-
-def register_provider(provider: HoverProvider | CompletionProvider):
+AllProviders = DefinitionProvider | HoverProvider | CompletionProvider | DocumentSymbolProvider
+def register_provider(provider: AllProviders):
     if isinstance(provider, DefinitionProvider):
         Providers.definition_providers.append(provider)
     elif isinstance(provider, HoverProvider):
@@ -70,7 +70,7 @@ def register_provider(provider: HoverProvider | CompletionProvider):
         raise Exception('Got a unusported provider')
 
 
-def unregister_provider(provider: HoverProvider | CompletionProvider):
+def unregister_provider(provider: AllProviders):
     if DefinitionProvider in provider.__bases__:
         Providers.definition_providers = [p for p in Providers.definition_providers if p.name != provider.name]
     elif HoverProvider in provider.__bases__:
