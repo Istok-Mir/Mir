@@ -3,7 +3,7 @@ import asyncio
 from typing import List
 
 from .lsp_requests import Request
-from .manage_servers import servers_for_view
+from .manage_servers import servers_for_view, servers_for_window
 from .providers import Providers, HoverProvider, CompletionProvider, DefinitionProvider, DocumentSymbolProvider
 from .server import is_applicable_view
 from .types import Definition, DocumentSymbol, SymbolInformation, LocationLink, Hover, CompletionItem, CompletionList, DocumentUri, Diagnostic
@@ -244,14 +244,22 @@ class mir:
     @staticmethod
     async def get_diagnostics(view_or_window: sublime.View | sublime.Window) -> list[tuple[DocumentUri, list[Diagnostic]]]:
         result: list[tuple[DocumentUri, list[Diagnostic]]] = []
-        servers = servers_for_view(view_or_window)
+        map_result: dict[DocumentUri, list[Diagnostic]] = {}
         if isinstance(view_or_window, sublime.View):
+            servers = servers_for_view(view_or_window)
             for server in servers:
                 uri = get_view_uri(view_or_window)
-                result.append((uri, server.diagnostics.get(uri)))
+                if uri not in map_result:
+                    map_result[uri] = []
+                map_result[uri].extend(server.diagnostics.get(uri))
         elif isinstance(view_or_window, sublime.Window):
+            servers = servers_for_window(view_or_window)
             for server in servers:
-                result.append(list(server.diagnostics.items()))
+                for uri, diagnostics in server.diagnostics.items():
+                    if uri not in map_result:
+                        map_result[uri] = []
+                    map_result[uri].extend(diagnostics)
+        result = list(map_result.items())
         return result
 
     _on_did_change_diagnostics_cbs = []
