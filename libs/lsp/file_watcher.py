@@ -8,14 +8,6 @@ from .types import CreateFilesParams, RenameFilesParams, DeleteFilesParams, DidC
 from .view_to_lsp import file_name_to_uri
 
 file_watchers = []
-def setup_file_watchers(window: sublime.Window):
-    global file_watchers
-    ignore_patterns = get_global_ignore_globs()
-    for folder_name in window.folders():
-        file_watcher = FileWatcher(folder_name, ignore_patterns=ignore_patterns)
-        file_watcher.start()
-        file_watchers.append(file_watcher)
-
 def create_file_watcher(folder_name: str):
     global file_watchers
     ignore_patterns = get_global_ignore_globs()
@@ -32,10 +24,13 @@ def get_file_watcher(folder_name: str) -> FileWatcher | None:
     return None
 
 
-def cleanup_file_watchers():
+def remove_file_watcher(folder_name: str):
     global file_watchers
-    for file_watcher in file_watchers:
-        file_watcher.stop()
+    for i, file_watcher in enumerate(list(file_watchers)):
+        if file_watcher.folder_name == folder_name:
+            file_watcher.stop()
+            file_watchers.pop(i)
+
 
 class FileWatcher(FileSystemEventHandler):
     def __init__(self, folder_name, ignore_patterns):

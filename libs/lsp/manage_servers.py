@@ -2,7 +2,7 @@ from __future__ import annotations
 from ..event_loop import run_future
 from .view_to_lsp import get_view_uri, view_to_text_document_item
 from .server import LanguageServer, matches_activation_event_on_uri, is_applicable_view
-from .server_request_and_notification_handlers import attach_server_request_and_notification_handlers
+from .file_watcher import remove_file_watcher
 from .capabilities import ServerCapability
 import sublime
 import sublime_plugin
@@ -117,7 +117,9 @@ class ManageServers(sublime_plugin.EventListener):
     def on_new_window(self, window):
         print('EventListener on_new_window', window)
 
-    def on_pre_close_window(self, window):
+    def on_pre_close_window(self, window: sublime.Window):
         for server in ManageServers.servers_for_window(window):
             server.stop()
+        for folder_name in window.folders():
+            remove_file_watcher(folder_name)
         ManageServers.detach_all_servers_from_window(window)
