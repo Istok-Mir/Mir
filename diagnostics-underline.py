@@ -53,6 +53,10 @@ class MirHoverListener(sublime_plugin.ViewEventListener):
                         hints.append(region)
                     elif severity == DiagnosticSeverity.Information:
                         infos.append(region)
+            view.erase_regions('mir-deprecated')
+            view.add_regions('mir-deprecated', deprecated, 'markup.unnecessary', flags=sublime.DRAW_NO_OUTLINE | sublime.NO_UNDO)
+            view.erase_regions('mir-unnecessary')
+            view.add_regions('mir-unnecessary', unnecessary, 'markup.unnecessary', flags=sublime.DRAW_NO_OUTLINE | sublime.NO_UNDO)
             view.erase_regions('mir-hints')
             view.add_regions('mir-hints', hints, 'comment', flags=sublime.DRAW_SQUIGGLY_UNDERLINE | sublime.DRAW_NO_OUTLINE | sublime.DRAW_NO_FILL | sublime.NO_UNDO)
             view.erase_regions('mir-infos')
@@ -61,10 +65,6 @@ class MirHoverListener(sublime_plugin.ViewEventListener):
             view.add_regions('mir-warnings', warnings, 'region.yellowish', flags=sublime.DRAW_SQUIGGLY_UNDERLINE | sublime.DRAW_NO_OUTLINE | sublime.DRAW_NO_FILL | sublime.NO_UNDO)
             view.erase_regions('mir-errors')
             view.add_regions('mir-errors', errors, 'region.redish', flags=sublime.DRAW_SQUIGGLY_UNDERLINE | sublime.DRAW_NO_OUTLINE | sublime.DRAW_NO_FILL | sublime.NO_UNDO)
-            view.erase_regions('mir-deprecated')
-            view.add_regions('mir-deprecated', deprecated, 'markup.unnecessary', flags=sublime.DRAW_NO_OUTLINE | sublime.NO_UNDO)
-            view.erase_regions('mir-unnecessary')
-            view.add_regions('mir-unnecessary', unnecessary, 'markup.unnecessary', flags=sublime.DRAW_NO_OUTLINE | sublime.NO_UNDO)
 
     def on_close(self):
         if self.cleanup:
