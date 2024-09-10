@@ -82,7 +82,7 @@ class ExampleHoverProvider(HoverProvider):
         'selector': 'source.json',
         'on_uri': ['file://**/package.json'],
     }
-    async def provide_hover(self, view: sublime.View, hover_point: int) -> Hover:
+    async def provide_hover(self, view: sublime.View, hover_point: int, hover_zone: sublime.HoverZone) -> Hover:
         if hover_point % 2 == 0:
             return {
             'contents': {
