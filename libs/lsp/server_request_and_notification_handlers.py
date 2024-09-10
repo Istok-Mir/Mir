@@ -5,7 +5,6 @@ from .capabilities import method_to_capability
 from .view_to_lsp import parse_uri
 from .types import RegistrationParams, UnregistrationParams, LogMessageParams, LogMessageParams, MessageType, ConfigurationParams, PublishDiagnosticsParams, DidChangeWatchedFilesRegistrationOptions, CreateFilesParams, RenameFilesParams, DeleteFilesParams, DidChangeWatchedFilesParams
 from .file_watcher import get_file_watcher, create_file_watcher
-import sublime
 if TYPE_CHECKING:
 	from .server import LanguageServer
 
