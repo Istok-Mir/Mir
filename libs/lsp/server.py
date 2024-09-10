@@ -251,6 +251,7 @@ class LanguageServer:
         run_future(self.shutdown())
 
     def register_providers(self):
+        # this method is messy, and will probably need to change
         from .providers import register_provider, CompletionProvider, HoverProvider, DefinitionProvider, DocumentSymbolProvider
         server = self
         if server.capabilities.has('definitionProvider'):
