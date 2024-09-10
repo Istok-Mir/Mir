@@ -2,7 +2,7 @@ from __future__ import annotations
 import sublime
 import sublime_plugin
 from .api import mir, run_future
-from .api.helpers import open_view_with_uri, minihtml, MinihtmlKind
+from .api.helpers import minihtml, MinihtmlKind
 
 
 class MirHoverListener(sublime_plugin.ViewEventListener):
