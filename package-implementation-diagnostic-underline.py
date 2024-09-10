@@ -2,8 +2,8 @@ from __future__ import annotations
 import sublime
 import sublime_plugin
 from .api import mir, run_future
-from .api.types import DiagnosticSeverity
-from .api.helpers import open_view_with_uri, minihtml, MinihtmlKind, parse_uri, range_to_region
+from .api.types import DiagnosticSeverity, DiagnosticTag
+from .api.helpers import parse_uri, range_to_region
 
 
 class MirHoverListener(sublime_plugin.ViewEventListener):
@@ -31,6 +31,8 @@ class MirHoverListener(sublime_plugin.ViewEventListener):
                 continue
             results = await mir.get_diagnostics(view)
             errors = []
+            deprecated = []
+            unnecessary = []
             warnings = []
             infos = []
             hints = []
@@ -38,7 +40,12 @@ class MirHoverListener(sublime_plugin.ViewEventListener):
                 for diagnostic in diagnostics:
                     region = range_to_region(view, diagnostic['range'])
                     severity = diagnostic.get('severity', DiagnosticSeverity.Information)
-                    if severity == DiagnosticSeverity.Error:
+                    tags = diagnostic.get('tags', [])
+                    if DiagnosticTag.Unnecessary in tags:
+                        unnecessary.append(region)
+                    elif DiagnosticTag.Deprecated in tags:
+                        deprecated.append(region)
+                    elif severity == DiagnosticSeverity.Error:
                         errors.append(region)
                     elif severity == DiagnosticSeverity.Warning:
                         warnings.append(region)
@@ -47,13 +54,17 @@ class MirHoverListener(sublime_plugin.ViewEventListener):
                     elif severity == DiagnosticSeverity.Information:
                         infos.append(region)
             view.erase_regions('mir-hints')
+            view.add_regions('mir-hints', hints, 'comment', flags=sublime.DRAW_SQUIGGLY_UNDERLINE | sublime.DRAW_NO_OUTLINE | sublime.DRAW_NO_FILL | sublime.NO_UNDO)
             view.erase_regions('mir-infos')
+            view.add_regions('mir-infos', infos, 'comment', flags=sublime.DRAW_SQUIGGLY_UNDERLINE | sublime.DRAW_NO_OUTLINE | sublime.DRAW_NO_FILL | sublime.NO_UNDO)
             view.erase_regions('mir-warnings')
+            view.add_regions('mir-warnings', warnings, 'region.yellowish', flags=sublime.DRAW_SQUIGGLY_UNDERLINE | sublime.DRAW_NO_OUTLINE | sublime.DRAW_NO_FILL | sublime.NO_UNDO)
             view.erase_regions('mir-errors')
-            view.add_regions('mir-hints', hints, 'region.bluish', flags=sublime.DRAW_SQUIGGLY_UNDERLINE | sublime.DRAW_NO_OUTLINE | sublime.DRAW_NO_FILL)
-            view.add_regions('mir-infos', infos, 'region.purplish', flags=sublime.DRAW_SQUIGGLY_UNDERLINE | sublime.DRAW_NO_OUTLINE | sublime.DRAW_NO_FILL)
-            view.add_regions('mir-warnings', warnings, 'region.yellowish', flags=sublime.DRAW_SQUIGGLY_UNDERLINE | sublime.DRAW_NO_OUTLINE | sublime.DRAW_NO_FILL)
-            view.add_regions('mir-errors', errors, 'region.redish', flags=sublime.DRAW_SQUIGGLY_UNDERLINE | sublime.DRAW_NO_OUTLINE | sublime.DRAW_NO_FILL)
+            view.add_regions('mir-errors', errors, 'region.redish', flags=sublime.DRAW_SQUIGGLY_UNDERLINE | sublime.DRAW_NO_OUTLINE | sublime.DRAW_NO_FILL | sublime.NO_UNDO)
+            view.erase_regions('mir-deprecated')
+            view.add_regions('mir-deprecated', deprecated, 'markup.unnecessary', flags=sublime.DRAW_NO_OUTLINE | sublime.NO_UNDO)
+            view.erase_regions('mir-unnecessary')
+            view.add_regions('mir-unnecessary', unnecessary, 'markup.unnecessary', flags=sublime.DRAW_NO_OUTLINE | sublime.NO_UNDO)
 
     def on_close(self):
         if self.cleanup:
