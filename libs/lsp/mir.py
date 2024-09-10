@@ -59,8 +59,8 @@ class mir:
 
         try:
             results = await asyncio.gather(
+                *[handle_provider(provider) for provider in providers],
                 *[handle(future) for future in mir._definition_requests],
-                *[handle_provider(provider) for provider in providers]
             )
         except Exception as e:
             print('Mir (DefinitionError):', e)
@@ -122,8 +122,8 @@ class mir:
         # await all futures and handle them appropriately
         try:
             results = await asyncio.gather(
-                *[handle(future) for future in mir._hover_requests],
-                *[handle_provider(provider) for provider in providers]
+                *[handle_provider(provider) for provider in providers],
+                *[handle(future) for future in mir._hover_requests]
             )
         except Exception as e:
             print('Mir (HoverError):', e)
@@ -180,8 +180,8 @@ class mir:
         # await all futures and handle them appropriately
         try:
             results = await asyncio.gather(
+                *[handle_provider(provider) for provider in providers],
                 *[handle(future) for future in mir._completion_requests],
-                *[handle_provider(provider) for provider in providers]
             )
         except Exception as e:
             print('Mir (CompletionError):', e)
@@ -233,8 +233,8 @@ class mir:
         # await all futures and handle them appropriately
         try:
             results = await asyncio.gather(
-                *[handle(future) for future in mir._document_symbols_requests],
-                *[handle_provider(provider) for provider in providers]
+                *[handle_provider(provider) for provider in providers],
+                *[handle(future) for future in mir._document_symbols_requests]
             )
         except Exception as e:
             print('Mir (DocumentSymbolError):', e)
