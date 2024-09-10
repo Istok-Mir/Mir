@@ -46,14 +46,14 @@ class MirHoverListener(sublime_plugin.ViewEventListener):
                         hints.append(region)
                     elif severity == DiagnosticSeverity.Information:
                         infos.append(region)
-            view.erase_regions('mir-errors')
-            view.erase_regions('mir-warnings')
-            view.erase_regions('mir-infos')
             view.erase_regions('mir-hints')
-            view.add_regions('mir-errors', errors, 'region.redish', flags=sublime.DRAW_SQUIGGLY_UNDERLINE | sublime.DRAW_NO_OUTLINE | sublime.DRAW_NO_FILL)
-            view.add_regions('mir-warnings', warnings, 'region.yellowish', flags=sublime.DRAW_SQUIGGLY_UNDERLINE | sublime.DRAW_NO_OUTLINE | sublime.DRAW_NO_FILL)
-            view.add_regions('mir-infos', infos, 'region.purplish', flags=sublime.DRAW_SQUIGGLY_UNDERLINE | sublime.DRAW_NO_OUTLINE | sublime.DRAW_NO_FILL)
+            view.erase_regions('mir-infos')
+            view.erase_regions('mir-warnings')
+            view.erase_regions('mir-errors')
             view.add_regions('mir-hints', hints, 'region.bluish', flags=sublime.DRAW_SQUIGGLY_UNDERLINE | sublime.DRAW_NO_OUTLINE | sublime.DRAW_NO_FILL)
+            view.add_regions('mir-infos', infos, 'region.purplish', flags=sublime.DRAW_SQUIGGLY_UNDERLINE | sublime.DRAW_NO_OUTLINE | sublime.DRAW_NO_FILL)
+            view.add_regions('mir-warnings', warnings, 'region.yellowish', flags=sublime.DRAW_SQUIGGLY_UNDERLINE | sublime.DRAW_NO_OUTLINE | sublime.DRAW_NO_FILL)
+            view.add_regions('mir-errors', errors, 'region.redish', flags=sublime.DRAW_SQUIGGLY_UNDERLINE | sublime.DRAW_NO_OUTLINE | sublime.DRAW_NO_FILL)
 
     def on_close(self):
         if self.cleanup:
