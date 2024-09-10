@@ -49,6 +49,7 @@ class Request(Generic[T]):
         self.server.notify.cancel_request({
             'id': self.id
         })
+        self.result.cancel()
 
 class LspRequest:
     def __init__(self, send_request):

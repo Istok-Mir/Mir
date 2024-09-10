@@ -14,6 +14,8 @@ from typing import TypeVar, Generic
 SourceName = str
 """ The language server name or the provider name """
 
+MAX_WAIT_TIME=1 # second
+
 class mir:
     @staticmethod
     async def definitions(view: sublime.View, point: int) -> list[tuple[SourceName, Definition | list[LocationLink] | None]]:
@@ -28,7 +30,7 @@ class mir:
         # STEP 3:
         async def handle(provider: DefinitionProvider):
             try:
-                result = await provider.provide_definition(view, point)
+                result = await asyncio.wait_for(provider.provide_definition(view, point), MAX_WAIT_TIME)
             except Exception as e:
                 print(f'Error happened in provider {provider.name}', e)
                 return (provider.name, None)
@@ -56,7 +58,7 @@ class mir:
         # STEP 3:
         async def handle(provider: HoverProvider):
             try:
-                result = await provider.provide_hover(view, hover_point)
+                result = await asyncio.wait_for(provider.provide_hover(view, hover_point), MAX_WAIT_TIME)
             except Exception as e:
                 print(f'Error happened in provider {provider.name}', e)
                 return (provider.name, None)
@@ -86,7 +88,7 @@ class mir:
         # STEP 3:
         async def handle(provider: CompletionProvider):
             try:
-                result = await provider.provide_completion_items(view, point)
+                result = await asyncio.wait_for(provider.provide_completion_items(view, point), MAX_WAIT_TIME)
             except Exception as e:
                 print(f'Error happened in provider {provider.name}', e)
                 return (provider.name, None)
@@ -115,7 +117,7 @@ class mir:
         # STEP 3:
         async def handle(provider: DocumentSymbolProvider):
             try:
-                result = await provider.provide_document_symbol(view)
+                result = await asyncio.wait_for(provider.provide_document_symbol(view), MAX_WAIT_TIME)
             except Exception as e:
                 print(f'Error happened in provider {provider.name}', e)
                 return (provider.name, None)
