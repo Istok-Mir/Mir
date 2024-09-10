@@ -7,6 +7,7 @@ from wcmatch.glob import globmatch, GLOBSTAR
 from .types import CreateFilesParams, RenameFilesParams, DeleteFilesParams, DidChangeWatchedFilesParams, FileChangeType
 from .view_to_lsp import file_name_to_uri
 from typing import TypedDict, Callable
+import posixpath
 from typing_extensions import NotRequired
 
 file_watchers = []
