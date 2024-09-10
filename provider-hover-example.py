@@ -11,7 +11,7 @@ class DiagnosticsHoverProvider(HoverProvider):
     activation_events = {
         'selector': '*',
     }
-    async def provide_hover(self, view: sublime.View, hover_point: int) -> Hover:
+    async def provide_hover(self, view: sublime.View, hover_point: int, hover_zone: sublime.HoverZone) -> Hover:
         all_diagnostics = await mir.get_diagnostics(view)
         diagnostics_under_cursor: list[Diagnostic] = []
         for _uri, diagnostics in all_diagnostics:
