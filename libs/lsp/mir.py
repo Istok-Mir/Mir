@@ -45,7 +45,7 @@ class mir:
         return results
 
     @staticmethod
-    async def hover(view: sublime.View, hover_point: int) -> list[tuple[SourceName, Hover | None]]:
+    async def hover(view: sublime.View, hover_point: int, hover_zone: sublime.HoverZone) -> list[tuple[SourceName, Hover | None]]:
         # STEP 1:
         # Trigger Canceling Providers
         providers = [provider for provider in Providers.hover_providers if is_applicable_view(view, provider.activation_events)]
@@ -58,7 +58,7 @@ class mir:
         # STEP 3:
         async def handle(provider: HoverProvider):
             try:
-                result = await asyncio.wait_for(provider.provide_hover(view, hover_point), MAX_WAIT_TIME)
+                result = await asyncio.wait_for(provider.provide_hover(view, hover_point, hover_zone), MAX_WAIT_TIME)
             except Exception as e:
                 print(f'Error happened in provider {provider.name}', e)
                 return (provider.name, None)

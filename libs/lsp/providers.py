@@ -37,7 +37,7 @@ class HoverProvider(BaseProvider):
     name: str
     activation_events: ActivationEvents
 
-    async def provide_hover(self, view: sublime.View, hover_point: int) -> Hover | None:
+    async def provide_hover(self, view: sublime.View, hover_point: int, hover_zone: sublime.HoverZone) -> Hover | None:
         ...
 
 

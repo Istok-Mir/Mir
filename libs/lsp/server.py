@@ -335,7 +335,6 @@ class LanguageServer:
                     if LspHoverProvider._requests:
                         for request in LspHoverProvider._requests:
                             request.cancel()
-                            request.result.cancel()
                         LspHoverProvider._requests = []
             hover_provider = LspHoverProvider()
             self.providers.append(hover_provider)

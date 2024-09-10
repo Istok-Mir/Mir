@@ -7,11 +7,10 @@ from .api.helpers import minihtml, MinihtmlKind
 
 class MirHoverListener(sublime_plugin.ViewEventListener):
     def on_hover(self, hover_point, hover_zone):
-        if hover_zone == 1:
-            run_future(self.do_hover(hover_point))
+        run_future(self.do_hover(hover_point, hover_zone))
 
-    async def do_hover(self, hover_point: int):
-        hovers = await mir.hover(self.view, hover_point)
+    async def do_hover(self, hover_point: int, hover_zone: sublime.HoverZone):
+        hovers = await mir.hover(self.view, hover_point, hover_zone)
         combined_content: list[str] = []
         for name, hover in hovers:
             if isinstance(hover, dict):
