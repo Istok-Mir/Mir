@@ -34,9 +34,9 @@ def remove_file_watcher(folder_name: str):
 
 class FileWatcher(FileSystemEventHandler):
     def __init__(self, folder_name, ignore_patterns):
-        self.folder_name = folder_name
-        self.watch_patterns = []
-        self.ignore_patterns = [sublime_pattern_to_glob(p, False, folder_name) for p in ignore_patterns]
+        self.folder_name: str = folder_name
+        self.watch_patterns: list[str] = []
+        self.ignore_patterns: list[str] = [sublime_pattern_to_glob(p, False, folder_name) for p in ignore_patterns]
         self.observer = Observer()
         self.observer.schedule(self, folder_name, recursive=True)
         self.registar = {}
