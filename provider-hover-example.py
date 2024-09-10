@@ -17,9 +17,11 @@ class DiagnosticsHoverProvider(HoverProvider):
         for _uri, diagnostics in all_diagnostics:
             diagnostics_under_cursor.extend([d for d in diagnostics if range_to_region(view, d['range']).contains(hover_point)])
 
+        def format_diagnostics(diagnostic: Diagnostic):
+            return f"<p>{diagnostic['message']}</p>"
 
         return {
-          'contents': [d['message'] for d in diagnostics_under_cursor]
+          'contents': [format_diagnostics(d) for d in diagnostics_under_cursor]
         }
 
 
