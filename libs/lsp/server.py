@@ -321,7 +321,7 @@ class LanguageServer:
                 activation_events=self.activation_events
                 _requests: list[Request]=[]
 
-                async def provide_hover(self, view: sublime.View, hover_point: int) -> Hover | None:
+                async def provide_hover(self, view: sublime.View, hover_point: int, hover_zone: sublime.HoverZone) -> Hover | None:
                     uri = get_view_uri(view)
                     req = server.send.hover({
                         'textDocument': {
