@@ -10,7 +10,7 @@ from .view_to_lsp import file_name_to_uri
 file_watchers = []
 def setup_file_watchers(window: sublime.Window):
     global file_watchers
-    ignore_patterns = get_global_ignore_globs(window)
+    ignore_patterns = get_global_ignore_globs()
     for folder_name in window.folders():
         file_watcher = FileWatcher(folder_name, ignore_patterns=ignore_patterns)
         file_watcher.start()
@@ -18,7 +18,7 @@ def setup_file_watchers(window: sublime.Window):
 
 def create_file_watcher(folder_name: str):
     global file_watchers
-    ignore_patterns = get_global_ignore_globs(window)
+    ignore_patterns = get_global_ignore_globs()
     file_watcher = FileWatcher(folder_name, ignore_patterns=ignore_patterns)
     file_watcher.start()
     file_watchers.append(file_watcher)
@@ -157,7 +157,7 @@ def sublime_pattern_to_glob(pattern: str, is_directory_pattern: bool, root_path:
     return glob
 
 
-def get_global_ignore_globs(window) -> list[str]:
+def get_global_ignore_globs() -> list[str]:
     globalprefs = sublime.active_window().active_view().settings()
     folder_exclude_patterns: list[str] = globalprefs.get('folder_exclude_patterns', [])
     file_exclude_patterns: list[str] = globalprefs.get('file_exclude_patterns', [])
