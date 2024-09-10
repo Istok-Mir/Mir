@@ -253,3 +253,15 @@ class mir:
             for server in servers:
                 result.append(list(server.diagnostics.items()))
         return result
+
+    _on_did_change_diagnostics_cbs = []
+    @staticmethod
+    def on_did_change_diagnostics(cb):
+        mir._on_did_change_diagnostics_cbs.append(cb)
+        def cleanup():
+            mir._on_did_change_diagnostics_cbs = [c for c in mir._on_did_change_diagnostics_cbs if c != cb]
+        return cleanup
+
+    @staticmethod
+    def _notify_did_change_diagnostics(uris: list[str]):
+        [cb(uris) for cb in mir._on_did_change_diagnostics_cbs]

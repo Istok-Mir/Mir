@@ -82,7 +82,9 @@ def attach_server_request_and_notification_handlers(server: LanguageServer):
         # print(f"Mir | {message_type}: {params.get('message')}")
 
     def publish_diagnostics(params: PublishDiagnosticsParams):
+        from .mir import mir
         server.diagnostics.set(params['uri'], params['diagnostics'])
+        mir._notify_did_change_diagnostics([params['uri']])
 
     server.on_request('workspace/configuration', workspace_configuration)
     server.on_request('client/registerCapability', register_capability)
