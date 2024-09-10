@@ -68,7 +68,7 @@ def attach_server_request_and_notification_handlers(server: LanguageServer):
                 for folder in server.workspace_folders:
                     _, folder_name = parse_uri(folder['uri'])
                     watcher = get_file_watcher(folder_name)
-                    watcher.unregister(server.name)
+                    # watcher.unregister(server.name) # pyright for some reason unregisters this capaability immediately afterm registering it
 
 
     def on_log_message(params: LogMessageParams):
