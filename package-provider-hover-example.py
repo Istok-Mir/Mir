@@ -12,7 +12,7 @@ class DiagnosticsHoverProvider(HoverProvider):
         'selector': '*',
     }
     async def provide_hover(self, view: sublime.View, hover_point: int) -> Hover:
-        all_diagnostics = mir.get_diagnostics(view)
+        all_diagnostics = await mir.get_diagnostics(view)
         diagnostics_under_cursor: list[Diagnostic] = []
         for uri, diagnostics in all_diagnostics:
             diagnostics_under_cursor.extend([d for d in diagnostics if range_to_region(view, d['range']).contains(hover_point)])

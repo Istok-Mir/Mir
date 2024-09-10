@@ -242,7 +242,7 @@ class mir:
         return results
 
     @staticmethod
-    def get_diagnostics(view_or_window: sublime.View | sublime.Window) -> list[tuple[DocumentUri, list[Diagnostic]]]:
+    async def get_diagnostics(view_or_window: sublime.View | sublime.Window) -> list[tuple[DocumentUri, list[Diagnostic]]]:
         result: list[tuple[DocumentUri, list[Diagnostic]]] = []
         servers = servers_for_view(view_or_window)
         if isinstance(view_or_window, sublime.View):
