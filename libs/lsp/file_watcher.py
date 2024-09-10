@@ -16,7 +16,15 @@ def setup_file_watchers(window: sublime.Window):
         file_watcher.start()
         file_watchers.append(file_watcher)
 
-def get_file_watcher(folder_name: str):
+def create_file_watcher(folder_name: str):
+    global file_watchers
+    ignore_patterns = get_global_ignore_globs(window)
+    file_watcher = FileWatcher(folder_name, ignore_patterns=ignore_patterns)
+    file_watcher.start()
+    file_watchers.append(file_watcher)
+    return file_watcher
+
+def get_file_watcher(folder_name: str) -> FileWatcher | None:
     global file_watchers
     found_watchers = [fw for fw in file_watchers if fw.folder_name == folder_name]
     if found_watchers:

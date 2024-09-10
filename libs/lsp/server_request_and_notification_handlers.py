@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any, cast
 from .capabilities import method_to_capability
 from .view_to_lsp import parse_uri
 from .types import RegistrationParams, UnregistrationParams, LogMessageParams, LogMessageParams, MessageType, ConfigurationParams, PublishDiagnosticsParams, DidChangeWatchedFilesRegistrationOptions, CreateFilesParams, RenameFilesParams, DeleteFilesParams, DidChangeWatchedFilesParams
-from .file_watcher import get_file_watcher
+from .file_watcher import get_file_watcher, create_file_watcher
 import sublime
 if TYPE_CHECKING:
 	from .server import LanguageServer
@@ -48,6 +48,8 @@ def attach_server_request_and_notification_handlers(server: LanguageServer):
                     _, folder_name = parse_uri(folder['uri'])
                     glob_patterns = [watcher['globPattern'] for watcher in watchers if isinstance(watcher['globPattern'], str)]
                     watcher = get_file_watcher(folder_name)
+                    if watcher is None:
+                        watcher = create_file_watcher(folder_name)
                     watcher.register(server.name, {
                         'glob_patterns': glob_patterns,
                         'on_did_create_files': on_did_create_files,
@@ -62,6 +64,12 @@ def attach_server_request_and_notification_handlers(server: LanguageServer):
         for unregistration in unregisterations:
             capability_path = method_to_capability(unregistration["method"])
             server.capabilities.unregister(capability_path)
+            if capability_path == 'workspace.didChangeWatchedFiles':
+                for folder in server.workspace_folders:
+                    _, folder_name = parse_uri(folder['uri'])
+                    watcher = get_file_watcher(folder_name)
+                    watcher.unregister(server.name)
+
 
     def on_log_message(params: LogMessageParams):
         message_type = {
