@@ -53,10 +53,10 @@ class DocumentSymbolProvider(BaseProvider):
     name: str
     activation_events: ActivationEvents
 
-    async def provide_document_symbol(self, view: sublime.View) -> list[SymbolInformation, DocumentSymbol] | list[DocumentSymbol] | None:
+    async def provide_document_symbol(self, view: sublime.View) -> list[SymbolInformation] | list[DocumentSymbol] | None:
         ...
 
-AllProviders = DefinitionProvider | HoverProvider | CompletionProvider | DocumentSymbolProvider
+AllProviders = Union[DefinitionProvider, HoverProvider, CompletionProvider, DocumentSymbolProvider]
 def register_provider(provider: AllProviders):
     if isinstance(provider, DefinitionProvider):
         Providers.definition_providers.append(provider)

@@ -21,6 +21,8 @@ import datetime
 import json
 import shutil
 from .diagnostic_collection import DiagnosticCollection
+if TYPE_CHECKING:
+    from .providers import AllProviders
 
 ENCODING = "utf-8"
 
@@ -180,6 +182,7 @@ class LanguageServer:
         self._process = None
         self._received_shutdown = False
         self.workspace_folders: list[WorkspaceFolder] = []
+        self.providers: list[AllProviders] = []
 
         self.pending_changes: dict[int, DidChangeTextDocumentParams] = {}
         self.request_id = 1
@@ -227,6 +230,7 @@ class LanguageServer:
                 'initializationOptions': self.initialization_options.get()
             }).result
             self.capabilities.assign(cast(dict, initialize_result['capabilities']))
+            self.register_providers()
             self.notify.initialized({})
             self.status = 'ready'
 
@@ -246,7 +250,129 @@ class LanguageServer:
         self.view.settings().clear_on_change('')
         run_future(self.shutdown())
 
+    def register_providers(self):
+        from .providers import register_provider, CompletionProvider, HoverProvider, DefinitionProvider, DocumentSymbolProvider
+        server = self
+        if server.capabilities.has('definitionProvider'):
+            from .types import Definition, LocationLink
+            from .view_to_lsp import point_to_position
+
+            class LspDefinitionProvider(DefinitionProvider):
+                name= server.name
+                activation_events=self.activation_events
+                _requests: list[Request]=[]
+
+                async def provide_definition(self, view: sublime.View, point: int) -> Definition | list[LocationLink] | None:
+                    uri = get_view_uri(view)
+                    req = server.send.definition({
+                        'textDocument': {
+                            'uri': uri
+                        },
+                        'position': point_to_position(view, point)
+                    })
+                    LspDefinitionProvider._requests.append(req)
+                    return await req.result
+
+                async def cancel(self):
+                    if LspDefinitionProvider._requests:
+                        for request in LspDefinitionProvider._requests:
+                            request.cancel()
+                        LspDefinitionProvider._requests = []
+            definition_provider = LspDefinitionProvider()
+            self.providers.append(definition_provider)
+            register_provider(definition_provider)
+
+        if server.capabilities.has('completionProvider'):
+            from .types import CompletionItem, CompletionList
+            from .view_to_lsp import point_to_position
+
+            class LspCompletionProvider(CompletionProvider):
+                name= server.name
+                activation_events=self.activation_events
+                _completion_requests: list[Request]=[]
+
+                async def provide_completion_items(self, view: sublime.View, point: int) -> list[CompletionItem] | CompletionList | None:
+                    uri = get_view_uri(view)
+                    req = server.send.completion({
+                        'textDocument': {
+                            'uri': uri
+                        },
+                        'position': point_to_position(view, point)
+                    })
+                    LspCompletionProvider._completion_requests.append(req)
+                    return await req.result
+
+                async def cancel(self):
+                    if LspCompletionProvider._completion_requests:
+                        for request in LspCompletionProvider._completion_requests:
+                            request.cancel()
+                        LspCompletionProvider._completion_requests = []
+            completion_provider = LspCompletionProvider()
+            self.providers.append(completion_provider)
+            register_provider(completion_provider)
+
+        if server.capabilities.has('hoverProvider'):
+            from .types import Hover
+            from .view_to_lsp import point_to_position
+
+            class LspHoverProvider(HoverProvider):
+                name=server.name
+                activation_events=self.activation_events
+                _requests: list[Request]=[]
+
+                async def provide_hover(self, view: sublime.View, hover_point: int) -> Hover | None:
+                    uri = get_view_uri(view)
+                    req = server.send.hover({
+                        'textDocument': {
+                            'uri': uri
+                        },
+                        'position': point_to_position(view, hover_point)
+                    })
+                    LspHoverProvider._requests.append(req)
+                    return await req.result
+
+                async def cancel(self):
+                    if LspHoverProvider._requests:
+                        for request in LspHoverProvider._requests:
+                            request.cancel()
+                        LspHoverProvider._requests = []
+            hover_provider = LspHoverProvider()
+            self.providers.append(hover_provider)
+            register_provider(hover_provider)
+
+        if server.capabilities.has('documentSymbolProvider'):
+            from .types import SymbolInformation, DocumentSymbol, DocumentSymbol
+            from .view_to_lsp import point_to_position
+
+            class LspDocumentSymbolProvider(DocumentSymbolProvider):
+                name= server.name
+                activation_events=self.activation_events
+                _requests: list[Request]=[]
+
+                async def provide_document_symbol(self, view: sublime.View) -> list[SymbolInformation] | list[DocumentSymbol] | None:
+                    uri = get_view_uri(view)
+                    req = server.send.document_symbol({
+                        'textDocument': {
+                            'uri': uri
+                        },
+                    })
+                    LspDocumentSymbolProvider._requests.append(req)
+                    return await req.result
+
+                async def cancel(self):
+                    if LspDocumentSymbolProvider._requests:
+                        for request in LspDocumentSymbolProvider._requests:
+                            request.cancel()
+                        LspDocumentSymbolProvider._requests = []
+            document_symbol_provider = LspDocumentSymbolProvider()
+            self.providers.append(document_symbol_provider)
+            register_provider(document_symbol_provider)
+
+
     async def shutdown(self):
+        from .providers import unregister_provider
+        for provider in self.providers:
+            unregister_provider(provider)
         await self.send.shutdown().result
         self._received_shutdown = True
         self.notify.exit()
