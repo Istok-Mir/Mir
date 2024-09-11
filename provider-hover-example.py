@@ -1,5 +1,5 @@
 # this is just a concept
-from .api.types import Hover, Diagnostic, DiagnosticSeverity
+from .api.types import Hover, Diagnostic
 from .api import HoverProvider, mir
 from .api.helpers import range_to_region
 import sublime
