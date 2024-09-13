@@ -50,16 +50,6 @@ def file_name_to_uri(file_name: str) -> str:
 
 def open_view_with_uri(uri: str, lsp_range: Range, window: sublime.Window) -> sublime.View:
     schema, parsed_uri = parse_uri(uri)
-    for v in window.views():
-        view_uri = get_view_uri(v)
-        schema, parsed_view_uri_uri = parse_uri(view_uri)
-        if parsed_view_uri_uri == parsed_uri:
-            window.focus_view(v)
-            region = range_to_region(v, lsp_range)
-            v.sel().clear()
-            v.sel().add(region.end())
-            v.show_at_center(region)
-            return v
     return window.open_file(parsed_uri+f":{lsp_range['end']['line']+1}:{lsp_range['end']['character']+1}", sublime.ENCODED_POSITION)
 
 def parse_uri(uri: str) -> tuple[str, str]:

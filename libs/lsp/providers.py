@@ -3,8 +3,6 @@ from typing import List, Union, TYPE_CHECKING
 from .server import ActivationEvents
 from .types import CompletionItem, Hover, CompletionList, Definition, LocationLink, SymbolInformation, DocumentSymbol
 import sublime
-if TYPE_CHECKING:
-    from .lsp_providers import LspProvider
 
 class BaseProvider:
     @classmethod
@@ -58,7 +56,7 @@ class DocumentSymbolProvider(BaseProvider):
     async def provide_document_symbol(self, view: sublime.View) -> list[SymbolInformation] | list[DocumentSymbol] | None:
         ...
 
-AllProviders = Union[DefinitionProvider, HoverProvider, CompletionProvider, DocumentSymbolProvider, LspProvider]
+AllProviders = Union[DefinitionProvider, HoverProvider, CompletionProvider, DocumentSymbolProvider]
 def register_provider(provider: AllProviders):
     if isinstance(provider, DefinitionProvider):
         Providers.definition_providers.append(provider)
