@@ -1,0 +1,98 @@
+from __future__ import annotations
+from .providers import CompletionProvider, DefinitionProvider, HoverProvider, DocumentSymbolProvider
+from .lsp_requests import Request
+from typing import TYPE_CHECKING
+from .view_to_lsp import get_view_uri, point_to_position
+if TYPE_CHECKING:
+    import sublime
+    from .types import CompletionItem, CompletionList, Definition, LocationLink, Hover, SymbolInformation, DocumentSymbol
+    from .server import LanguageServer
+
+class LspProvider:
+    def __init__(self, server: LanguageServer):
+        self.server = server
+        self.name = self.server.name
+        self.activation_events = self.server.activation_events
+        self._requests: list[Request]=[]
+
+class LspDefinitionProvider(LspProvider, DefinitionProvider):
+    async def provide_definition(self, view: sublime.View, point: int) -> Definition | list[LocationLink] | None:
+        uri = get_view_uri(view)
+        req = self.server.send.definition({
+            'textDocument': {
+                'uri': uri
+            },
+            'position': point_to_position(view, point)
+        })
+        self._requests.append(req)
+        return await req.result
+
+    async def cancel(self):
+        if self._requests:
+            for request in self._requests:
+                request.cancel()
+            self._requests = []
+
+
+class LspCompletionProvider(LspProvider, CompletionProvider):
+    async def provide_completion_items(self, view: sublime.View, point: int) -> list[CompletionItem] | CompletionList | None:
+        uri = get_view_uri(view)
+        req = self.server.send.completion({
+            'textDocument': {
+                'uri': uri
+            },
+            'position': point_to_position(view, point)
+        })
+        self._requests.append(req)
+        return await req.result
+
+    async def cancel(self):
+        if self._requests:
+            for request in self._requests:
+                request.cancel()
+            self._requests = []
+
+
+class LspHoverProvider(LspProvider, HoverProvider):
+    async def provide_hover(self, view: sublime.View, hover_point: int, hover_zone: sublime.HoverZone) -> Hover | None:
+        uri = get_view_uri(view)
+        req = self.server.send.hover({
+            'textDocument': {
+                'uri': uri
+            },
+            'position': point_to_position(view, hover_point)
+        })
+        self._requests.append(req)
+        return await req.result
+
+    async def cancel(self):
+        if self._requests:
+            for request in self._requests:
+                request.cancel()
+            self._requests = []
+
+
+class LspDocumentSymbolProvider(LspProvider, DocumentSymbolProvider):
+    async def provide_document_symbol(self, view: sublime.View) -> list[SymbolInformation] | list[DocumentSymbol] | None:
+        uri = get_view_uri(view)
+        req = self.server.send.document_symbol({
+            'textDocument': {
+                'uri': uri
+            },
+        })
+        self._requests.append(req)
+        return await req.result
+
+    async def cancel(self):
+        if self._requests:
+            for request in self._requests:
+                request.cancel()
+            self._requests = []
+
+
+capabilities_to_lsp_providers = {
+    'definitionProvider': LspDefinitionProvider,
+    'hoverProvider': LspHoverProvider,
+    'completionProvider': LspCompletionProvider,
+    'documentSymbolProvider': LspDocumentSymbolProvider,
+}

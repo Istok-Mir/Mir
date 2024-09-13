@@ -14,7 +14,7 @@ from typing import TypeVar, Generic
 SourceName = str
 """ The language server name or the provider name """
 
-MAX_WAIT_TIME=1 # second
+MAX_WAIT_TIME=10 # second
 
 class mir:
     @staticmethod
@@ -98,7 +98,7 @@ class mir:
         # await all futures and handle them appropriately
         try:
             results = await asyncio.gather(
-                *[handle(provider) for provider in providers]
+                *[handle(provider) for provider in providers],
             )
         except Exception as e:
             print('Mir (CompletionError):', e)

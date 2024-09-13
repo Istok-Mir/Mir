@@ -21,8 +21,7 @@ import datetime
 import json
 import shutil
 from .diagnostic_collection import DiagnosticCollection
-if TYPE_CHECKING:
-    from .providers import AllProviders
+import traceback
 
 ENCODING = "utf-8"
 
@@ -176,13 +175,13 @@ class LanguageServer:
         self.notify = LspNotification(self.send_notification)
         self.capabilities = ServerCapabilities()
         self.view: sublime.View = sublime.View(-1)
+        self.window: sublime.Window = sublime.Window(-1)
         self.settings = DottedDict()
         self.initialization_options = DottedDict()
         self.diagnostics = DiagnosticCollection()
         self._process = None
         self._received_shutdown = False
         self.workspace_folders: list[WorkspaceFolder] = []
-        self.providers: list[AllProviders] = []
 
         self.pending_changes: dict[int, DidChangeTextDocumentParams] = {}
         self.request_id = 1
@@ -194,6 +193,7 @@ class LanguageServer:
         self.on_notification_handlers: list[NotificationHandler] = []
         # logs
         self._communcation_logs: CommmunicationLogs = CommmunicationLogs(self.name)
+        self.before_shutdown: list[Callable[[],None]] = []
         attach_server_request_and_notification_handlers(self)
 
     async def start(self, view: sublime.View):
@@ -202,6 +202,7 @@ class LanguageServer:
         window = view.window()
         if not window:
             raise Exception('A window must exists now')
+        self.window = window
         self._communcation_logs = CommmunicationLogs(self.name, window)
 
         self.before_initialize()
@@ -213,6 +214,7 @@ class LanguageServer:
                 self.cmd,
                 stdout=asyncio.subprocess.PIPE,
                 stdin=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
                 env=os.environ.copy()
             )
             run_future(self._run_forever())
@@ -251,129 +253,19 @@ class LanguageServer:
         run_future(self.shutdown())
 
     def register_providers(self):
-        # this method is messy, and will probably need to change
-        from .providers import register_provider, CompletionProvider, HoverProvider, DefinitionProvider, DocumentSymbolProvider
-        server = self
-        if server.capabilities.has('definitionProvider'):
-            from .types import Definition, LocationLink
-            from .view_to_lsp import point_to_position
-
-            class LspDefinitionProvider(DefinitionProvider):
-                name= server.name
-                activation_events=self.activation_events
-                _requests: list[Request]=[]
-
-                async def provide_definition(self, view: sublime.View, point: int) -> Definition | list[LocationLink] | None:
-                    uri = get_view_uri(view)
-                    req = server.send.definition({
-                        'textDocument': {
-                            'uri': uri
-                        },
-                        'position': point_to_position(view, point)
-                    })
-                    LspDefinitionProvider._requests.append(req)
-                    return await req.result
-
-                async def cancel(self):
-                    if LspDefinitionProvider._requests:
-                        for request in LspDefinitionProvider._requests:
-                            request.cancel()
-                        LspDefinitionProvider._requests = []
-            definition_provider = LspDefinitionProvider()
-            self.providers.append(definition_provider)
-            register_provider(definition_provider)
-
-        if server.capabilities.has('completionProvider'):
-            from .types import CompletionItem, CompletionList
-            from .view_to_lsp import point_to_position
-
-            class LspCompletionProvider(CompletionProvider):
-                name= server.name
-                activation_events=self.activation_events
-                _completion_requests: list[Request]=[]
-
-                async def provide_completion_items(self, view: sublime.View, point: int) -> list[CompletionItem] | CompletionList | None:
-                    uri = get_view_uri(view)
-                    req = server.send.completion({
-                        'textDocument': {
-                            'uri': uri
-                        },
-                        'position': point_to_position(view, point)
-                    })
-                    LspCompletionProvider._completion_requests.append(req)
-                    return await req.result
-
-                async def cancel(self):
-                    if LspCompletionProvider._completion_requests:
-                        for request in LspCompletionProvider._completion_requests:
-                            request.cancel()
-                        LspCompletionProvider._completion_requests = []
-            completion_provider = LspCompletionProvider()
-            self.providers.append(completion_provider)
-            register_provider(completion_provider)
-
-        if server.capabilities.has('hoverProvider'):
-            from .types import Hover
-            from .view_to_lsp import point_to_position
-
-            class LspHoverProvider(HoverProvider):
-                name=server.name
-                activation_events=self.activation_events
-                _requests: list[Request]=[]
-
-                async def provide_hover(self, view: sublime.View, hover_point: int, hover_zone: sublime.HoverZone) -> Hover | None:
-                    uri = get_view_uri(view)
-                    req = server.send.hover({
-                        'textDocument': {
-                            'uri': uri
-                        },
-                        'position': point_to_position(view, hover_point)
-                    })
-                    LspHoverProvider._requests.append(req)
-                    return await req.result
-
-                async def cancel(self):
-                    if LspHoverProvider._requests:
-                        for request in LspHoverProvider._requests:
-                            request.cancel()
-                        LspHoverProvider._requests = []
-            hover_provider = LspHoverProvider()
-            self.providers.append(hover_provider)
-            register_provider(hover_provider)
-
-        if server.capabilities.has('documentSymbolProvider'):
-            from .types import SymbolInformation, DocumentSymbol, DocumentSymbol
-            from .view_to_lsp import point_to_position
-
-            class LspDocumentSymbolProvider(DocumentSymbolProvider):
-                name= server.name
-                activation_events=self.activation_events
-                _requests: list[Request]=[]
-
-                async def provide_document_symbol(self, view: sublime.View) -> list[SymbolInformation] | list[DocumentSymbol] | None:
-                    uri = get_view_uri(view)
-                    req = server.send.document_symbol({
-                        'textDocument': {
-                            'uri': uri
-                        },
-                    })
-                    LspDocumentSymbolProvider._requests.append(req)
-                    return await req.result
-
-                async def cancel(self):
-                    if LspDocumentSymbolProvider._requests:
-                        for request in LspDocumentSymbolProvider._requests:
-                            request.cancel()
-                        LspDocumentSymbolProvider._requests = []
-            document_symbol_provider = LspDocumentSymbolProvider()
-            self.providers.append(document_symbol_provider)
-            register_provider(document_symbol_provider)
-
+        from .providers import register_provider, unregister_provider
+        from .lsp_providers import capabilities_to_lsp_providers
+        for capability, Provider in capabilities_to_lsp_providers.items():
+            if self.capabilities.has(capability):
+                provider = Provider(self)
+                def dispose():
+                    unregister_provider(provider)
+                self.before_shutdown.append(dispose)
+                register_provider(provider)
 
     async def shutdown(self):
-        from .providers import unregister_provider
-        for provider in self.providers:
-            unregister_provider(provider)
+        for cb in self.before_shutdown:
+            cb()
         await self.send.shutdown().result
         self._received_shutdown = True
         self.notify.exit()
@@ -406,8 +298,11 @@ class LanguageServer:
                     continue
                 body = await self._process.stdout.readexactly(num_bytes)
                 run_future(self._handle_body(body))
-        except (BrokenPipeError, ConnectionResetError, StopLoopException) as e:
-            print(f'Mir ({self.name}) Error in run_forever. ', e)
+        except (BrokenPipeError, ConnectionResetError) as e:
+            print(f'Mir ({self.name}). BrokenPipeError, ConnectionResetError', e)
+            pass
+        except StopLoopException as e:
+            print(f'Mir: ({self.name}) stopped.', e)
             pass
         return self._received_shutdown
 

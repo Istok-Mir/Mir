@@ -32,8 +32,10 @@ def attach_server_request_and_notification_handlers(server: LanguageServer):
     def on_did_change_watched_files(params: DidChangeWatchedFilesParams):
         server.notify.did_change_watched_files(params)
 
-
+    register_provider_map = {}
     async def register_capability(params: RegistrationParams):
+        from .lsp_providers import capabilities_to_lsp_providers
+        from .providers import register_provider
         registrations = params["registrations"]
         for registration in registrations:
             capability_path = method_to_capability(registration["method"])
@@ -56,13 +58,25 @@ def attach_server_request_and_notification_handlers(server: LanguageServer):
                         'on_did_delete_files': on_did_delete_files,
                         'on_did_change_watched_files': on_did_change_watched_files,
                     })
+            if capability_path in capabilities_to_lsp_providers:
+                Provider = capabilities_to_lsp_providers[capability_path]
+                provider = Provider(server)
+                register_provider(provider)
+                if not capability_path in register_provider_map:
+                    register_provider_map[capability_path] = []
+                register_provider_map[capability_path].append(provider)
+
             server.capabilities.register(capability_path, options)
 
     async def unregister_capability(params: UnregistrationParams):
+        from .providers import unregister_provider
         unregisterations = params["unregisterations"]
         for unregistration in unregisterations:
             capability_path = method_to_capability(unregistration["method"])
             server.capabilities.unregister(capability_path)
+            provider = register_provider_map.get(capability_path, []).pop()
+            if provider:
+                unregister_provider(provider)
             if capability_path == 'workspace.didChangeWatchedFiles':
                 for folder in server.workspace_folders:
                     _, folder_name = parse_uri(folder['uri'])

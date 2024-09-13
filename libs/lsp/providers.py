@@ -71,13 +71,14 @@ def register_provider(provider: AllProviders):
 
 
 def unregister_provider(provider: AllProviders):
-    if DefinitionProvider in provider.__bases__:
-        Providers.definition_providers = [p for p in Providers.definition_providers if p.name != provider.name]
-    elif HoverProvider in provider.__bases__:
-        Providers.hover_providers = [p for p in Providers.hover_providers if p.name != provider.name]
-    elif CompletionProvider in provider.__bases__:
-        Providers.completion_providers = [p for p in Providers.completion_providers if p.name != provider.name]
-    elif DocumentSymbolProvider in provider.__bases__:
-        Providers.document_symbols_providers = [p for p in Providers.document_symbols_providers if p.name != provider.name]
+    if isinstance(provider, DefinitionProvider):
+        Providers.definition_providers = [p for p in Providers.definition_providers if p != provider]
+    elif isinstance(provider, HoverProvider):
+        Providers.hover_providers = [p for p in Providers.hover_providers if p != provider]
+    elif isinstance(provider, CompletionProvider):
+        Providers.completion_providers = [p for p in Providers.completion_providers if p != provider]
+    elif isinstance(provider, DocumentSymbolProvider):
+        Providers.document_symbols_providers = [p for p in Providers.document_symbols_providers if p != provider]
     else:
         raise Exception(f'Got a unusported provider {provider.__name__}')
+
