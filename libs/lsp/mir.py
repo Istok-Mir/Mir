@@ -14,7 +14,7 @@ from typing import TypeVar, Generic
 SourceName = str
 """ The language server name or the provider name """
 
-MAX_WAIT_TIME=10 # second
+MAX_WAIT_TIME=3 # seconds is a lot of time
 
 class mir:
     @staticmethod
