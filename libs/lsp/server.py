@@ -255,9 +255,9 @@ class LanguageServer:
     def register_providers(self):
         from .providers import register_provider, unregister_provider
         from .lsp_providers import capabilities_to_lsp_providers
-        for capability, Provider in capabilities_to_lsp_providers.items():
+        for capability, LspProvider in capabilities_to_lsp_providers.items():
             if self.capabilities.has(capability):
-                provider = Provider(self)
+                provider = LspProvider(self)
                 def dispose():
                     unregister_provider(provider)
                 self.before_shutdown.append(dispose)

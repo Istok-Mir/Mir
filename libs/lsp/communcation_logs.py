@@ -12,6 +12,7 @@ class CommmunicationLogs:
             self.panel = window.create_output_panel(name)
 
     def append(self, log: str):
+        return
         if not self.panel:
             return
         time = datetime.datetime.now().strftime('%H:%M:%S')

@@ -6,6 +6,7 @@ from .view_to_lsp import get_view_uri, point_to_position
 if TYPE_CHECKING:
     import sublime
     from .types import CompletionItem, CompletionList, Definition, LocationLink, Hover, SymbolInformation, DocumentSymbol
+    from .capabilities import ServerCapability
     from .server import LanguageServer
 
 class LspProvider:
@@ -90,7 +91,7 @@ class LspDocumentSymbolProvider(LspProvider, DocumentSymbolProvider):
             self._requests = []
 
 
-capabilities_to_lsp_providers = {
+capabilities_to_lsp_providers: dict[ServerCapability, type[LspProvider]] = {
     'definitionProvider': LspDefinitionProvider,
     'hoverProvider': LspHoverProvider,
     'completionProvider': LspCompletionProvider,

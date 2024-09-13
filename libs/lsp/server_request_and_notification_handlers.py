@@ -59,8 +59,8 @@ def attach_server_request_and_notification_handlers(server: LanguageServer):
                         'on_did_change_watched_files': on_did_change_watched_files,
                     })
             if capability_path in capabilities_to_lsp_providers:
-                Provider = capabilities_to_lsp_providers[capability_path]
-                provider = Provider(server)
+                LspProvider = capabilities_to_lsp_providers[capability_path]
+                provider = LspProvider(server)
                 register_provider(provider)
                 if not capability_path in register_provider_map:
                     register_provider_map[capability_path] = []
