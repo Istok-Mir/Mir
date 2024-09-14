@@ -18,10 +18,9 @@ from wcmatch.glob import globmatch
 from wcmatch.glob import GLOBSTAR
 import asyncio
 import datetime
-import json
+import orjson
 import shutil
 from .diagnostic_collection import DiagnosticCollection
-import traceback
 
 ENCODING = "utf-8"
 
@@ -67,11 +66,7 @@ class StopLoopException(Exception):
 
 
 def create_message(payload: Any) :
-    body = json.dumps(
-        payload,
-        check_circular=False,
-        ensure_ascii=False,
-        separators=(",", ":")).encode(ENCODING)
+    body = orjson.dumps(payload)
     return (
         f"Content-Length: {len(body)}\r\n".encode(ENCODING),
         "Content-Type: application/vscode-jsonrpc; charset=utf-8\r\n\r\n".encode(ENCODING),
@@ -308,12 +303,12 @@ class LanguageServer:
 
     async def _handle_body(self, body: bytes) -> None:
         try:
-            await self._receive_payload(json.loads(body))
+            await self._receive_payload(orjson.loads(body))
         except IOError as ex:
             self._log(f"Mir ({self.name})  malformed {ENCODING}: {ex}")
         except UnicodeDecodeError as ex:
             self._log(f"Mir ({self.name})  malformed {ENCODING}: {ex}")
-        except json.JSONDecodeError as ex:
+        except orjson.JSONDecodeError as ex:
             self._log(f"Mir ({self.name})  malformed JSON: {ex}")
         except Exception as e:
             print(f"Mir ({self.name}) Error in _handle_body. ", e)
