@@ -16,6 +16,11 @@ class MirHoverListener(sublime_plugin.ViewEventListener):
             return
         self.cleanup = mir.on_did_change_diagnostics(self.on_did_change_diagnostics)
 
+    def on_load(self):
+        if self.cleanup:
+            return
+        self.cleanup = mir.on_did_change_diagnostics(self.on_did_change_diagnostics)
+
     def on_did_change_diagnostics(self, uris: list[str]):
         run_future(self.draw_diagnotsics(uris))
 
