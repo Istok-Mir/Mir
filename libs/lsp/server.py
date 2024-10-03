@@ -363,10 +363,9 @@ class LanguageServer:
             self._communcation_logs.append(f'Sending request "{method}" ({request_id})\nParams: {format_payload(params)}')
             response.result.set_result(cache)
             self._communcation_logs.append(f'Cache hit "{response.method}" ({response.id}) - {0}s\nResponse: {format_payload(cache)}')
-        else:
-            self._response_handlers[request_id] = response
-            self._communcation_logs.append(f'Sending request "{method}" ({request_id})\nParams: {format_payload(params)}')
-            run_future(self._send_payload(make_request(method, request_id, params)))
+        self._response_handlers[request_id] = response
+        self._communcation_logs.append(f'Sending request "{method}" ({request_id})\nParams: {format_payload(params)}')
+        run_future(self._send_payload(make_request(method, request_id, params)))
         return response
 
     def _send_payload_sync(self, payload: dict) -> None:
