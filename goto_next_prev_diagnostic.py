@@ -17,12 +17,12 @@ def find_diagnostic(view: sublime.View, diagnostics: list[Diagnostic], forward: 
     point = region.b if region is not None else 0
 
     op_func = operator.gt if forward else operator.lt
-    for diagnostic in diagnostics:
+    for diagnostic in sorted_diagnostics:
         diag_pos = position_to_point(view, diagnostic['range']['start'])
         if op_func(diag_pos, point):
             break
     else:
-        diag_pos = position_to_point(view, diagnostics[0]['range']['start'])
+        diag_pos = position_to_point(view, sorted_diagnostics[0]['range']['start'])
     return diag_pos
 
 

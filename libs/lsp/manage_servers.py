@@ -25,19 +25,17 @@ async def open_document(view: sublime.View):
     window = view.window()
     if not window:
         return
-    server_for_the_view = servers_for_view(view)
-    if len(server_for_the_view) == 0: # start the servers if not started
-        for server in ManageServers.language_servers_pluguins:
-            if not is_applicable_view(view, server.activation_events):
+    for server in ManageServers.language_servers_pluguins:
+        if not is_applicable_view(view, server.activation_events):
+            continue
+        if server.name not in [s.name for s in ManageServers.servers_for_view(view)]:
+            try:
+                new_server = server()
+                await new_server.start(view)
+                ManageServers.attach_server_to_window(new_server, window)
+            except Exception as e:
+                print(f'Mir ({server.name}) | Error while starting.', e)
                 continue
-            if server.name not in [s.name for s in ManageServers.servers_for_view(view)]:
-                try:
-                    new_server = server()
-                    await new_server.start(view)
-                    ManageServers.attach_server_to_window(new_server, window)
-                except Exception as e:
-                    print(f'Mir ({server.name}) | Error while starting.', e)
-                    continue
     for server in servers_for_view(view):
         server.notify.did_open_text_document({
             'textDocument': view_to_text_document_item(view)
@@ -109,6 +107,7 @@ class ManageServers(sublime_plugin.EventListener):
         print('EventListener on_revert', view)
 
     def on_load(self, view):
+        print('ovde')
         run_future(open_document(view))
 
     def on_pre_close(self, view):
