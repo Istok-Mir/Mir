@@ -182,7 +182,6 @@ class LanguageServer:
         self.request_id = 1
         # equests sent from client
         self._response_handlers: Dict[Any, Request] = {}
-        self._cache_responses: Dict[str, Request] = {}
         # requests and notifications sent from server
         self.on_request_handlers = {}
         self.on_notification_handlers: list[NotificationHandler] = []
@@ -327,16 +326,7 @@ class LanguageServer:
         except Exception as err:
             self._log(f"Error handling server payload: {err}")
 
-    def invalidete_cache(self, uri: str):
-        for key, _ in list(self._cache_responses.items()):
-            if f"uri:{uri};" in key:
-                del self._cache_responses[key]
-
     def send_notification(self, method: str, params: Optional[dict] = None):
-        if method == 'textDocument/didChange' and params and 'textDocument' in params:
-            self.invalidete_cache(params['textDocument']['uri'])
-        if method == 'textDocument/didClose' and params and 'textDocument' in params:
-            self.invalidete_cache(params['textDocument']['uri'])
         self._communcation_logs.append(f'Send notification "{method}"\nParams: {format_payload(params)}')
         self._send_payload_sync(
             make_notification(method, params))
@@ -358,11 +348,6 @@ class LanguageServer:
         request_id = self.request_id
         self.request_id += 1
         response = Request(self, request_id, method, params)
-        cache = self._cache_responses.get(response.cache_key)
-        if cache:
-            self._communcation_logs.append(f'Sending request "{method}" ({request_id})\nParams: {format_payload(params)}')
-            response.result.set_result(cache)
-            self._communcation_logs.append(f'Cache hit "{response.method}" ({response.id}) - {0}s\nResponse: {format_payload(cache)}')
         self._response_handlers[request_id] = response
         self._communcation_logs.append(f'Sending request "{method}" ({request_id})\nParams: {format_payload(params)}')
         run_future(self._send_payload(make_request(method, request_id, params)))
@@ -406,8 +391,6 @@ class LanguageServer:
         if "result" in server_response and "error" not in server_response:
             self._communcation_logs.append(f'Recieved response "{response.method}" ({response.id}) - {response.duration}s\nResponse: {format_payload(server_response["result"])}')
             response.result.set_result(server_response["result"])
-            if response.cache_key:
-                self._cache_responses[response.cache_key] = server_response["result"]
         elif "result" not in server_response and "error" in server_response:
             self._communcation_logs.append(f'Recieved error response "{response.method}" ({response.id}) - {response.duration}s\nResponse:{format_payload(server_response["error"])}')
             response.result.set_exception(Error.from_lsp(server_response["error"]))

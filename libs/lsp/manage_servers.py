@@ -107,7 +107,6 @@ class ManageServers(sublime_plugin.EventListener):
         print('EventListener on_revert', view)
 
     def on_load(self, view):
-        print('ovde')
         run_future(open_document(view))
 
     def on_pre_close(self, view):
