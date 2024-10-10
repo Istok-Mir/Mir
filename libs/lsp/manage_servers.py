@@ -6,7 +6,6 @@ from .file_watcher import remove_file_watcher
 from .capabilities import ServerCapability
 import sublime
 import sublime_plugin
-import copy
 
 
 def servers_for_view(view: sublime.View, capability: ServerCapability | None = None) -> list[LanguageServer]:
