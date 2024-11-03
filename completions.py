@@ -32,8 +32,8 @@ class MirCompletionListener(sublime_plugin.ViewEventListener):
             if isinstance(result, dict):
                 items = result['items']
                 for index, i in enumerate(items):
-                    if first_letter and not i['label'].startswith(first_letter):
-                        continue
+                    # if first_letter and not i['label'].startswith(first_letter):
+                    #     continue
                     label_details_description = i.get('labelDetails', {}).get('description') or ""
                     ci = sublime.CompletionItem.command_completion(i['label'], 'mir_insert_completion', {
                         'index': index,

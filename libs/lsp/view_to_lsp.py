@@ -1,6 +1,7 @@
 from __future__ import annotations
-from typing import cast
-from .types import LanguageKind, Position, TextDocumentItem, Range
+from typing import cast, Any
+from typing_extensions import TypeGuard
+from .types import LanguageKind, Position, Range, TextDocumentItem, TextEdit, TextDocumentEdit
 import sublime
 from urllib.parse import urlparse
 from urllib.request import url2pathname
@@ -136,3 +137,12 @@ def selector_to_language_id(selector: str) -> str:
     return result if isinstance(result, str) else ""
 
 
+def is_range(val: Any) -> TypeGuard[Range]:
+    return isinstance(val, dict) and 'start' in val and 'end' in val
+
+
+def is_text_edit(val: Any) -> TypeGuard[TextEdit]:
+    return isinstance(val, dict) and 'range' in val and 'newText' in val
+
+def is_text_document_edit(val: Any) -> TypeGuard[TextDocumentEdit]:
+    return isinstance(val, dict) and 'textDocument' in val and 'edits' in val
