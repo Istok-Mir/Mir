@@ -61,7 +61,9 @@ class MirRenameCommand(sublime_plugin.TextCommand):
             return
         if is_range(response):
             initial_text = self.view.substr(range_to_region(self.view, response))
-            def on_done(new_name):
+            def on_done(new_name: str):
+                if not new_name.strip():
+                    return
                 run_future(self.rename(server, point, new_name))
             w.show_input_panel('Mir Rename:', initial_text, on_done, None, None)
         else:
