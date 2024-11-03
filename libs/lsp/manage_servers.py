@@ -14,6 +14,11 @@ def servers_for_view(view: sublime.View, capability: ServerCapability | None = N
     return [s for s in ManageServers.servers_for_view(view) if is_applicable_view(view, s.activation_events)]
 
 
+def server_for_view(name: str, view: sublime.View) -> LanguageServer | None:
+    language_server = next(iter([s for s in ManageServers.servers_for_view(view) if is_applicable_view(view, s.activation_events) and s.name == name]), None)
+    return language_server
+
+
 def servers_for_window(window: sublime.Window, capability: ServerCapability | None = None) -> list[LanguageServer]:
     if capability:
         return [s for s in ManageServers.servers_for_window(window) if s.capabilities.has(capability)]
