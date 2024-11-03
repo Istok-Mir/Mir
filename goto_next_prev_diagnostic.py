@@ -5,9 +5,10 @@ from .api import mir, run_future
 from .api.types import Diagnostic
 from .api.helpers import position_to_point
 import operator
+from .api.helpers import minihtml, MinihtmlKind
 
 
-def find_diagnostic(view: sublime.View, diagnostics: list[Diagnostic], forward: bool) -> int:
+def find_diagnostic(view: sublime.View, diagnostics: list[Diagnostic], forward: bool) -> tuple[int, Diagnostic]:
     sorted_diagnostics: list[Diagnostic] = []
     sorted_diagnostics.extend(diagnostics)
     sorted_diagnostics.sort(key=lambda d: operator.itemgetter('line', 'character')(d['range']['start']), reverse=not forward)
@@ -17,13 +18,16 @@ def find_diagnostic(view: sublime.View, diagnostics: list[Diagnostic], forward: 
     point = region.b if region is not None else 0
 
     op_func = operator.gt if forward else operator.lt
+    diag = None
     for diagnostic in sorted_diagnostics:
         diag_pos = position_to_point(view, diagnostic['range']['start'])
+        diag = diagnostic
         if op_func(diag_pos, point):
             break
     else:
         diag_pos = position_to_point(view, sorted_diagnostics[0]['range']['start'])
-    return diag_pos
+        diag = sorted_diagnostics[0]
+    return (diag_pos, diag)
 
 
 class MirNextDiagnosticCommand(sublime_plugin.TextCommand):
@@ -32,13 +36,11 @@ class MirNextDiagnosticCommand(sublime_plugin.TextCommand):
 
     async def goto_next(self):
         results = await mir.get_diagnostics(self.view)
+        all_diagnostics = []
         for _, diagnostics in results:
-            diag_pos = find_diagnostic(self.view, diagnostics, forward=True)
-            self.view.show_at_center(diag_pos)
-            self.view.sel().clear()
-            self.view.sel().add(diag_pos)
-            break
-
+            all_diagnostics.extend(diagnostics)
+        diag_pos, diagnostic = find_diagnostic(self.view, all_diagnostics, forward=True)
+        self.view.run_command('mir_go_to_point', {'point': diag_pos, 'diagnostic': diagnostic})
 
 class MirPrevDiagnosticCommand(sublime_plugin.TextCommand):
     def run(self, edit):
@@ -46,10 +48,22 @@ class MirPrevDiagnosticCommand(sublime_plugin.TextCommand):
 
     async def goto_prev(self):
         results = await mir.get_diagnostics(self.view)
+        all_diagnostics = []
         for _, diagnostics in results:
-            diag_pos = find_diagnostic(self.view, diagnostics, forward=False)
-            self.view.sel().clear()
-            self.view.sel().add_all([diag_pos])
-            self.view.show_at_center(diag_pos)
-            break
+            all_diagnostics.extend(diagnostics)
+        diag_pos, diagnostic = find_diagnostic(self.view, all_diagnostics, forward=False)
+        self.view.run_command('mir_go_to_point', {'point': diag_pos, 'diagnostic': diagnostic})
 
+
+class MirGoToPointCommand(sublime_plugin.TextCommand):
+    def run(self, edit, point, diagnostic: Diagnostic):
+        self.view.sel().clear()
+        self.view.sel().add(point)
+        self.view.show(point)
+        content = minihtml(self.view, diagnostic['message'], MinihtmlKind.FORMAT_MARKED_STRING | MinihtmlKind.FORMAT_MARKUP_CONTENT)
+        self.view.show_popup(
+            f"""<html style='box-sizing:border-box; background-color:var(--background); padding:0rem; margin:0'><body style='padding:0.3rem; margin:0; border-radius:4px; border: 1px solid color(var(--foreground) blend(var(--background) 20%));'><div style='padding: 0.0rem 0.2rem; font-size: 0.9rem;'>{content}</div></body></html>""",
+            sublime.PopupFlags.HIDE_ON_MOUSE_MOVE_AWAY,
+            point,
+            max_width=800,
+        )
