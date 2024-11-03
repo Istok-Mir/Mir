@@ -73,8 +73,8 @@ def text_change_to_text_document_content_change_event(change: sublime.TextChange
 
 def is_regular_view(v: sublime.View) -> bool:
     # Not from the quick panel (CTRL+P), and not a special view like a console, output panel or find-in-files panels.
-    if v.window() is None: # detect hover popup
-        return False
+    # if v.window() is None: # detect hover popup
+    #     return False
     if v.element() is not None:
         return False
     if v.settings().get('is_widget'):
