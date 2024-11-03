@@ -32,7 +32,7 @@ class LspDefinitionProvider(LspProvider, DefinitionProvider):
         if self._requests:
             for request in self._requests:
                 request.cancel()
-            self._requests = []
+        self._requests = []
 
 
 class LspCompletionProvider(LspProvider, CompletionProvider):
@@ -51,7 +51,7 @@ class LspCompletionProvider(LspProvider, CompletionProvider):
         if self._requests:
             for request in self._requests:
                 request.cancel()
-            self._requests = []
+        self._requests = []
 
 
 class LspHoverProvider(LspProvider, HoverProvider):
@@ -70,7 +70,7 @@ class LspHoverProvider(LspProvider, HoverProvider):
         if self._requests:
             for request in self._requests:
                 request.cancel()
-            self._requests = []
+        self._requests = []
 
 
 class LspDocumentSymbolProvider(LspProvider, DocumentSymbolProvider):
@@ -88,7 +88,7 @@ class LspDocumentSymbolProvider(LspProvider, DocumentSymbolProvider):
         if self._requests:
             for request in self._requests:
                 request.cancel()
-            self._requests = []
+        self._requests = []
 
 
 capabilities_to_lsp_providers: dict[ServerCapability, type[LspProvider]] = {
