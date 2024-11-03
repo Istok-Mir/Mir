@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, cast
 
 from .capabilities import method_to_capability
-from .view_to_lsp import parse_uri
+from .view_to_lsp import get_view_uri, parse_uri, view_to_text_document_item
 from .types import RegistrationParams, UnregistrationParams, LogMessageParams, LogMessageParams, MessageType, ConfigurationParams, PublishDiagnosticsParams, DidChangeWatchedFilesRegistrationOptions, CreateFilesParams, RenameFilesParams, DeleteFilesParams, DidChangeWatchedFilesParams
 from .file_watcher import get_file_watcher, create_file_watcher
 if TYPE_CHECKING:
@@ -99,9 +99,20 @@ def attach_server_request_and_notification_handlers(server: LanguageServer):
         server.diagnostics.set(params['uri'], params['diagnostics'])
         mir._notify_did_change_diagnostics([params['uri']])
 
+    async def diagnostic_refresh(params: None):
+        for view in server.open_views:
+            req = server.send.text_document_diagnostic({
+                'textDocument': {
+                    'uri': get_view_uri(view)
+                }
+            })
+
     server.on_request('workspace/configuration', workspace_configuration)
     server.on_request('client/registerCapability', register_capability)
     server.on_request('client/unregisterCapability', unregister_capability)
+    server.on_request('workspace/diagnostic/refresh', diagnostic_refresh)
     server.on_notification('window/logMessage', on_log_message)
     server.on_notification('textDocument/publishDiagnostics', publish_diagnostics)
+
+
 

@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+from .pull_diagnostics import pull_diagnostics
 from ..event_loop import run_future
 from .view_to_lsp import get_view_uri, view_to_text_document_item
 from .server import LanguageServer, matches_activation_event_on_uri, is_applicable_view
@@ -41,9 +43,12 @@ async def open_document(view: sublime.View):
                 print(f'Mir ({server.name}) | Error while starting.', e)
                 continue
     for server in servers_for_view(view):
+        text_document = view_to_text_document_item(view)
         server.notify.did_open_text_document({
-            'textDocument': view_to_text_document_item(view)
+            'textDocument': text_document
         })
+        server.open_views.append(view)
+        await pull_diagnostics(server, text_document['uri'])
 
 
 def close_document(view: sublime.View):
@@ -53,6 +58,7 @@ def close_document(view: sublime.View):
                 'uri': get_view_uri(view)
             }
         })
+        server.open_views = [v for v in server.open_views if v.id() != view.id()]
         if server.activation_events.get('on_uri'): # close servers who specify on_uri activation event
             window = view.window()
             if not window:

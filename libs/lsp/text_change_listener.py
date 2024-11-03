@@ -6,10 +6,11 @@ from .types import TextDocumentContentChangeEvent, TextDocumentSyncKind, TextDoc
 from .view_to_lsp import get_view_uri
 import sublime_plugin
 import sublime
+import functools
 if TYPE_CHECKING:
     from .server import LanguageServer
 
-class TextChangeListener(sublime_plugin.TextChangeListener):
+class MirTextChangeListener(sublime_plugin.TextChangeListener):
     @classmethod
     def is_applicable(cls, buffer: sublime.Buffer) -> bool:
         v = buffer.primary_view()
@@ -23,7 +24,8 @@ class TextChangeListener(sublime_plugin.TextChangeListener):
         if changes is None:
             return
         incremental_changes = [text_change_to_text_document_content_change_event(text_change) for text_change in changes]
-        for server in servers_for_view(view):
+        servers = servers_for_view(view)
+        for server in servers:
             # get sync kind for server
             textDocumentSyncKind = 0
             text_document_sync: TextDocumentSyncOptions | TextDocumentSyncKind = server.capabilities.get('textDocumentSync')
@@ -51,7 +53,8 @@ class TextChangeListener(sublime_plugin.TextChangeListener):
                 server.pending_changes[view.id()]['contentChanges'] = full_file_changes
             else:
                 raise Exception(f'TextChangeListener. ${server.name} somehow managed to get here. textDocumentSyncKind is {textDocumentSyncKind}.')
-            sublime.set_timeout(lambda: self.debounce_sending_changes(server, view, last_change_count=view.change_count()), 100)
+            debounce_func = functools.partial(self.debounce_sending_changes, server, view, last_change_count=view.change_count())
+            sublime.set_timeout(debounce_func, 100)
 
     def debounce_sending_changes(self, server: LanguageServer, view:sublime.View, last_change_count: int):
         if view.change_count() == last_change_count and server.status == 'ready':
@@ -70,8 +73,8 @@ def text_change_to_text_document_content_change_event(change: sublime.TextChange
 
 def is_regular_view(v: sublime.View) -> bool:
     # Not from the quick panel (CTRL+P), and not a special view like a console, output panel or find-in-files panels.
-    # if v.window() is None: # detect hover popup
-    #     return False
+    if v.window() is None: # detect hover popup
+        return False
     if v.element() is not None:
         return False
     if v.settings().get('is_widget'):

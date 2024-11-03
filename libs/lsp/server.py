@@ -1,6 +1,8 @@
 from __future__ import annotations
 import os
 
+from .pull_diagnostics import pull_diagnostics
+
 from .server_request_and_notification_handlers import attach_server_request_and_notification_handlers
 from .capabilities import CLIENT_CAPABILITIES, ServerCapabilities
 from .lsp_requests import LspRequest, LspNotification, Request
@@ -170,6 +172,7 @@ class LanguageServer:
         self.notify = LspNotification(self.send_notification)
         self.capabilities = ServerCapabilities()
         self.view: sublime.View = sublime.View(-1)
+        self.open_views: list[sublime.View] = []
         self.window: sublime.Window = sublime.Window(-1)
         self.settings = DottedDict()
         self.initialization_options = DottedDict()
@@ -188,6 +191,9 @@ class LanguageServer:
         # logs
         self._communcation_logs: CommmunicationLogs = CommmunicationLogs(self.name)
         self.before_shutdown: list[Callable[[],None]] = []
+
+        self.diagnostics_previous_result_id: str | None = None
+
         attach_server_request_and_notification_handlers(self)
 
     async def start(self, view: sublime.View):
@@ -439,3 +445,4 @@ class LanguageServer:
         self.pending_changes = {}
         for _, did_change_text_document_params in pending_changes:
             self.notify.did_change_text_document(did_change_text_document_params)
+            run_future(pull_diagnostics(self, did_change_text_document_params['textDocument']['uri']))
