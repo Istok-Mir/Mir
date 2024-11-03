@@ -243,7 +243,7 @@ class LanguageServer:
 
             self.on_settings_change()
             self.view.settings().add_on_change('', update_settings_on_change)
-            self.notify.workspace_did_change_configuration({'settings': {}}) # https://github.com/microsoft/language-server-protocol/issues/567#issuecomment-420589320
+            self.notify.workspace_did_change_configuration({'settings': self.settings.get()}) # https://github.com/microsoft/language-server-protocol/issues/567#issuecomment-420589320
         except Exception as e:
             print(f'Mir ({self.name}) Error while creating subprocess.', e)
             self.status = 'off'
@@ -332,7 +332,7 @@ class LanguageServer:
         except Exception as err:
             self._log(f"Error handling server payload: {err}")
 
-    def send_notification(self, method: str, params: Optional[dict] = None):
+    def send_notification(self, method: str, params: Optional[dict|list] = None):
         self._communcation_logs.append(f'Send notification "{method}"\nParams: {format_payload(params)}')
         self._send_payload_sync(
             make_notification(method, params))

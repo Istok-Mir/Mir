@@ -8,7 +8,7 @@ import operator
 from .api.helpers import minihtml, MinihtmlKind
 
 
-def find_diagnostic(view: sublime.View, diagnostics: list[Diagnostic], forward: bool) -> tuple[int, Diagnostic]:
+def find_diagnostic(view: sublime.View, diagnostics: list[Diagnostic], forward: bool) -> tuple[int, Diagnostic|None]:
     sorted_diagnostics: list[Diagnostic] = []
     sorted_diagnostics.extend(diagnostics)
     sorted_diagnostics.sort(key=lambda d: operator.itemgetter('line', 'character')(d['range']['start']), reverse=not forward)
@@ -16,6 +16,8 @@ def find_diagnostic(view: sublime.View, diagnostics: list[Diagnostic], forward: 
     sel = view.sel()
     region = sel[0] if sel else None
     point = region.b if region is not None else 0
+    if not sorted_diagnostics:
+        return (point, None)
 
     op_func = operator.gt if forward else operator.lt
     diag = None
@@ -56,10 +58,12 @@ class MirPrevDiagnosticCommand(sublime_plugin.TextCommand):
 
 
 class MirGoToPointCommand(sublime_plugin.TextCommand):
-    def run(self, edit, point, diagnostic: Diagnostic):
+    def run(self, edit, point, diagnostic: Diagnostic | None):
         self.view.sel().clear()
         self.view.sel().add(point)
         self.view.show(point)
+        if not diagnostic:
+            return
         content = minihtml(self.view, diagnostic['message'], MinihtmlKind.FORMAT_MARKED_STRING | MinihtmlKind.FORMAT_MARKUP_CONTENT)
         self.view.show_popup(
             f"""<html style='box-sizing:border-box; background-color:var(--background); padding:0rem; margin:0'><body style='padding:0.3rem; margin:0; border-radius:4px; border: 1px solid color(var(--foreground) blend(var(--background) 20%));'><div style='padding: 0.0rem 0.2rem; font-size: 0.9rem;'>{content}</div></body></html>""",
