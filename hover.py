@@ -19,7 +19,6 @@ class MirHoverListener(sublime_plugin.ViewEventListener):
                 combined_content.append(content)
         combined_content = [c for c in combined_content if c]
         if combined_content:
-            print(combined_content)
             self.view.show_popup(
                 f"""<html style='box-sizing:border-box; background-color:var(--background); padding:0rem; margin:0'><body style='padding:0.3rem; margin:0; border-radius:4px; border: 1px solid color(var(--foreground) blend(var(--background) 20%));'><div style='padding: 0.0rem 0.2rem; font-size: 0.9rem;'>{'<hr style="border-top: 1px solid color(var(--foreground) blend(var(--background) 20%)); display:block"/>'.join(combined_content)}</div></body></html>""",
                 sublime.PopupFlags.HIDE_ON_MOUSE_MOVE_AWAY,
