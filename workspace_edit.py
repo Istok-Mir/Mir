@@ -29,10 +29,7 @@ class MirApplyWorkspaceEdit(sublime_plugin.TextCommand):
                     is_view_open = True
                 else:
                     view = await open_view(file_path, window)
-                view.run_command('mir_apply_text_document_edits', {'edits': change['edits'] })
-                await save_view(view)
-                if not is_view_open:
-                    view.close()
+                view.run_command('mir_apply_text_document_edits', {'edits': change['edits'], 'close_after_edit': not is_view_open })
             return
         changes = workspace_edit.get('changes')
         if changes:
@@ -44,17 +41,14 @@ class MirApplyWorkspaceEdit(sublime_plugin.TextCommand):
                     is_view_open = True
                 else:
                     view = await open_view(file_path, window)
-                view.run_command('mir_apply_text_document_edits', {'edits': text_edits })
-                await save_view(view)
-                if not is_view_open:
-                    view.close()
+                view.run_command('mir_apply_text_document_edits', {'edits': text_edits, 'close_after_edit': not is_view_open })
             return
         print('Mir: TODO implement workspace_edit for', document_changes)
         
 
 
 class MirApplyTextDocumentEditsCommand(sublime_plugin.TextCommand):
-    def run(self, edit: sublime.Edit, edits: list[TextEdit | AnnotatedTextEdit | SnippetTextEdit]):
+    def run(self, edit: sublime.Edit, edits: list[TextEdit | AnnotatedTextEdit | SnippetTextEdit], close_after_edit=False):
         text_edits: list[TextEdit] = []
         print('ovde apply ediut', self.view.file_name())
         for e in edits:
@@ -64,6 +58,12 @@ class MirApplyTextDocumentEditsCommand(sublime_plugin.TextCommand):
                 print('Mir TODO implement edit for', e)
         for text_edit in reversed(text_edits):
             self.view.replace(edit, range_to_region(self.view, text_edit['range']), text_edit['newText'])
+        run_future(self.save(close_after_edit))
+
+    async def save(self, close_after_edit: bool):
+        await save_view(self.view)
+        if close_after_edit:
+            self.view.close()
 
 
 
