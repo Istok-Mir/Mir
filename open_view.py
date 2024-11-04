@@ -42,12 +42,16 @@ async def save_view(view: sublime.View) -> None:
     await future
 
 
-async def open_view(file_name, window: sublime.Window) -> sublime.View:
+async def open_view(file_name, window: sublime.Window, focus_view=True) -> sublime.View:
     future: asyncio.Future[sublime.View] = asyncio.Future()
     open_view_futures_map[file_name] = future
     active_view = window.active_view()
-    window.open_file(file_name)
-    if active_view:
+    view = window.find_open_file(file_name)
+    if view:
+        future.set_result(view)
+    else:
+        window.open_file(file_name)
+    if focus_view and active_view:
         window.focus_view(active_view)
     res = await future
     return res

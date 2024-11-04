@@ -54,20 +54,24 @@ class MirPrevDiagnosticCommand(sublime_plugin.TextCommand):
         for _, diagnostics in results:
             all_diagnostics.extend(diagnostics)
         diag_pos, diagnostic = find_diagnostic(self.view, all_diagnostics, forward=False)
-        self.view.run_command('mir_go_to_point', {'point': diag_pos, 'diagnostic': diagnostic})
+        self.view.run_command('mir_go_to_point', {'point': diag_pos, 'message': diagnostic['message'] if diagnostic else None})
 
 
 class MirGoToPointCommand(sublime_plugin.TextCommand):
-    def run(self, edit, point, diagnostic: Diagnostic | None):
+    def run(self, edit, point, message: str | None=None):
+        window = self.view.window()
+        if not window:
+            return
+        window.focus_view(self.view)
         self.view.sel().clear()
         self.view.sel().add(point)
         self.view.show(point)
-        if not diagnostic:
+        if not message:
             return
-        content = minihtml(self.view, diagnostic['message'], MinihtmlKind.FORMAT_MARKED_STRING | MinihtmlKind.FORMAT_MARKUP_CONTENT)
-        self.view.show_popup(
+        content = minihtml(self.view, message, MinihtmlKind.FORMAT_MARKED_STRING | MinihtmlKind.FORMAT_MARKUP_CONTENT)
+        sublime.set_timeout(lambda: self.view.show_popup(
             f"""<html style='box-sizing:border-box; background-color:var(--background); padding:0rem; margin:0'><body style='padding:0.3rem; margin:0; border-radius:4px; border: 1px solid color(var(--foreground) blend(var(--background) 20%));'><div style='padding: 0.0rem 0.2rem; font-size: 0.9rem;'>{content}</div></body></html>""",
             sublime.PopupFlags.HIDE_ON_MOUSE_MOVE_AWAY,
             point,
             max_width=800,
-        )
+        ), 100)
