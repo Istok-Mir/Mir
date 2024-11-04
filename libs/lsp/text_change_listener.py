@@ -7,10 +7,21 @@ from .view_to_lsp import get_view_uri
 import sublime_plugin
 import sublime
 import functools
+from weakref import WeakValueDictionary
 if TYPE_CHECKING:
     from .server import LanguageServer
 
 class MirTextChangeListener(sublime_plugin.TextChangeListener):
+    ids_to_listeners: WeakValueDictionary[int, sublime_plugin.TextChangeListener] = WeakValueDictionary()
+
+    def attach(self, buffer: sublime.Buffer) -> None:
+        super().attach(buffer)
+        self.ids_to_listeners[self.buffer.buffer_id] = self
+
+    def detach(self) -> None:
+        self.ids_to_listeners.pop(self.buffer.buffer_id, None)
+        super().detach()
+
     @classmethod
     def is_applicable(cls, buffer: sublime.Buffer) -> bool:
         v = buffer.primary_view()
@@ -73,8 +84,6 @@ def text_change_to_text_document_content_change_event(change: sublime.TextChange
 
 def is_regular_view(v: sublime.View) -> bool:
     # Not from the quick panel (CTRL+P), and not a special view like a console, output panel or find-in-files panels.
-    if v.window() is None: # detect hover popup
-        return False
     if v.element() is not None:
         return False
     if v.settings().get('is_widget'):
