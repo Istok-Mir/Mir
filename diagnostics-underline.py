@@ -6,7 +6,7 @@ from .api.types import DiagnosticSeverity, DiagnosticTag
 from .api.helpers import parse_uri, range_to_region
 
 
-class MirHoverListener(sublime_plugin.ViewEventListener):
+class MirDiagnosticListener(sublime_plugin.ViewEventListener):
     def __init__(self, view):
         super().__init__(view)
         self.cleanup = None
