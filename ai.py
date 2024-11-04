@@ -416,43 +416,43 @@ export default useCase({{
 - **Only generate what was asked for**
 - Group this code change like. 
 
-File: server/src/db/schema/bookTable.ts
+File: server/src/db/schema/[replaceWithEntityName]Table.ts
 ```typescript
 // generated cide
 ```
 
-File: server/src/usecase/book/createBook.ts
+File: server/src/usecase/[entityName]/[ReplaceWithEntityName]Book.ts
 ```typescript
 // put code here
 ```
 
-File: server/src/usecase/book/updateBook.ts
+File: server/src/usecase/[entityName]/[ReplaceWithEntityName]Book.ts
 ```typescript
 // put code here
 ```
 
-File: server/src/usecase/book/getBook.ts
+File: server/src/usecase/[entityName]/get[ReplaceWithEntityName].ts
 ```typescript
 // put code here
 ```
 
-File: server/src/usecase/book/getBooks.ts
+File: server/src/usecase/[entityName]/get[replaceWithEntityNamePlural].ts
 ```typescript
 // put code here
 ```
 
-File: server/src/usecase/book/deleteBooks.ts
+File: server/src/usecase/[entityName]/delete[ReplaceWithEntityName].ts
 ```typescript
 // put code here
 ```
 
 DON'T group code changes like this:
 ```typescript
-// File: server/src/usecase/book/deleteBooks.ts
+// File: server/src/usecase/[entityName]/delete[replaceWithEntityName].ts
 // put code here
 ```
 Instead do
-// File: server/src/usecase/book/deleteBooks.ts
+// File: server/src/usecase/[entityName]/delete[replaceWithEntityName].ts
 ```typescript
 // put code here
 ```
