@@ -24,10 +24,11 @@ class CommmunicationLogs:
             'force': False,
             'scroll_to_end': True
         })
-        last_bracket_point = self.panel.find(r'(}|])$', self.panel.size(), sublime.FindFlags.REVERSE)
-        start_bracket_point = self.panel.find(r'^(Response: |Params: )', last_bracket_point.end(), sublime.FindFlags.REVERSE)
-        if last_bracket_point is not None and start_bracket_point is not None:
-            self.panel.fold(sublime.Region(start_bracket_point.end() + 1, last_bracket_point.begin()))
+        # last_bracket_point = self.panel.find(r'(}|])$', self.panel.size(), sublime.FindFlags.REVERSE)
+        # start_bracket_point = self.panel.find(r'^(Response: |Params: )', last_bracket_point.end(), sublime.FindFlags.REVERSE)
+        # if last_bracket_point is not None and start_bracket_point is not None:
+        #     self.panel.fold(sublime.Region(start_bracket_point.end() + 1, last_bracket_point.begin()))
+        self.panel.settings().set("word_wrap", False)
         self.panel.settings().set('scroll_past_end', False)
         self.panel.clear_undo_stack()
         self.panel.set_read_only(True)

@@ -12,7 +12,7 @@ class CspellLanguageServer(LanguageServer):
     }
 
     def before_initialize(self):
-        def on_workspace_config_for_document(params: WorkspaceConfigForDocumentRequest) -> WorkspaceConfigForDocumentResponse:
+        async def on_workspace_config_for_document(params: WorkspaceConfigForDocumentRequest) -> WorkspaceConfigForDocumentResponse:
             # It looks like this method is necessary to enable code actions...
             return {
                 'uri': None,
