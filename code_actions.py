@@ -5,7 +5,6 @@ from .libs.lsp.manage_servers import server_for_view
 
 from .libs.lsp.mir import SourceName
 
-
 from .api.types import CodeActionTriggerKind, Diagnostic, CodeAction, Command, CodeActionKind
 from .api import mir
 from .libs.event_loop import run_future

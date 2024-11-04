@@ -15,7 +15,6 @@ class CommmunicationLogs:
     def append(self, log: str):
         if not self.panel:
             return
-        return # disable logs for the time being
         time = datetime.datetime.now().strftime('%H:%M:%S')
         log_with_time = f"({time}) {log}"
         self.logs.append(log_with_time)
