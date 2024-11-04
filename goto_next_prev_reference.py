@@ -31,6 +31,8 @@ def find_reference(
         region = range_to_region(view, reference['range'])
         _, file_name = parse_uri(reference['uri'])
         if region.contains(start_point):
+            if file_name != view_file_name:
+                continue
             location_index = index+1 if forward else index-1
             break
     # normalize index
