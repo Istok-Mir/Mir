@@ -92,7 +92,8 @@ def attach_server_request_and_notification_handlers(server: LanguageServer):
             MessageType.Debug: 'Debug',
             MessageType.Log: 'Log',
         }.get(params.get('type', MessageType.Log))
-        # print(f"Mir | {message_type}: {params.get('message')}")
+        if message_type in ['Error', 'Warning']:
+            print(f"Mir | {message_type}: {params.get('message')}")
 
     def publish_diagnostics(params: PublishDiagnosticsParams):
         from .mir import mir
