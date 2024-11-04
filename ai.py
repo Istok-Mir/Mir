@@ -202,7 +202,7 @@ prepared_prompt = """
 ```typescript
 import {{ uuid, pgTable, timestamp, boolean, text }} from "drizzle-orm/pg-core"
 
-export const userTable = pgTable("user", {{}}
+export const userTable = pgTable("user", {{
   id: uuid().primaryKey().defaultRandom(),
   createdAt: timestamp().defaultNow(),
   updatedAt: timestamp()
@@ -240,10 +240,10 @@ import {{ assertPermission }} from "@/framework/security/Permissions"
 import {{ useCase }} from "@/framework/router/UseCase"
 import {{ z }} from 'zod'
 
-export default useCase({{}}
-  input: z.object({{}}}}),
+export default useCase({{
+  input: z.object({{}}),
   output: z.void(),
-  async run() {{}}}}
+  async run() {{}}
 }})
 ```
 - **With Input:**
@@ -252,14 +252,14 @@ import {{ assertPermission }} from "@/framework/security/Permissions"
 import {{ useCase }} from "@/framework/router/UseCase"
 import {{ z }} from 'zod'
 
-export default useCase({{}}
-  input: z.object({{}}
+export default useCase({{
+  input: z.object({{
     search: z.string(),
     limit: z.coerce.number().default(10),
     offset: z.coerce.number().default(0),
   }}),
   output: z.void(),
-  async run({{ input, can }}, tx) {{}}
+  async run({{ input, can }}, tx) {{
     assertPermission(can("book:view:all"))
     // use input parameters
   }},
@@ -271,10 +271,10 @@ import {{ assertPermission }} from "@/framework/security/Permissions"
 import {{ useCase }} from "@/framework/router/UseCase"
 import {{ z }} from 'zod'
 
-export default useCase({{}}
-  input: z.object({{}}}}),
+export default useCase({{
+  input: z.object({{}}),
   output: z.object({{ message: z.string() }}),
-  async run(_context, tx) {{}}
+  async run(_context, tx) {{
     return {{ message: 'Hello' }}
   }},
 }})
@@ -287,10 +287,10 @@ import {{ useCase }} from "@/framework/router/UseCase"
 import {{ z }} from 'zod'
 import {{ noteTable }} from "@/db/schema/noteTable"
 
-export default useCase({{}}
+export default useCase({{
   input: z.object({{ note: z.string() }}),
   output: z.object({{ id: z.string() }}),
-  async run({{ input, can }}, tx) {{}}
+  async run({{ input, can }}, tx) {{
     assertPermission(can('create:note'))
     const [savedNote] = await tx.insert(noteTable).values({{ note: input.note }}).returning()
     return {{ id: savedNote.id }}
@@ -303,10 +303,10 @@ import {{ assertPermission }} from "@/framework/security/Permissions"
 import {{ useCase }} from "@/framework/router/UseCase"
 import {{ z }} from 'zod'
 
-export default useCase({{}}
+export default useCase({{
   input: z.object({{ id: z.string() }}),
   output: z.object({{ id: z.string(), note: z.string() }}),
-  async run({{ input, can }}, tx) {{}}
+  async run({{ input, can }}, tx) {{
     assertPermission(can('view:note'))
     const note = await tx.query.noteTable.findFirst({{ where: eq(noteTable.id, input.id) }})
     return note
@@ -319,10 +319,10 @@ import {{ assertPermission }} from "@/framework/security/Permissions"
 import {{ useCase }} from "@/framework/router/UseCase"
 import {{ z }} from 'zod'
 
-export default useCase({{}}
+export default useCase({{
     input: z.object({{ id: z.string(), note: z.string() }}),
     output: z.void(),
-    async run({{ input, can }}, tx) {{}}
+    async run({{ input, can }}, tx) {{
       assertPermission(can('update:note:all'))
       // assertPermission(can('update:note:own'))
       await tx.update(noteTable).set({{ note: input.note }}).where(eq(noteTable.id, input.id))
@@ -335,10 +335,10 @@ import {{ assertPermission }} from "@/framework/security/Permissions"
 import {{ useCase }} from "@/framework/router/UseCase"
 import {{ z }} from 'zod'
 
-export default useCase({{}}
+export default useCase({{
   input: z.object({{ id: z.string() }}),
   output: z.void(),
-  async run({{ input, can }}, tx) {{}}
+  async run({{ input, can }}, tx) {{
     assertPermission(can('delete:note:own'))
     await tx.delete(noteTable).where(eq(noteTable.id, input.id))
   }},
@@ -348,7 +348,7 @@ export default useCase({{}}
 - **Paginated Response Requirements:**
 - Structure paginated responses using:
 ```typescript
-output: z.object({{}}
+output: z.object({{
   items: z.array(z.object({{ /* define fields here */ }})),
   totalCount: z.number(),
 }})
@@ -367,15 +367,15 @@ import {{ userTable }} from "@/db/schema/userTable"
 import {{ and, eq, or, asc, desc }} from "drizzle-orm"
 import {{ createSearchArray, ILikeAnyArray }} from "@/framework/utils/ILikeAnyArray"
 
-export default useCase({{}}
-  input: z.object({{}}
+export default useCase({{
+  input: z.object({{
     search: z.string().default(""),
     limit: z.coerce.number().default(10),
     offset: z.coerce.number().default(0),
   }}),
-  output: z.object({{}}
+  output: z.object({{
     items: z.array(
-      z.object({{}}
+      z.object({{
         id: z.string(),
         firstName: z.string(),
         lastName: z.string(),
@@ -385,7 +385,7 @@ export default useCase({{}}
     ),
     totalCount: z.number(),
   }}),
-  async run({{ input, can }}, tx) {{}}
+  async run({{ input, can }}, tx) {{
     assertPermission(can('view:admins'))
     const whereOptions = and(
       eq(userTable.role, 'admin'),
@@ -396,7 +396,7 @@ export default useCase({{}}
       )
     )
     const [adminUsers, totalCount] = await Promise.all([
-      tx.query.userTable.findMany({{}}
+      tx.query.userTable.findMany({{
         where: whereOptions,
         orderBy: [asc(userTable.isBlocked), desc(userTable.firstName)],
         offset: input.offset,
