@@ -159,7 +159,7 @@ def stream_response(view: sublime.View, prompt):
     view.run_command("append", {
         'characters': '\n\n',
         'force': False,
-        'scroll_to_end': False
+        'scroll_to_end': True
     })
     while True:
         # Read a chunk of data
@@ -179,7 +179,7 @@ def stream_response(view: sublime.View, prompt):
                 view.run_command("append", {
                     'characters': text_chunk,
                     'force': False,
-                    'scroll_to_end': False
+                    'scroll_to_end': True
                 })
             except json.JSONDecodeError:
                 print("Failed to decode JSON chunk:", chunk_text)
