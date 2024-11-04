@@ -1,11 +1,8 @@
 from __future__ import annotations
-from typing import Literal
-
 from .libs.lsp.manage_servers import server_for_view
-
 from .libs.lsp.mir import SourceName
 
-from .api.types import CodeActionTriggerKind, Diagnostic, CodeAction, Command, CodeActionKind
+from .api.types import CodeActionTriggerKind, Diagnostic, CodeAction, Command, CodeActionKind, CodeActionContext
 from .api import mir
 from .libs.event_loop import run_future
 import sublime
@@ -33,7 +30,10 @@ class CodeActionSelectionListener(sublime_plugin.ViewEventListener):
             return []
         self.view.erase_regions('mir_bulb')
         region = sel[0]
-        all_code_actions= await get_code_actions(self.view, region, CodeActionTriggerKind.Automatic)
+        only_kinds=[CodeActionKind.QuickFix]
+        if len(region)>1:
+            only_kinds.extend([CodeActionKind.Refactor, CodeActionKind.RefactorExtract, CodeActionKind.RefactorInline, CodeActionKind.RefactorMove, CodeActionKind.RefactorRewrite])
+        all_code_actions= await get_code_actions(self.view, region, CodeActionTriggerKind.Invoked, only_kinds=only_kinds)
         if not all_code_actions:
             return
         quick_fixes: list[CodeAction] = []
@@ -126,17 +126,19 @@ def get_point(view: sublime.View):
     return region.b
 
 
-async def get_code_actions(view: sublime.View, region: sublime.Region, trigger_kind: CodeActionTriggerKind) -> list[tuple[SourceName, list[Command | CodeAction]]]:
+async def get_code_actions(view: sublime.View, region: sublime.Region, trigger_kind: CodeActionTriggerKind, only_kinds: list[CodeActionKind] | None=None) -> list[tuple[SourceName, list[Command | CodeAction]]]:
     # get diagnostics
     diagnostics_results = await mir.get_diagnostics(view)
     all_diagnostics: list[Diagnostic] = []
     for _, diagnostics in diagnostics_results:
         all_diagnostics.extend(diagnostics)
-    result = await mir.code_actions(view, region, {
+    context: CodeActionContext = {
         'diagnostics': all_diagnostics,
-        'only': [CodeActionKind.QuickFix],
         'triggerKind': trigger_kind
-    })
+    }
+    if only_kinds:
+        context['only'] = only_kinds
+    result = await mir.code_actions(view, region, context)
     all_code_actions: list[tuple[SourceName, list[Command | CodeAction]]] = []
     for name, code_actions in result:
         if code_actions:
