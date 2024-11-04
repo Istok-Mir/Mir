@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from .libs.lsp.view_to_lsp import get_view_uri, parse_uri, range_to_region
+from .libs.lsp.view_to_lsp import parse_uri, range_to_region
 from .libs.lsp.types import Location
 import sublime
 import sublime_plugin
@@ -51,6 +51,19 @@ def get_point(view: sublime.View):
         return
     return region.b
 
+class Cache:
+    results: list[Location] = []
+
+    @staticmethod
+    def cache_hit(point: int, view):
+        for ref in Cache.results:
+            r = range_to_region(view, ref['range'])
+            if r.contains(point):
+                return True
+        return False
+
+
+
 class MirNextReferenceCommand(sublime_plugin.TextCommand):
     def run(self, edit):
         point = get_point(self.view)
@@ -59,11 +72,15 @@ class MirNextReferenceCommand(sublime_plugin.TextCommand):
         run_future(self.goto_next(point))
 
     async def goto_next(self, point: int):
-        results = await mir.references(self.view, point)
-        all_references: list[Location] = []
-        for _, references in results:
-            if references:
-                all_references.extend(references)
+        cache_hit = Cache.cache_hit(point, self.view)
+        all_references: list[Location] = Cache.results if cache_hit else []
+        if not cache_hit:
+            results = await mir.references(self.view, point)
+            Cache.results = []
+            for _, references in results:
+                if references:
+                    all_references.extend(references)
+            Cache.results = all_references
         ordinal_number, location = find_reference(self.view, all_references, forward=True, start_point=point)
         w = self.view.window()
         if not location or not w:
@@ -82,11 +99,15 @@ class MirPrevReferenceCommand(sublime_plugin.TextCommand):
         run_future(self.goto_prev(point))
 
     async def goto_prev(self, point: int):
-        results = await mir.references(self.view, point)
-        all_references: list[Location] = []
-        for _, references in results:
-            if references:
-                all_references.extend(references)
+        cache_hit = Cache.cache_hit(point, self.view)
+        all_references: list[Location] = Cache.results if cache_hit else []
+        if not cache_hit:
+            results = await mir.references(self.view, point)
+            Cache.results = []
+            for _, references in results:
+                if references:
+                    all_references.extend(references)
+            Cache.results = all_references
         ordinal_number, location = find_reference(self.view, all_references, forward=False, start_point=point)
         w = self.view.window()
         if not location or not w:
