@@ -31,7 +31,7 @@ class MirDiagnosticListener(sublime_plugin.ViewEventListener):
 
         for uri in uris:
             _, file_name = parse_uri(uri)
-            view = window.find_open_file(file_name)
+            view = next(iter([v for w in sublime.windows() for v in w.views() if v.file_name() == file_name]), None)
             if not view:
                 continue
             results = await mir.get_diagnostics(view)
