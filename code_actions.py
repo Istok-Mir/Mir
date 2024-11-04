@@ -33,7 +33,7 @@ class CodeActionSelectionListener(sublime_plugin.ViewEventListener):
             return []
         self.view.erase_regions('mir_bulb')
         region = sel[0]
-        all_code_actions= await get_code_actions(self.view, region)
+        all_code_actions= await get_code_actions(self.view, region, CodeActionTriggerKind.Automatic)
         if not all_code_actions:
             return
         quick_fixes: list[CodeAction] = []
@@ -56,7 +56,7 @@ class MirCodeActionsCommand(sublime_plugin.TextCommand):
         if not sel:
             return []
         region = sel[0]
-        all_code_actions= await get_code_actions(self.view, region)
+        all_code_actions= await get_code_actions(self.view, region, CodeActionTriggerKind.Invoked)
         if not all_code_actions:
             return
         quick_fixes: list[tuple[SourceName, CodeAction]] = []
@@ -126,7 +126,7 @@ def get_point(view: sublime.View):
     return region.b
 
 
-async def get_code_actions(view: sublime.View, region: sublime.Region) -> list[tuple[SourceName, list[Command | CodeAction]]]:
+async def get_code_actions(view: sublime.View, region: sublime.Region, trigger_kind: CodeActionTriggerKind) -> list[tuple[SourceName, list[Command | CodeAction]]]:
     # get diagnostics
     diagnostics_results = await mir.get_diagnostics(view)
     all_diagnostics: list[Diagnostic] = []
@@ -135,7 +135,7 @@ async def get_code_actions(view: sublime.View, region: sublime.Region) -> list[t
     result = await mir.code_actions(view, region, {
         'diagnostics': all_diagnostics,
         'only': [CodeActionKind.QuickFix],
-        'triggerKind': CodeActionTriggerKind.Automatic
+        'triggerKind': trigger_kind
     })
     all_code_actions: list[tuple[SourceName, list[Command | CodeAction]]] = []
     for name, code_actions in result:
