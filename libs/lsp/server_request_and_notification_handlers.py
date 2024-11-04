@@ -1,9 +1,11 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Any, cast
 
+import sublime
+
 from .capabilities import method_to_capability
 from .view_to_lsp import get_view_uri, parse_uri, view_to_text_document_item
-from .types import RegistrationParams, UnregistrationParams, LogMessageParams, LogMessageParams, MessageType, ConfigurationParams, PublishDiagnosticsParams, DidChangeWatchedFilesRegistrationOptions, CreateFilesParams, RenameFilesParams, DeleteFilesParams, DidChangeWatchedFilesParams, WorkspaceFolder
+from .types import ApplyWorkspaceEditParams, ApplyWorkspaceEditResult, RegistrationParams, UnregistrationParams, LogMessageParams, LogMessageParams, MessageType, ConfigurationParams, PublishDiagnosticsParams, DidChangeWatchedFilesRegistrationOptions, CreateFilesParams, RenameFilesParams, DeleteFilesParams, DidChangeWatchedFilesParams, WorkspaceFolder
 from .file_watcher import get_file_watcher, create_file_watcher
 
 if TYPE_CHECKING:
@@ -112,11 +114,27 @@ def attach_server_request_and_notification_handlers(server: LanguageServer):
     async def workspace_folders(params: None) -> list[WorkspaceFolder] | None:
         return server.workspace_folders
 
+    async def workspace_apply_edits(params: ApplyWorkspaceEditParams) -> ApplyWorkspaceEditResult:
+        view = server.window.active_view()
+        if not view:
+            return {
+                'applied': False,
+                'failureReason': "I do not have a view available to trigger applying workspace edits"
+            }
+
+        view.run_command('mir_apply_workspace_edit', {
+            'workspace_edit': params['edit']
+        })
+        return {
+            'applied': True # TODO improve, what can go wrong?
+        }
+
     server.on_request('workspace/configuration', workspace_configuration)
     server.on_request('client/registerCapability', register_capability)
     server.on_request('client/unregisterCapability', unregister_capability)
     server.on_request('workspace/diagnostic/refresh', diagnostic_refresh)
     server.on_request('workspace/workspaceFolders', workspace_folders)
+    server.on_request('workspace/applyEdit', workspace_apply_edits)
     server.on_notification('window/logMessage', on_log_message)
     server.on_notification('textDocument/publishDiagnostics', publish_diagnostics)
 

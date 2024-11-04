@@ -50,7 +50,6 @@ class MirApplyWorkspaceEdit(sublime_plugin.TextCommand):
 class MirApplyTextDocumentEditsCommand(sublime_plugin.TextCommand):
     def run(self, edit: sublime.Edit, edits: list[TextEdit | AnnotatedTextEdit | SnippetTextEdit], close_after_edit=False):
         text_edits: list[TextEdit] = []
-        print('ovde apply ediut', self.view.file_name())
         for e in edits:
             if is_text_edit(e):
                 text_edits.append(e)

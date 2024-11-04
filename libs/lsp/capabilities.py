@@ -197,7 +197,8 @@ ServerCapability = Literal[
     'workspaceSymbolProvider',
     'workspace.didChangeConfiguration',
     'diagnosticProvider.identifier',
-    'completionProvider.resolveProvider'
+    'completionProvider.resolveProvider',
+    'codeActionProvider.resolveProvider'
 ]
 
 _METHOD_TO_CAPABILITY: dict[str, ServerCapability] = {

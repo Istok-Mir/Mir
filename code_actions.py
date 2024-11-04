@@ -1,6 +1,10 @@
 from __future__ import annotations
 from typing import Literal
 
+from .libs.lsp.manage_servers import server_for_view
+
+from .libs.lsp.mir import SourceName
+
 
 from .api.types import CodeActionTriggerKind, Diagnostic, CodeAction, Command, CodeActionKind
 from .api import mir
@@ -55,29 +59,57 @@ class MirCodeActionsCommand(sublime_plugin.TextCommand):
         all_code_actions= await get_code_actions(self.view, region)
         if not all_code_actions:
             return
-        quick_fixes: list[CodeAction] = []
-        code_actions: list[CodeAction|Command] = []
-        for code_action in all_code_actions:
-            if 'isPreferred' in code_action and code_action.get('isPreferred'):
-                quick_fixes.append(code_action)
-            else:
-                code_actions.append(code_action)
-        items: list[tuple[str, CodeAction|Command]] = []
-        for qf in quick_fixes:
-            items.append((qf['title'], qf))
-        for ca in code_actions:
-            items.append((ca['title'], ca))
+        quick_fixes: list[tuple[SourceName, CodeAction]] = []
+        code_actions: list[tuple[SourceName, CodeAction|Command]] = []
+        for server_name, loop_code_actions in all_code_actions:
+            for code_action in loop_code_actions:
+                if 'isPreferred' in code_action and code_action.get('isPreferred'):
+                    quick_fixes.append((server_name, code_action))
+                else:
+                    code_actions.append((server_name, code_action))
+        items: list[tuple[str, CodeAction|Command, str]] = []
+        for code_action in quick_fixes:
+            server_name=code_action[0]
+            code_action=code_action[1]
+            title=code_action['title']
+            items.append((title, code_action, server_name))
+        for code_action in code_actions:
+            server_name=code_action[0]
+            code_action=code_action[1]
+            title=code_action['title']
+            items.append((title, code_action, server_name))
 
         def on_done(i: int):
             if i < 0:
                 return
+            run_future(on_done_async(i))
+
+        async def on_done_async(i: int):
             code_action = items[i][1]
-            if 'command' in code_action:
-                print('TODO Mir doesnt support command yet')
-                return
+            server_name = items[i][2]
+            server = server_for_view(server_name, self.view)
+            if server and server.capabilities.has('codeActionProvider.resolveProvider'):
+                req =  server.send.resolve_code_action(code_action)
+                code_action = await req.result
+            command = code_action.get('command')
+            if isinstance(command, dict):
+                print('cmd dict', server_name, code_action)
+                self.view.run_command('mir_execute_command', {
+                    'server_name': server_name,
+                    'command': command['command'],
+                    'arguments': command.get('arguments')
+                })
+            if isinstance(command, str):
+                print('cmd str')
+                self.view.run_command('mir_execute_command', {
+                    'server_name': server_name,
+                    'command': command,
+                    'arguments': code_action.get('arguments')
+                })
             edit = code_action.get('edit')
             if not edit:
                 return
+            print('edit')
             self.view.run_command('mir_apply_workspace_edit', {
                 'workspace_edit': edit
             })
@@ -94,7 +126,7 @@ def get_point(view: sublime.View):
     return region.b
 
 
-async def get_code_actions(view: sublime.View, region: sublime.Region) -> list[Command | CodeAction]:
+async def get_code_actions(view: sublime.View, region: sublime.Region) -> list[tuple[SourceName, list[Command | CodeAction]]]:
     # get diagnostics
     diagnostics_results = await mir.get_diagnostics(view)
     all_diagnostics: list[Diagnostic] = []
@@ -105,8 +137,8 @@ async def get_code_actions(view: sublime.View, region: sublime.Region) -> list[C
         'only': [CodeActionKind.QuickFix],
         'triggerKind': CodeActionTriggerKind.Automatic
     })
-    all_code_actions: list[Command | CodeAction] = []
-    for _, code_actions in result:
+    all_code_actions: list[tuple[SourceName, list[Command | CodeAction]]] = []
+    for name, code_actions in result:
         if code_actions:
-            all_code_actions.extend(code_actions)
+            all_code_actions.append((name, code_actions))
     return all_code_actions
