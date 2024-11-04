@@ -173,7 +173,6 @@ class MirApplyTextEditsCommand(sublime_plugin.TextCommand):
     def run(self, edit: sublime.Edit, text_edits: list[TextEdit]) -> None:
         if not text_edits:
             return
-        print('text_edits', text_edits)
         content = []
         for text_edit in text_edits:
             self.view.replace(edit, range_to_region(self.view, text_edit['range']), text_edit['newText'])

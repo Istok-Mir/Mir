@@ -4,9 +4,9 @@ from typing import List
 
 from .lsp_requests import Request
 from .manage_servers import servers_for_view, servers_for_window
-from .providers import Providers, HoverProvider, CompletionProvider, DefinitionProvider, DocumentSymbolProvider
+from .providers import Providers, HoverProvider, CompletionProvider, DefinitionProvider, DocumentSymbolProvider, ReferencesProvider
 from .server import is_applicable_view
-from .types import Definition, DocumentSymbol, SymbolInformation, LocationLink, Hover, CompletionItem, CompletionList, DocumentUri, Diagnostic
+from .types import Definition, DocumentSymbol, Location, SymbolInformation, LocationLink, Hover, CompletionItem, CompletionList, DocumentUri, Diagnostic
 from .view_to_lsp import get_view_uri, point_to_position
 import sublime
 from typing import TypeVar, Generic
@@ -42,6 +42,33 @@ class mir:
             )
         except Exception as e:
             print('Mir (DefinitionError):', e)
+        return results
+
+    @staticmethod
+    async def references(view: sublime.View, point: int) -> list[tuple[SourceName, list[Location] | None]]:
+        # STEP 1:
+        providers = [provider for provider in Providers.reference_providers if is_applicable_view(view, provider.activation_events)]
+        for provider in providers:
+            await provider.cancel()
+
+        # STEP 2 define return value
+        results: list[tuple[SourceName, list[Location] | None]] = []
+
+        # STEP 3:
+        async def handle(provider: ReferencesProvider):
+            try:
+                result = await asyncio.wait_for(provider.provide_references(view, point), MAX_WAIT_TIME)
+            except Exception as e:
+                print(f'Error happened in provider {provider.name}', e)
+                return (provider.name, None)
+            return (provider.name, result)
+
+        try:
+            results = await asyncio.gather(
+                *[handle(provider) for provider in providers],
+            )
+        except Exception as e:
+            print('Mir (ReferenceError):', e)
         return results
 
     @staticmethod

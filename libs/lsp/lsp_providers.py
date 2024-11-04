@@ -1,5 +1,7 @@
 from __future__ import annotations
-from .providers import CompletionProvider, DefinitionProvider, HoverProvider, DocumentSymbolProvider
+
+from libs.lsp.types import Location
+from .providers import CompletionProvider, DefinitionProvider, HoverProvider, DocumentSymbolProvider, ReferencesProvider
 from .lsp_requests import Request
 from typing import TYPE_CHECKING
 from .view_to_lsp import get_view_uri, point_to_position
@@ -23,6 +25,24 @@ class LspDefinitionProvider(LspProvider, DefinitionProvider):
             'textDocument': {
                 'uri': uri
             },
+            'position': point_to_position(view, point)
+        })
+        self._requests.append(req)
+        return await req.result
+
+    async def cancel(self):
+        if self._requests:
+            for request in self._requests:
+                request.cancel()
+        self._requests = []
+
+
+class LspReferencesProvider(LspProvider, ReferencesProvider):
+    async def provide_references(self, view: sublime.View, point: int) -> list[Location] | None:
+        uri = get_view_uri(view)
+        req = self.server.send.references({
+            'context': { 'includeDeclaration': True},
+            'textDocument': {'uri': uri },
             'position': point_to_position(view, point)
         })
         self._requests.append(req)
@@ -93,6 +113,7 @@ class LspDocumentSymbolProvider(LspProvider, DocumentSymbolProvider):
 
 capabilities_to_lsp_providers: dict[ServerCapability, type[LspProvider]] = {
     'definitionProvider': LspDefinitionProvider,
+    'referencesProvider': LspReferencesProvider,
     'hoverProvider': LspHoverProvider,
     'completionProvider': LspCompletionProvider,
     'documentSymbolProvider': LspDocumentSymbolProvider,
