@@ -21,7 +21,7 @@ class MirTextChangeListener(sublime_plugin.TextChangeListener):
         if not view:
             return
         incremental_changes: list[TextDocumentContentChangeEvent] = []
-        if changes is None:
+        if not changes:
             return
         incremental_changes = [text_change_to_text_document_content_change_event(text_change) for text_change in changes]
         servers = servers_for_view(view)
