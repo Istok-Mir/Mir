@@ -40,7 +40,6 @@ class MirAiViewEventListenerCommand(sublime_plugin.ViewEventListener):
                 hover_point,
                 max_width=800,
             )
-        print('hover', line)
 
 class MirCreateFileCommand(sublime_plugin.TextCommand):
     def run(self, edit, file_name: str, content: str):
@@ -55,7 +54,6 @@ class MirCreateFileCommand(sublime_plugin.TextCommand):
         os.makedirs(str(Path(file_name).parent), exist_ok=True)
         with open(file_name, "w") as file:
             file.write(content)
-        print('create file:', file_name)
 
 
 class MirAiCommand(sublime_plugin.TextCommand):
