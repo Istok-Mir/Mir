@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import List, Union, TYPE_CHECKING
 from .server import ActivationEvents
-from .types import CompletionItem, Hover, CompletionList, Definition, Location, LocationLink, SymbolInformation, DocumentSymbol
+from .types import CodeActionContext, CompletionItem, Hover, CompletionList, Definition, Location, LocationLink, SymbolInformation, DocumentSymbol, Command, CodeAction
 import sublime
 
 class BaseProvider:
@@ -21,6 +21,7 @@ class BaseProvider:
 class Providers:
     definition_providers: List[DefinitionProvider]=[]
     reference_providers: List[ReferencesProvider]=[]
+    code_action_providers: List[CodeActionProvider]=[]
     hover_providers: List[HoverProvider]=[]
     completion_providers: List[CompletionProvider]=[]
     document_symbols_providers: List[DocumentSymbolProvider]=[]
@@ -39,6 +40,14 @@ class ReferencesProvider(BaseProvider):
     activation_events: ActivationEvents
 
     async def provide_references(self, view: sublime.View, point: int) -> list[Location] | None:
+        ...
+
+
+class CodeActionProvider(BaseProvider):
+    name: str
+    activation_events: ActivationEvents
+
+    async def provide_code_actions(self, view: sublime.View, region: sublime.Region, context: CodeActionContext) -> list[Command | CodeAction] | None:
         ...
 
 
@@ -65,12 +74,14 @@ class DocumentSymbolProvider(BaseProvider):
     async def provide_document_symbol(self, view: sublime.View) -> list[SymbolInformation] | list[DocumentSymbol] | None:
         ...
 
-AllProviders = Union[DefinitionProvider, ReferencesProvider, HoverProvider, CompletionProvider, DocumentSymbolProvider]
+AllProviders = Union[DefinitionProvider, ReferencesProvider, CodeActionProvider, HoverProvider, CompletionProvider, DocumentSymbolProvider]
 def register_provider(provider: AllProviders):
     if isinstance(provider, DefinitionProvider):
         Providers.definition_providers.append(provider)
     elif isinstance(provider, ReferencesProvider):
         Providers.reference_providers.append(provider)
+    elif isinstance(provider, CodeActionProvider):
+        Providers.code_action_providers.append(provider)
     elif isinstance(provider, HoverProvider):
         Providers.hover_providers.append(provider)
     elif isinstance(provider, CompletionProvider):
@@ -86,6 +97,8 @@ def unregister_provider(provider: AllProviders):
         Providers.definition_providers = [p for p in Providers.definition_providers if p != provider]
     elif isinstance(provider, ReferencesProvider):
         Providers.reference_providers = [p for p in Providers.reference_providers if p != provider]
+    elif isinstance(provider, CodeActionProvider):
+        Providers.code_action_providers = [p for p in Providers.code_action_providers if p != provider]
     elif isinstance(provider, HoverProvider):
         Providers.hover_providers = [p for p in Providers.hover_providers if p != provider]
     elif isinstance(provider, CompletionProvider):

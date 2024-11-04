@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from .providers import CompletionProvider, DefinitionProvider, HoverProvider, DocumentSymbolProvider, ReferencesProvider
+from .providers import CompletionProvider, DefinitionProvider, CodeActionProvider, HoverProvider, DocumentSymbolProvider, ReferencesProvider
 from .lsp_requests import Request
 from typing import TYPE_CHECKING
-from .view_to_lsp import get_view_uri, point_to_position
+from .view_to_lsp import get_view_uri, point_to_position, range_to_region, region_to_range
 if TYPE_CHECKING:
     import sublime
-    from .types import CompletionItem, CompletionList, Definition, LocationLink, Hover, SymbolInformation, DocumentSymbol, Location
+    from .types import CompletionItem, CompletionList, Definition, LocationLink, Hover, SymbolInformation, DocumentSymbol, Location, CodeAction, Command, CodeActionContext
     from .capabilities import ServerCapability
     from .server import LanguageServer
 
@@ -52,6 +52,24 @@ class LspReferencesProvider(LspProvider, ReferencesProvider):
             for request in self._requests:
                 request.cancel()
         self._requests = []
+
+class LspCodeActionProvider(LspProvider, CodeActionProvider):
+    async def provide_code_actions(self, view: sublime.View, region: sublime.Region, context: CodeActionContext) -> list[Command | CodeAction] | None:
+        uri = get_view_uri(view)
+        req = self.server.send.code_action({
+            'textDocument': {'uri': uri },
+            'range': region_to_range(view, region),
+            'context': context
+        })
+        self._requests.append(req)
+        return await req.result
+
+    async def cancel(self):
+        if self._requests:
+            for request in self._requests:
+                request.cancel()
+        self._requests = []
+
 
 
 class LspCompletionProvider(LspProvider, CompletionProvider):
@@ -113,6 +131,7 @@ class LspDocumentSymbolProvider(LspProvider, DocumentSymbolProvider):
 capabilities_to_lsp_providers: dict[ServerCapability, type[LspProvider]] = {
     'definitionProvider': LspDefinitionProvider,
     'referencesProvider': LspReferencesProvider,
+    'codeActionProvider': LspCodeActionProvider,
     'hoverProvider': LspHoverProvider,
     'completionProvider': LspCompletionProvider,
     'documentSymbolProvider': LspDocumentSymbolProvider,

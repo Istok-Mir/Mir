@@ -40,6 +40,12 @@ def range_to_region(view: sublime.View, range: Range) -> sublime.Region:
     return sublime.Region(a, b)
 
 
+def region_to_range(view: sublime.View, region: sublime.Region) -> Range:
+    return {
+        'start': point_to_position(view, region.begin()),
+        'end': point_to_position(view, region.end()),
+    }
+
 def _view_to_uri(view) -> str:
     file_name = view.file_name()
     if not file_name:
