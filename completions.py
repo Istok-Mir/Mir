@@ -164,7 +164,7 @@ def get_text_edit_range(text_edit: TextEdit | InsertReplaceEdit) -> Range:
     if 'insert' in text_edit and 'replace' in text_edit:
         text_edit = cast(InsertReplaceEdit, text_edit)
         # insert_mode = 'replace' if insert_mode == 'insert' else 'insert'
-        insert_mode = 'replace'
+        insert_mode = 'insert'
         return text_edit.get(insert_mode)  # type: ignore
     text_edit = cast(TextEdit, text_edit)
     return text_edit['range']
