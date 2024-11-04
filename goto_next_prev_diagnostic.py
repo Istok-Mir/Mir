@@ -42,7 +42,7 @@ class MirNextDiagnosticCommand(sublime_plugin.TextCommand):
         for _, diagnostics in results:
             all_diagnostics.extend(diagnostics)
         diag_pos, diagnostic = find_diagnostic(self.view, all_diagnostics, forward=True)
-        self.view.run_command('mir_go_to_point', {'point': diag_pos, 'diagnostic': diagnostic})
+        self.view.run_command('mir_go_to_point', {'point': diag_pos, 'message': diagnostic['message'] if diagnostic else None})
 
 class MirPrevDiagnosticCommand(sublime_plugin.TextCommand):
     def run(self, edit):
