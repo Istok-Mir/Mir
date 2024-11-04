@@ -65,7 +65,8 @@ class MirRenameCommand(sublime_plugin.TextCommand):
                 if not new_name.strip():
                     return
                 run_future(self.rename(server, point, new_name))
-            w.show_input_panel('Mir Rename:', initial_text, on_done, None, None)
+            v = w.show_input_panel('Mir Rename:', initial_text, on_done, None, None)
+            v.run_command('select_all')
         else:
             print('TODO implemet other rename reponses')
 
