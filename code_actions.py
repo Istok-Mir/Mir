@@ -38,9 +38,10 @@ class CodeActionSelectionListener(sublime_plugin.ViewEventListener):
         if not all_code_actions:
             return
         quick_fixes: list[CodeAction] = []
-        # for code_action in all_code_actions:
-        #     if 'isPreferred' in code_action and code_action.get('isPreferred'):
-        #         quick_fixes.append(code_action)
+        for _, code_actions in all_code_actions:
+            for code_action in code_actions:
+                if 'isPreferred' in code_action and code_action.get('isPreferred'):
+                    quick_fixes.append(code_action)
         flags =  sublime.RegionFlags.DRAW_NO_FILL | sublime.RegionFlags.DRAW_NO_OUTLINE | sublime.RegionFlags.NO_UNDO
         scope = 'region.bluish' if quick_fixes else 'region.yellowish'
         icon = 'Packages/Mir/icons/ligthing-fix.png' if quick_fixes else 'Packages/Mir/icons/lightning.png' 
