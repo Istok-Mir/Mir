@@ -8,9 +8,8 @@ from .libs.lsp.manage_servers import server_for_view, servers_for_view
 from .libs.lsp.server import LanguageServer, is_applicable_view
 import sublime
 import sublime_plugin
-from .api import mir, run_future
-from .api.types import DiagnosticSeverity, DiagnosticTag
-from .api.helpers import parse_uri, range_to_region, point_to_position, get_view_uri, is_range
+from .api import run_future
+from .api.helpers import  range_to_region, point_to_position, get_view_uri, is_range
 
 
 class MirRenameCommand(sublime_plugin.TextCommand):
