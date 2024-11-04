@@ -114,6 +114,7 @@ class MirPrevReferenceCommand(sublime_plugin.TextCommand):
             return
         _, file_path = parse_uri(location['uri'])
         view = await open_view(file_path, w)
+        w.focus_view(view)
         point = position_to_point(view, location['range']['end'])
         view.run_command('mir_go_to_point', {'point': point, 'message': f"{ordinal_number} of {len(all_references)} referenecs"})
 

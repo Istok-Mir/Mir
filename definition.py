@@ -3,7 +3,6 @@ from .libs.lsp.view_to_lsp import parse_uri, position_to_point
 import sublime
 import sublime_plugin
 from .api import mir, run_future
-from .api.helpers import open_view_with_uri
 from .open_view import open_view
 
 

@@ -28,7 +28,7 @@ class MirApplyWorkspaceEdit(sublime_plugin.TextCommand):
                 if view:
                     is_view_open = True
                 else:
-                    view = await open_view(file_path, window, focus_view=False)
+                    view = await open_view(file_path, window)
                 view.run_command('mir_apply_text_document_edits', {'edits': change['edits'], 'close_after_edit': not is_view_open })
             return
         changes = workspace_edit.get('changes')
@@ -40,7 +40,7 @@ class MirApplyWorkspaceEdit(sublime_plugin.TextCommand):
                 if view:
                     is_view_open = True
                 else:
-                    view = await open_view(file_path, window, focus_view=False)
+                    view = await open_view(file_path, window)
                 view.run_command('mir_apply_text_document_edits', {'edits': text_edits, 'close_after_edit': not is_view_open })
             return
         print('Mir: TODO implement workspace_edit for', document_changes)
