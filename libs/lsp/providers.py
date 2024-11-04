@@ -33,6 +33,7 @@ class DefinitionProvider(BaseProvider):
     async def provide_definition(self, view: sublime.View, point: int) -> Definition | list[LocationLink] | None:
         ...
 
+
 class ReferencesProvider(BaseProvider):
     name: str
     activation_events: ActivationEvents
@@ -68,7 +69,7 @@ AllProviders = Union[DefinitionProvider, ReferencesProvider, HoverProvider, Comp
 def register_provider(provider: AllProviders):
     if isinstance(provider, DefinitionProvider):
         Providers.definition_providers.append(provider)
-    if isinstance(provider, ReferencesProvider):
+    elif isinstance(provider, ReferencesProvider):
         Providers.reference_providers.append(provider)
     elif isinstance(provider, HoverProvider):
         Providers.hover_providers.append(provider)
@@ -77,13 +78,13 @@ def register_provider(provider: AllProviders):
     elif isinstance(provider, DocumentSymbolProvider):
         Providers.document_symbols_providers.append(provider)
     else:
-        raise Exception('Got a unusported provider')
+        raise Exception(f'Mir: Got a unusported provider {provider.name} during register_provider')
 
 
 def unregister_provider(provider: AllProviders):
     if isinstance(provider, DefinitionProvider):
         Providers.definition_providers = [p for p in Providers.definition_providers if p != provider]
-    if isinstance(provider, ReferencesProvider):
+    elif isinstance(provider, ReferencesProvider):
         Providers.reference_providers = [p for p in Providers.reference_providers if p != provider]
     elif isinstance(provider, HoverProvider):
         Providers.hover_providers = [p for p in Providers.hover_providers if p != provider]
@@ -92,5 +93,5 @@ def unregister_provider(provider: AllProviders):
     elif isinstance(provider, DocumentSymbolProvider):
         Providers.document_symbols_providers = [p for p in Providers.document_symbols_providers if p != provider]
     else:
-        raise Exception(f'Got a unusported provider {provider.__name__}')
+        raise Exception(f'Mir: Got a unusported provider {provider.name} during unregister_provider')
 

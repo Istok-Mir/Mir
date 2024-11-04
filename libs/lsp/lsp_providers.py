@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from libs.lsp.types import Location
 from .providers import CompletionProvider, DefinitionProvider, HoverProvider, DocumentSymbolProvider, ReferencesProvider
 from .lsp_requests import Request
 from typing import TYPE_CHECKING
 from .view_to_lsp import get_view_uri, point_to_position
 if TYPE_CHECKING:
     import sublime
-    from .types import CompletionItem, CompletionList, Definition, LocationLink, Hover, SymbolInformation, DocumentSymbol
+    from .types import CompletionItem, CompletionList, Definition, LocationLink, Hover, SymbolInformation, DocumentSymbol, Location
     from .capabilities import ServerCapability
     from .server import LanguageServer
 
