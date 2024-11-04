@@ -7,29 +7,20 @@ from .view_to_lsp import get_view_uri
 import sublime_plugin
 import sublime
 import functools
-from weakref import WeakValueDictionary
 if TYPE_CHECKING:
     from .server import LanguageServer
 
 class MirTextChangeListener(sublime_plugin.TextChangeListener):
-    ids_to_listeners: WeakValueDictionary[int, sublime_plugin.TextChangeListener] = WeakValueDictionary()
-
-    def attach(self, buffer: sublime.Buffer) -> None:
-        super().attach(buffer)
-        self.ids_to_listeners[self.buffer.buffer_id] = self
-
-    def detach(self) -> None:
-        self.ids_to_listeners.pop(self.buffer.buffer_id, None)
-        super().detach()
-
     @classmethod
     def is_applicable(cls, buffer: sublime.Buffer) -> bool:
         v = buffer.primary_view()
-        return v is not None and is_regular_view(v)
+        return v is not None and is_regular_view(v) and v.element() is None
 
     def on_text_changed(self, changes: Iterable[sublime.TextChange]) -> None:
         view = self.buffer.primary_view()
         if not view:
+            return
+        if view.element() is not None: # why?? if I already asked in is `v.element() is None` and is_regular_view? ST BUG?
             return
         incremental_changes: list[TextDocumentContentChangeEvent] = []
         if not changes:
