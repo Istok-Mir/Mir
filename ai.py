@@ -9,7 +9,7 @@ import os
 
 path_pattern = r"File:\s+/?(.+)"
 
-code_pattern = r'```([\s|\w]+)'
+code_pattern = r'^```(?:\w+)?\s*\n(.*?)```'
 
 
 class MirAiViewEventListenerCommand(sublime_plugin.ViewEventListener):
@@ -23,19 +23,19 @@ class MirAiViewEventListenerCommand(sublime_plugin.ViewEventListener):
             return
         line_region = self.view.line(hover_point)
         line = self.view.substr(line_region)
-        match = re.search(path_pattern, line)
+        file_path_match = re.search(path_pattern, line)
 
-        content = self.view.substr(self.view.find(code_pattern, line_region.end()))
-        content = content.replace('```', '').strip()
-
-        if match:
-            filepath = Path(match.group(1))
+        almoust_full_content = self.view.substr(sublime.Region(line_region.end(), self.view.size()))
+        code_match = re.search(code_pattern, almoust_full_content, re.DOTALL | re.MULTILINE)
+        if file_path_match and code_match:
+            code = code_match.group(1)
+            filepath = Path(file_path_match.group(1))
             folders = window.folders() if window else []
             first_folder = Path(folders[0] if folders else '')
             full_path = first_folder.joinpath(filepath)
             exists = os.path.exists(full_path)
             self.view.show_popup(
-                f"""<html style='box-sizing:border-box; background-color:var(--background); padding:0rem; margin:0'><body style='padding:0.3rem; margin:0; border-radius:4px; border: 1px solid color(var(--foreground) blend(var(--background) 20%));'><div style='padding: 0.0rem 0.2rem; font-size: 0.9rem;'><a style="text-decoration: none" href="{sublime.html_format_command('subl:mir_create_file', {'file_name': str(full_path), 'content': content})}">{'Goto File' if exists else 'Create File'}</a></div></body></html>""",
+                f"""<html style='box-sizing:border-box; background-color:var(--background); padding:0rem; margin:0'><body style='padding:0.3rem; margin:0; border-radius:4px; border: 1px solid color(var(--foreground) blend(var(--background) 20%));'><div style='padding: 0.0rem 0.2rem; font-size: 0.9rem;'><a style="text-decoration: none" href="{sublime.html_format_command('subl:mir_create_file', {'file_name': str(full_path), 'content': code})}">{'Goto File' if exists else 'Create File'}</a></div></body></html>""",
                 sublime.PopupFlags.HIDE_ON_MOUSE_MOVE_AWAY,
                 hover_point,
                 max_width=800,
