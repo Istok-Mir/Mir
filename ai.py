@@ -11,6 +11,8 @@ path_pattern = r"File:\s+/?(.+)"
 
 code_pattern = r'^```(?:\w+)?\s*\n(.*?)```'
 
+# Event to signal stopping the stream
+stop_event = threading.Event()
 
 class MirAiViewEventListenerCommand(sublime_plugin.ViewEventListener):
     @classmethod
@@ -74,18 +76,26 @@ class MirAiCommand(sublime_plugin.TextCommand):
 
 class MirAiSubmitCommand(sublime_plugin.TextCommand):
     def run(self, edit):
+        global stop_event
         end_point = get_point(self.view)
         if not end_point:
             return
         start_point = self.view.find('---', end_point, sublime.FindFlags.REVERSE)
         tasks_prompt = self.view.substr(sublime.Region(start_point.end(), end_point))
         final_prompt = prepared_prompt.format(tasks=tasks_prompt)
-        t = threading.Thread(target=stream_response, args=(self.view,final_prompt))
+        # If a previous request is running, stop it
+        if stop_event.is_set() == False:
+            stop_event.set()
+        stop_event=threading.Event()
+        t = threading.Thread(target=stream_response, args=(self.view,final_prompt, stop_event))
         t.start()
 
-
-
-        
+class MirAiCancelCommand(sublime_plugin.TextCommand):
+    def run(self, edit):
+        global stop_event
+        # If a previous request is running, stop it
+        if stop_event.is_set() == False:
+            stop_event.set()
 
 
 def get_point(view: sublime.View):
@@ -128,7 +138,7 @@ OLLAMA_PORT = 11434
 OLLAMA_PATH = "/api/generate"
 OLLAMA_MODEL = "qwen2.5-coder"
 
-def stream_response(view: sublime.View, prompt):
+def stream_response(view: sublime.View, prompt: str, stop_event: threading.Event):
     connection = http.client.HTTPConnection(OLLAMA_HOST, OLLAMA_PORT)
     headers = {
         "Content-Type": "application/json",
@@ -161,7 +171,7 @@ def stream_response(view: sublime.View, prompt):
         'force': False,
         'scroll_to_end': True
     })
-    while True:
+    while not stop_event.is_set():
         # Read a chunk of data
         chunk = response.readline()
         
