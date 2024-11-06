@@ -5,11 +5,14 @@ from typing import Optional, Awaitable
 __loop: Optional[asyncio.AbstractEventLoop] = None
 __thread: Optional[Thread] = None
 
+active_tasks = set()  # Global or class-level task tracker
 def run_future(future: Awaitable):
-    global __loop
+    global __loop, active_tasks
     if __loop:
-        f = asyncio.ensure_future(future, loop=__loop)
-        __loop.call_soon_threadsafe(asyncio.ensure_future, f)
+        task = asyncio.ensure_future(future, loop=__loop)
+        active_tasks.add(task)
+        task.add_done_callback(active_tasks.discard)  # Remove once done
+        __loop.call_soon_threadsafe(lambda: task)
 
 
 def setup_event_loop():
