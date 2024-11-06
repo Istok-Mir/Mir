@@ -10,7 +10,6 @@ import sublime_plugin
 
 class MirExecuteCommandCommand(sublime_plugin.TextCommand):
     def run(self, edit: sublime.Edit, server_name: str, command: str | None = None, arguments: list[Any] | None = None) -> None:
-        print('run ...', server_name, command, arguments)
         server = server_for_view(server_name, self.view)
         if server and command:
             params: ExecuteCommandParams = {"command": command}
@@ -21,4 +20,3 @@ class MirExecuteCommandCommand(sublime_plugin.TextCommand):
     async def execute_command(self, server: LanguageServer, params: ExecuteCommandParams):
         req = server.send.execute_command(params)
         result = await req.result
-        print('execute_command result', result)
