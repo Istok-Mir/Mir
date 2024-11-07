@@ -28,6 +28,9 @@ class Request(Generic[T]):
         return round((self.request_end_time-self.request_start_time).total_seconds(), 2)
 
     def cancel(self):
+        if self.request_end_time is not None:
+            # ignore canceling finished requests
+            return
         self.server.notify.cancel_request({
             'id': self.id
         })
