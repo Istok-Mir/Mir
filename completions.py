@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+from .libs.lsp.constants import COMPLETION_KINDS
 from .libs.lsp.server import LanguageServer
 import sublime
 import sublime_plugin
@@ -35,10 +37,12 @@ class MirCompletionListener(sublime_plugin.ViewEventListener):
                     # if first_letter and not i['label'].startswith(first_letter):
                     #     continue
                     label_details_description = i.get('labelDetails', {}).get('description') or ""
+                    completion_item_kind = i.get('kind')
+                    kind = COMPLETION_KINDS[completion_item_kind] if completion_item_kind else sublime.KIND_AMBIGUOUS
                     ci = sublime.CompletionItem.command_completion(i['label'], 'mir_insert_completion', {
                         'index': index,
                         'provider': name,
-                    }, annotation=label_details_description)
+                    }, annotation=label_details_description, kind=kind)
                     if 'textEdit' in i:
                         ci.flags = sublime.COMPLETION_FLAG_KEEP_PREFIX
                     completions.append(ci)
@@ -46,15 +50,18 @@ class MirCompletionListener(sublime_plugin.ViewEventListener):
                 items = result
                 for index, i in enumerate(items):
                     label_details_description = i.get('labelDetails', {}).get('description') or ""
+                    completion_item_kind = i.get('kind')
+                    kind = COMPLETION_KINDS[completion_item_kind] if completion_item_kind else sublime.KIND_AMBIGUOUS
                     ci = sublime.CompletionItem.command_completion(i['label'], 'mir_insert_completion',{
                         'index': index,
                         'provider': name,
-                    }, annotation=label_details_description)
-                    if 'textEdit' in i:
+                    }, annotation=label_details_description, kind=kind)
+                    if 'textEdit' in i: 
                         ci.flags = sublime.COMPLETION_FLAG_KEEP_PREFIX
                     completions.append(ci)
             MirCompletionListener.completions[name] = items, item_defaults
-        completion_list.set_completions(completions, sublime.INHIBIT_WORD_COMPLETIONS)
+        print('completions', completions)
+        completion_list.set_completions(completions, flags=sublime.AutoCompleteFlags.INHIBIT_WORD_COMPLETIONS | sublime.AutoCompleteFlags.INHIBIT_EXPLICIT_COMPLETIONS)
 
 class MirInsertCompletion(sublime_plugin.TextCommand):
     def run(self, edit: sublime.Edit, index: int, provider: str) -> None:
