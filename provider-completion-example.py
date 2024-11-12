@@ -17,8 +17,10 @@ class ExampleCompletionProvider(CompletionProvider):
 
 
 def plugin_loaded() -> None:
-    ExampleCompletionProvider.setup()
+	...
+    #ExampleCompletionProvider.setup()
 
 
 def plugin_unloaded() -> None:
-    ExampleCompletionProvider.cleanup()
+	...
+    # ExampleCompletionProvider.cleanup()
