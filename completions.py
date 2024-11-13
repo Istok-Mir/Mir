@@ -5,12 +5,11 @@ from .libs.lsp.server import LanguageServer
 import sublime
 import sublime_plugin
 from .api import mir, run_future
-from .api.helpers import position_to_point, range_to_region, server_for_view
+from .api.helpers import range_to_region, server_for_view
 from .api.types import CompletionItem, CompletionItemDefaults, TextEdit, InsertReplaceEdit, EditRangeWithInsertReplace, Range, InsertTextFormat
-from typing import Any, Callable, Generator, List, Tuple, Union
+from typing import Any, Generator, List, Tuple
 from typing import cast
 from typing_extensions import TypeAlias, TypeGuard
-import functools
 from .api.helpers import minihtml, MinihtmlKind
 
 
@@ -60,7 +59,6 @@ class MirCompletionListener(sublime_plugin.ViewEventListener):
                         ci.flags = sublime.COMPLETION_FLAG_KEEP_PREFIX
                     completions.append(ci)
             MirCompletionListener.completions[name] = items, item_defaults
-        print('completions', completions)
         completion_list.set_completions(completions, flags=sublime.AutoCompleteFlags.INHIBIT_WORD_COMPLETIONS | sublime.AutoCompleteFlags.INHIBIT_EXPLICIT_COMPLETIONS)
 
 class MirInsertCompletion(sublime_plugin.TextCommand):
@@ -80,7 +78,6 @@ class MirInsertCompletion(sublime_plugin.TextCommand):
             self.view.run_command("insert_snippet", {"contents": new_text})
         else:
             self.view.run_command("insert", {"characters": new_text})
-        # todo: this should all run from the worker thread
         server = server_for_view(provider, self.view)
         if not server or not server.capabilities.has('completionProvider.resolveProvider'):
             return
@@ -94,9 +91,6 @@ class MirInsertCompletion(sublime_plugin.TextCommand):
         req = server.send.resolve_completion_item(item)
         result = await req.result
         self._on_resolved(server.name, result)
-
-    def _on_resolved_async(self, session_name: str, item: CompletionItem) -> None:
-        sublime.set_timeout(functools.partial(self._on_resolved, session_name, item))
 
     def _on_resolved(self, session_name: str, item: CompletionItem) -> None:
         additional_edits = item.get('additionalTextEdits')
