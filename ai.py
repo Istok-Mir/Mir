@@ -86,6 +86,7 @@ class MirAiSubmitCommand(sublime_plugin.TextCommand):
         # If a previous request is running, stop it
         if stop_event.is_set() == False:
             stop_event.set()
+        self.view.replace(edit, sublime.Region(end_point+2, self.view.size()), '')
         stop_event=threading.Event()
         t = threading.Thread(target=stream_response, args=(self.view,final_prompt, stop_event))
         t.start()
