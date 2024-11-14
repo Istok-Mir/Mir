@@ -24,6 +24,7 @@ import orjson
 import shutil
 from .diagnostic_collection import DiagnosticCollection
 import importlib
+import functools
 
 ENCODING = "utf-8"
 
@@ -282,9 +283,10 @@ class LanguageServer:
         for capability, LspProvider in capabilities_to_lsp_providers.items():
             if self.capabilities.has(capability):
                 provider = LspProvider(self)
-                def dispose():
+                def dispose(provider):
                     unregister_provider(provider)
-                self.before_shutdown.append(dispose)
+                bound_fn = functools.partial(dispose, provider)
+                self.before_shutdown.append(bound_fn)
                 register_provider(provider)
 
     async def shutdown(self):
