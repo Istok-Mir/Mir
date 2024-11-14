@@ -24,7 +24,7 @@ class mir:
     @staticmethod
     async def definitions(view: sublime.View, point: int) -> list[tuple[SourceName, Definition | list[LocationLink] | None]]:
         # STEP 1:
-        providers = [provider for provider in Providers.definition_providers if is_applicable_view(view, provider.activation_events)]
+        providers = [provider for provider in Providers.definition_providers if provider.is_applicable() and is_applicable_view(view, provider.activation_events)]
         for provider in providers:
             await provider.cancel()
 
@@ -51,7 +51,7 @@ class mir:
     @staticmethod
     async def references(view: sublime.View, point: int) -> list[tuple[SourceName, list[Location] | None]]:
         # STEP 1:
-        providers = [provider for provider in Providers.reference_providers if is_applicable_view(view, provider.activation_events)]
+        providers = [provider for provider in Providers.reference_providers if provider.is_applicable() and is_applicable_view(view, provider.activation_events)]
         for provider in providers:
             await provider.cancel()
 
@@ -78,7 +78,7 @@ class mir:
     @staticmethod
     async def code_actions(view: sublime.View, region: sublime.Region, context: CodeActionContext) -> list[tuple[SourceName, list[Command | CodeAction] | None]]:
         # STEP 1:
-        providers = [provider for provider in Providers.code_action_providers if is_applicable_view(view, provider.activation_events)]
+        providers = [provider for provider in Providers.code_action_providers if provider.is_applicable() and is_applicable_view(view, provider.activation_events)]
         for provider in providers:
             await provider.cancel()
 
@@ -106,7 +106,8 @@ class mir:
     async def hover(view: sublime.View, hover_point: int, hover_zone: sublime.HoverZone) -> list[tuple[SourceName, Hover | None]]:
         # STEP 1:
         # Trigger Canceling Providers
-        providers = [provider for provider in Providers.hover_providers if is_applicable_view(view, provider.activation_events)]
+        print('Providers.hover_providers', Providers.hover_providers)
+        providers = [provider for provider in Providers.hover_providers if provider.is_applicable() and is_applicable_view(view, provider.activation_events)]
         for provider in providers:
             await provider.cancel()
 
@@ -136,7 +137,7 @@ class mir:
     async def completions(view: sublime.View, point: int) -> list[tuple[SourceName, list[CompletionItem] | CompletionList | None]]:
         # STEP 1:
         # Trigger Canceling Providers
-        providers = [provider for provider in Providers.completion_providers if is_applicable_view(view, provider.activation_events)]
+        providers = [provider for provider in Providers.completion_providers if provider.is_applicable() and is_applicable_view(view, provider.activation_events)]
         for provider in providers:
             await provider.cancel()
 
@@ -165,7 +166,7 @@ class mir:
     @staticmethod
     async def document_symbols(view: sublime.View) -> list[tuple[SourceName, list[SymbolInformation] | list[DocumentSymbol] | None]]:
         # STEP 1:
-        providers = [provider for provider in Providers.document_symbols_providers if is_applicable_view(view, provider.activation_events)]
+        providers = [provider for provider in Providers.document_symbols_providers if provider.is_applicable() and is_applicable_view(view, provider.activation_events)]
         for provider in providers:
             await provider.cancel()
 

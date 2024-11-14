@@ -9,6 +9,9 @@ import sublime
 callbacks_when_ready = []
 
 class BaseProvider:
+    def is_applicable(self) -> bool:
+        return True
+
     async def cancel(self) -> None:
         ...
 

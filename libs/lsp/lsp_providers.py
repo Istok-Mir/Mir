@@ -4,6 +4,7 @@ from .providers import CompletionProvider, DefinitionProvider, CodeActionProvide
 from .lsp_requests import Request
 from typing import TYPE_CHECKING
 from .view_to_lsp import get_view_uri, point_to_position, range_to_region, region_to_range
+import sublime
 if TYPE_CHECKING:
     import sublime
     from .types import CompletionItem, CompletionList, Definition, LocationLink, Hover, SymbolInformation, DocumentSymbol, Location, CodeAction, Command, CodeActionContext
@@ -11,6 +12,10 @@ if TYPE_CHECKING:
     from .server import LanguageServer
 
 class LspProvider:
+    def is_applicable(self):
+        # LSP Providers are only active for a given window
+        return self.server.window == sublime.active_window()
+
     def __init__(self, server: LanguageServer):
         self.server = server
         self.name = self.server.name
