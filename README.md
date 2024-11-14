@@ -56,11 +56,6 @@ class PackageVersionServer(LanguageServer):
         'on_uri': ['file://**/package.json'],
     }
 
-def plugin_loaded() -> None:
-    PackageVersionServer.setup()
-
-def plugin_unloaded() -> None:
-    PackageVersionServer.cleanup()
 ```
 See `Mir/package-language-server-*.py` files for examples.
 

@@ -12,10 +12,3 @@ class EslintLanguageServer(LanguageServer):
         
     def on_settings_change(self):
         self.settings.update({'codeAction': {'disableRuleComment': {'commentStyle': 'line', 'enable': True, 'location': 'separateLine'}, 'showDocumentation': {'enable': True}}, 'codeActionOnSave': {'enable': True, 'mode': 'all'}, 'format': False, 'ignoreUntitled': False, 'nodePath': None, 'onIgnoredFiles': 'off', 'options': {}, 'problems': {'shortenToSingleLine': False}, 'quiet': False, 'rulesCustomizations': [], 'run': 'onType', 'useESLintClass': False, 'validate': 'probe'}) # 'workspaceFolder': {'name': 'bejst', 'uri': 'file:///Users/predrag/Downloads/bejst'}
-
-def plugin_loaded() -> None:
-    EslintLanguageServer.setup()
-
-
-def plugin_unloaded() -> None:
-    EslintLanguageServer.cleanup()

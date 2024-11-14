@@ -16,14 +16,6 @@ class VtslsLanguageServer(LanguageServer):
         self.on_notification('$/typescriptVersion', on_typescript_version)
 
 
-def plugin_loaded() -> None:
-    VtslsLanguageServer.setup()
-
-
-def plugin_unloaded() -> None:
-    VtslsLanguageServer.cleanup()
-
-
 class SomeExample(TypedDict):
     name: str
     age: int

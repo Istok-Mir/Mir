@@ -50,15 +50,3 @@ class PyrightLanguageServer(LanguageServer):
         #     dep_dirs.insert(0, os.path.join(server_dir, "resources", "typings", "sublime_text_py33"))
 
         return list(filter(os.path.isdir, dep_dirs))
-
-
-
-
-
-
-def plugin_loaded() -> None:
-    PyrightLanguageServer.setup()
-
-
-def plugin_unloaded() -> None:
-    PyrightLanguageServer.cleanup()

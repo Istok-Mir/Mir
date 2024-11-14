@@ -23,6 +23,7 @@ import datetime
 import orjson
 import shutil
 from .diagnostic_collection import DiagnosticCollection
+import importlib
 
 ENCODING = "utf-8"
 
@@ -129,6 +130,12 @@ class NotificationHandler(TypedDict):
 
 def register_language_server(server: LanguageServer):
     from .manage_servers import ManageServers
+    if not hasattr(server, 'name'):
+        raise Exception(f'Specify a `name` static property for {server.__name__}.')
+    if not hasattr(server, 'cmd'):
+        raise Exception(f'Specify a `cmd` static property` for {server.name}.')
+    if not hasattr(server, 'activation_events'):
+        raise Exception(f'Specify a `activation_events` static property` for {server.name}.')
     if server.name in [s.name for s in ManageServers.language_servers_pluguins]:
         print(f'register_language_server {server.name} is skipped because it was already registred.')
         return
@@ -141,24 +148,41 @@ def unregister_language_server(server: LanguageServer):
     ManageServers.language_servers_pluguins = [s for s in ManageServers.language_servers_pluguins if s.name != server.name]
 
 
+server_callbacks_when_ready = []
+
 class LanguageServer:
     name: str
     cmd: str
     activation_events: ActivationEvents
 
-    @classmethod
-    def setup(cls):
-        if not hasattr(cls, 'name'):
-            raise Exception(f'Specify a `name` static property for {cls.__name__}.')
-        if not hasattr(cls, 'cmd'):
-            raise Exception(f'Specify a `cmd` static property` for {cls.__name__}.')
-        if not hasattr(cls, 'activation_events'):
-            raise Exception(f'Specify a `activation_events` static property` for {cls.__name__}.')
-        register_language_server(cls)
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        global server_callbacks_when_ready
 
-    @classmethod
-    def cleanup(cls):
-        unregister_language_server(cls)
+        def is_api_ready():
+            from sublime_plugin import api_ready
+            return api_ready
+
+        api_ready = is_api_ready()
+        def run():
+            register_language_server(cls)
+
+            def schedule():
+                m = importlib.import_module(cls.__module__)
+                original_plugin_unloaded = m.__dict__.get('plugin_unloaded')
+
+                def override_plugin_unloaded():
+                    if original_plugin_unloaded:
+                        original_plugin_unloaded()
+                    unregister_language_server(cls)
+
+                m.__dict__['plugin_unloaded'] = override_plugin_unloaded
+
+            sublime.set_timeout(schedule, 1)
+        if not api_ready:
+            server_callbacks_when_ready.append(run)
+        else:
+            run()
 
     def before_initialize(self):
         ...

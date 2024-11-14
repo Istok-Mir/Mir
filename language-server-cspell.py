@@ -148,13 +148,6 @@ class CspellLanguageServer(LanguageServer):
             "cSpell.workspaceRootPath": ""
         })
 
-def plugin_loaded() -> None:
-    CspellLanguageServer.setup()
-
-
-def plugin_unloaded() -> None:
-    CspellLanguageServer.cleanup()
-
 
 WorkspaceConfigForDocumentRequest = TypedDict('WorkspaceConfigForDocumentRequest', {
     'uri': DocumentUri

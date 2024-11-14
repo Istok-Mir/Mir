@@ -7,11 +7,3 @@ class PackageVersionServer(LanguageServer):
         'selector': 'source.json',
         'on_uri': ['file://**/package.json'],
     }
-
-
-def plugin_loaded() -> None:
-    PackageVersionServer.setup()
-
-
-def plugin_unloaded() -> None:
-    PackageVersionServer.cleanup()

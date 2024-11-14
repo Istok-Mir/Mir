@@ -42,13 +42,6 @@ class JsonServer(LanguageServer):
         self.send_notification('json/schemaAssociations', [get_schemas()])
 
 
-def plugin_loaded() -> None:
-    JsonServer.setup()
-
-
-def plugin_unloaded() -> None:
-    JsonServer.cleanup()
-
 def get_schemas():
     return [
       {
