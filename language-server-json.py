@@ -1,4 +1,11 @@
-from .api import LanguageServer
+from __future__ import annotations
+from typing import Any, TypedDict
+
+from .api import LanguageServer, mir, run_future
+from .api.helpers import server_for_view, get_view_uri
+from .api.types import DocumentUri, FormattingOptions, TextEdit
+import sublime
+import sublime_plugin
 
 class JsonServer(LanguageServer):
     name='json'
@@ -41,6 +48,49 @@ class JsonServer(LanguageServer):
         })
         self.send_notification('json/schemaAssociations', [get_schemas()])
 
+
+mir.commands.register_command('json.sort', 'mir_json_sort_document')
+
+class JsonSortDocumentParams(TypedDict):
+    uri: DocumentUri
+    options: FormattingOptions
+
+
+class MirJsonSortDocumentCommand(sublime_plugin.TextCommand):
+    def run(self, _: sublime.Edit, arguments=None) -> None:
+        run_future(self.sort())
+
+    async def sort(self):
+        server = server_for_view('json', self.view)
+        if server is None:
+            return
+        params: JsonSortDocumentParams = {
+            'uri': get_view_uri(self.view),
+            'options': formatting_options(self.view.settings()),
+        }
+        req = server.send_request('json/sort', params)
+        text_edits: list[TextEdit] = await req.result
+        self.view.run_command('mir_apply_text_edits', {
+            'text_edits': text_edits
+        })
+
+
+def formatting_options(settings: sublime.Settings) -> dict[str, Any]:
+    # Build 4085 allows "trim_trailing_white_space_on_save" to be a string so we have to account for that in a
+    # backwards-compatible way.
+    trim_trailing_white_space = settings.get("trim_trailing_white_space_on_save") not in (False, None, "none")
+    return {
+        # Size of a tab in spaces.
+        "tabSize": settings.get("tab_size", 4),
+        # Prefer spaces over tabs.
+        "insertSpaces": settings.get("translate_tabs_to_spaces", False),
+        # Trim trailing whitespace on a line. (since 3.15)
+        "trimTrailingWhitespace": trim_trailing_white_space,
+        # Insert a newline character at the end of the file if one does not exist. (since 3.15)
+        "insertFinalNewline": settings.get("ensure_newline_at_eof_on_save", False),
+        # Trim all newlines after the final newline at the end of the file. (sine 3.15)
+        "trimFinalNewlines": settings.get("ensure_newline_at_eof_on_save", False)
+    }
 
 def get_schemas():
     return [
