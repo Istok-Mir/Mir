@@ -1,7 +1,7 @@
 from __future__ import annotations
-
-from .api.types import URI, DocumentUri
-from .api import LanguageServer
+import sublime_plugin
+from .api.types import URI, DocumentUri, TextEdit
+from .api import LanguageServer, mir
 from typing import Dict, List, Optional, Tuple, TypedDict
 
 class CspellLanguageServer(LanguageServer):
@@ -169,3 +169,16 @@ WorkspaceConfigForDocumentResponse = TypedDict('WorkspaceConfigForDocumentRespon
     'words': FieldExistsInTarget,
     'ignoreWords': FieldExistsInTarget
 })
+
+DocumentVersion = int
+EditTextArguments = Tuple[URI, DocumentVersion, List[TextEdit]]
+
+
+mir.commands.register_command('cSpell.editText', 'cspell_edit_text')
+
+class CspellEditTextCommand(sublime_plugin.TextCommand):
+    def run(self, edit, arguments: EditTextArguments): 
+        _uri, document_version, text_edits = arguments
+        self.view.run_command('mir_apply_text_edits', {
+            'text_edits': text_edits
+        })

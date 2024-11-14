@@ -2,6 +2,8 @@ from __future__ import annotations
 import asyncio
 from typing import List
 
+from .commands import MirCommand
+
 from .lsp_requests import Request
 from .manage_servers import servers_for_view, servers_for_window
 from .providers import CodeActionProvider, Providers, HoverProvider, CompletionProvider, DefinitionProvider, DocumentSymbolProvider, ReferencesProvider
@@ -17,6 +19,8 @@ SourceName = str
 MAX_WAIT_TIME=5 # second is a lot of time
 
 class mir:
+    commands = MirCommand
+
     @staticmethod
     async def definitions(view: sublime.View, point: int) -> list[tuple[SourceName, Definition | list[LocationLink] | None]]:
         # STEP 1:
