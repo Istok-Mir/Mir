@@ -106,7 +106,6 @@ class mir:
     async def hover(view: sublime.View, hover_point: int, hover_zone: sublime.HoverZone) -> list[tuple[SourceName, Hover | None]]:
         # STEP 1:
         # Trigger Canceling Providers
-        print('Providers.hover_providers', Providers.hover_providers)
         providers = [provider for provider in Providers.hover_providers if provider.is_applicable() and is_applicable_view(view, provider.activation_events)]
         for provider in providers:
             await provider.cancel()
