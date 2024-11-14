@@ -44,7 +44,7 @@ class CodeActionSelectionListener(sublime_plugin.ViewEventListener):
                     quick_fixes.append(code_action)
         flags =  sublime.RegionFlags.DRAW_NO_FILL | sublime.RegionFlags.DRAW_NO_OUTLINE | sublime.RegionFlags.NO_UNDO
         scope = 'region.bluish' if quick_fixes else 'region.yellowish'
-        icon = 'Packages/Mir/icons/ligthing-fix.png' if quick_fixes else 'Packages/Mir/icons/lightning.png' 
+        icon = 'Packages/Mir/icons/lighting-fix.png' if quick_fixes else 'Packages/Mir/icons/lightning.png' 
         self.view.add_regions('mir_bulb', [sublime.Region(region.b)], scope=scope, icon=icon, flags=flags)
 
 
