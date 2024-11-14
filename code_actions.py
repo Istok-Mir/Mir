@@ -4,6 +4,7 @@ from .libs.lsp.mir import SourceName
 
 from .api.types import CodeActionTriggerKind, Diagnostic, CodeAction, Command, CodeActionKind, CodeActionContext
 from .api import mir
+from .api.helpers import range_to_region
 from .libs.event_loop import run_future
 import sublime
 import sublime_plugin
@@ -132,8 +133,10 @@ async def get_code_actions(view: sublime.View, region: sublime.Region, trigger_k
     all_diagnostics: list[Diagnostic] = []
     for _, diagnostics in diagnostics_results:
         all_diagnostics.extend(diagnostics)
+
+    diagnostics_in_region = [d for d in all_diagnostics if region.intersects(range_to_region(view, d['range']))]
     context: CodeActionContext = {
-        'diagnostics': all_diagnostics,
+        'diagnostics': diagnostics_in_region,
         'triggerKind': trigger_kind
     }
     if only_kinds:
