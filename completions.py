@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from .libs.lsp.providers import Providers
+
 from .libs.lsp.constants import COMPLETION_KINDS
 from .libs.lsp.server import LanguageServer
 import sublime
@@ -78,21 +80,17 @@ class MirInsertCompletion(sublime_plugin.TextCommand):
             self.view.run_command("insert_snippet", {"contents": new_text})
         else:
             self.view.run_command("insert", {"characters": new_text})
-        server = server_for_view(provider, self.view)
-        if not server or not server.capabilities.has('completionProvider.resolveProvider'):
+        resolve_completion_provider = next(iter([p for p in Providers.completion_providers if p.name == provider]), None)
+        if not resolve_completion_provider:
             return
-        additional_text_edits = item.get('additionalTextEdits')
-        if not additional_text_edits:
-            run_future(self.resolve_item(server, item))
-        else:
-            self._on_resolved(provider, item)
 
-    async def resolve_item(self, server: LanguageServer, item: CompletionItem):
-        req = server.send.resolve_completion_item(item)
-        result = await req.result
-        self._on_resolved(server.name, result)
+        async def resolve():
+            resolved_item = await resolve_completion_provider.resolve_completion_item(item)
+            self._on_resolved(provider, resolved_item)
 
-    def _on_resolved(self, session_name: str, item: CompletionItem) -> None:
+        run_future(resolve())
+
+    def _on_resolved(self, server_name: str, item: CompletionItem) -> None:
         additional_edits = item.get('additionalTextEdits')
         if additional_edits:
             self.view.run_command('mir_apply_text_edits', {
@@ -100,13 +98,11 @@ class MirInsertCompletion(sublime_plugin.TextCommand):
             })
         command = item.get("command")
         if command:
-            args = {
-                "command_name": command["command"],
-                "command_args": command.get("arguments"),
-                "session_name": session_name
-            }
-            print('TODO implement lsp_execute')
-            # self.view.run_command("lsp_execute", args)
+            self.view.run_command('mir_execute_command', {
+                'server_name': server_name,
+                'command': command['command'],
+                'arguments': command.get('arguments')
+            })
         
 
     def _translated_regions(self, edit_region: sublime.Region) -> Generator[sublime.Region, None, None]:

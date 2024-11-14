@@ -94,6 +94,9 @@ class CompletionProvider(BaseProvider):
     async def provide_completion_items(self, view: sublime.View, point: int) -> list[CompletionItem] | CompletionList | None:
         ...
 
+    async def resolve_completion_item(self, completion_item: CompletionItem) -> CompletionItem:
+        return completion_item
+
 
 class DocumentSymbolProvider(BaseProvider):
     name: str

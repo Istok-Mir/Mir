@@ -84,6 +84,14 @@ class LspCompletionProvider(LspProvider, CompletionProvider):
         self._requests.append(req)
         return await req.result
 
+    async def resolve_completion_item(self, completion_item) -> CompletionItem:
+        if not self.server.capabilities.has('completionProvider.resolveProvider'):
+            return completion_item
+        req = self.server.send.resolve_completion_item(completion_item)
+        self._requests.append(req)
+        resolved_completion_item = await req.result
+        return resolved_completion_item
+
     async def cancel(self):
         if self._requests:
             for request in self._requests:
