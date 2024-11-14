@@ -2,16 +2,15 @@
 from .api.types import Hover, Diagnostic
 from .api import HoverProvider, mir
 from .api.helpers import range_to_region
-import sublime
 
 
 #Example of a hover provider
 class DiagnosticsHoverProvider(HoverProvider):
-    name= 'Package Json Enhancer'
+    name= 'Diagnostics Hover Provider'
     activation_events = {
         'selector': '*',
     }
-    async def provide_hover(self, view: sublime.View, hover_point: int, hover_zone: sublime.HoverZone) -> Hover:
+    async def provide_hover(self, view, hover_point, hover_zone) -> Hover:
         all_diagnostics = await mir.get_diagnostics(view)
         diagnostics_under_cursor: list[Diagnostic] = []
         for _uri, diagnostics in all_diagnostics:
