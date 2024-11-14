@@ -4,6 +4,7 @@ from typing import List, Union
 from .api import CompletionProvider
 from .api.types import CompletionItem, CompletionList
 
+
 class ExampleCompletionProvider(CompletionProvider):
 	name='HellooCompletionsGoodbyeMyTime'
 	activation_events={
@@ -14,13 +15,3 @@ class ExampleCompletionProvider(CompletionProvider):
 		return [{
 			'label': 'Helloo',
 		}]
-
-
-def plugin_loaded() -> None:
-	...
-    #ExampleCompletionProvider.setup()
-
-
-def plugin_unloaded() -> None:
-	...
-    # ExampleCompletionProvider.cleanup()

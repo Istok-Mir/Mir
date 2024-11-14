@@ -106,11 +106,6 @@ class ExampleHoverProvider(HoverProvider):
           'contents': ['Hover Content']
         }
 
-def plugin_loaded() -> None:
-    ExampleHoverProvider.setup()
-
-def plugin_unloaded() -> None:
-    ExampleHoverProvider.cleanup()
 ```
 
 See `Mir/package-provider-*.py` files for examples.

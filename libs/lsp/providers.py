@@ -1,22 +1,50 @@
 from __future__ import annotations
 from typing import List, Union, TYPE_CHECKING
+
+from sublime_plugin import importlib
 from .server import ActivationEvents
 from .types import CodeActionContext, CompletionItem, Hover, CompletionList, Definition, Location, LocationLink, SymbolInformation, DocumentSymbol, Command, CodeAction
 import sublime
 
+callbacks_when_ready = []
+
 class BaseProvider:
-    @classmethod
-    def setup(cls):
-        register_provider(cls())
-
-    @classmethod
-    def cleanup(cls):
-        unregister_provider(cls)
-
-
     async def cancel(self) -> None:
         ...
 
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        global callbacks_when_ready
+
+        def is_api_ready():
+            from sublime_plugin import api_ready
+            return api_ready
+
+        api_ready = is_api_ready()
+        def run():
+            for parent in cls.__bases__:
+                if parent.__name__ in ['LspProvider', 'BaseProvider']:
+                    # skip classes like LspDefinitionProvider, Or DefinitionProvider and any class that directly inherits LspProvider or BaseProvider
+                    return 
+            provider = cls()
+            register_provider(provider)
+
+            def schedule():
+                m = importlib.import_module(cls.__module__)
+                original_plugin_unloaded = m.__dict__.get('plugin_unloaded')
+
+                def override_plugin_unloaded():
+                    if original_plugin_unloaded:
+                        original_plugin_unloaded()
+                    unregister_provider(provider)
+
+                m.__dict__['plugin_unloaded'] = override_plugin_unloaded
+
+            sublime.set_timeout(schedule, 1)
+        if not api_ready:
+            callbacks_when_ready.append(run)
+        else:
+            run()
 
 class Providers:
     definition_providers: List[DefinitionProvider]=[]

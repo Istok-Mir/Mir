@@ -20,11 +20,3 @@ class DiagnosticsHoverProvider(HoverProvider):
         return {
           'contents': [d['message'] for d in diagnostics_under_cursor]
         }
-
-
-def plugin_loaded() -> None:
-    DiagnosticsHoverProvider.setup()
-
-
-def plugin_unloaded() -> None:
-    DiagnosticsHoverProvider.cleanup()
