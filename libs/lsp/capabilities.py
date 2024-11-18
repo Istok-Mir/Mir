@@ -165,6 +165,7 @@ ServerCapability = Literal[
     'definitionProvider',
     'diagnosticProvider',
     'documentFormattingProvider',
+    'documentOnTypeFormattingProvider',
     'documentHighlightProvider',
     'documentLinkProvider',
     'documentRangeFormattingProvider',
@@ -237,7 +238,8 @@ _METHOD_TO_CAPABILITY: dict[str, ServerCapability] = {
     'textDocument/willSave': 'textDocumentSync.willSave',
     'textDocument/willSaveWaitUntil': 'textDocumentSync.willSaveWaitUntil',
     'workspace/didChangeWatchedFiles': 'workspace.didChangeWatchedFiles',
-    'workspace/didChangeConfiguration': 'workspace.didChangeConfiguration'
+    'workspace/didChangeConfiguration': 'workspace.didChangeConfiguration',
+    'textDocument/onTypeFormatting': 'documentOnTypeFormattingProvider'
 }
 
 def method_to_capability(method: str) -> ServerCapability:
