@@ -2,6 +2,8 @@ from __future__ import annotations
 from asyncio import Future
 import asyncio
 
+from .libs.lsp.pull_diagnostics import pull_diagnostics
+
 from .libs.lsp.mir import mir
 
 from .libs.lsp.manage_servers import servers_for_view
@@ -35,6 +37,7 @@ class MirCodeActionsOnSaveCommand(sublime_plugin.TextCommand):
 
         settings: list[str] = self.view.settings().get('mir.code_actions_on_save', [])
         for server in servers:
+            await pull_diagnostics(server, get_view_uri(self.view))
             code_action_provider: bool | CodeActionOptions = server.capabilities.get('codeActionProvider')
             matching_kinds = []
             for user_setting in settings:
