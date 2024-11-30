@@ -3,65 +3,61 @@ from __future__ import annotations
 from .libs.lsp.providers import Providers
 
 from .libs.lsp.constants import COMPLETION_KINDS
-from .libs.lsp.server import LanguageServer
 import sublime
 import sublime_plugin
 from .api import mir, run_future
-from .api.helpers import range_to_region, server_for_view
+from .api.helpers import range_to_region
 from .api.types import CompletionItem, CompletionItemDefaults, TextEdit, InsertReplaceEdit, EditRangeWithInsertReplace, Range, InsertTextFormat
-from typing import Any, Generator, List, Tuple
+from typing import Any, Generator, List, Tuple, TypeVar
 from typing import cast
 from typing_extensions import TypeAlias, TypeGuard
 from .api.helpers import minihtml, MinihtmlKind
+import cProfile
+import pstats
 
 
 CompletionsStore: TypeAlias = Tuple[List[CompletionItem], CompletionItemDefaults]
+
+T = TypeVar('T')
+
+def get_chunked(items: list[T]) -> Generator[T]:
+    for item in items:
+        yield item
 
 
 class MirCompletionListener(sublime_plugin.ViewEventListener):
     completions: dict[str, CompletionsStore] = {}
     def on_query_completions(self, prefix: str, locations: list[int]):
         completion_list = sublime.CompletionList()
-        run_future(self.do_completions(completion_list, locations[0], prefix))
+        run_future(self.do_completions(completion_list, locations, prefix))
         return completion_list
 
-    async def do_completions(self, completion_list: sublime.CompletionList, point: int, prefix: str):
-        completions_results = await mir.completions(self.view, point)
+    async def do_completions(self, completion_list: sublime.CompletionList, locations: list[int], prefix: str):
+        completions_results = await mir.completions(self.view, prefix, locations)
         completions: list[sublime.CompletionValue] = []
-        first_letter = prefix[:1]
         items: list[CompletionItem] = []
         item_defaults : CompletionItemDefaults = {}
         for name, result in completions_results:
             if isinstance(result, dict):
                 items = result['items']
-                for index, i in enumerate(items):
-                    # if first_letter and not i['label'].startswith(first_letter):
-                    #     continue
-                    label_details_description = i.get('labelDetails', {}).get('description') or ""
-                    completion_item_kind = i.get('kind')
-                    kind = COMPLETION_KINDS[completion_item_kind] if completion_item_kind else sublime.KIND_AMBIGUOUS
-                    ci = sublime.CompletionItem.command_completion(i['label'], 'mir_insert_completion', {
-                        'index': index,
-                        'provider': name,
-                    }, annotation=label_details_description, kind=kind)
-                    if 'textEdit' in i:
-                        ci.flags = sublime.COMPLETION_FLAG_KEEP_PREFIX
-                    completions.append(ci)
+                completions.extend([format_completion(c, name, index) for index, c in enumerate(get_chunked(items))])
             elif isinstance(result, list):
                 items = result
-                for index, i in enumerate(items):
-                    label_details_description = i.get('labelDetails', {}).get('description') or ""
-                    completion_item_kind = i.get('kind')
-                    kind = COMPLETION_KINDS[completion_item_kind] if completion_item_kind else sublime.KIND_AMBIGUOUS
-                    ci = sublime.CompletionItem.command_completion(i['label'], 'mir_insert_completion',{
-                        'index': index,
-                        'provider': name,
-                    }, annotation=label_details_description, kind=kind)
-                    if 'textEdit' in i: 
-                        ci.flags = sublime.COMPLETION_FLAG_KEEP_PREFIX
-                    completions.append(ci)
+                completions.extend([format_completion(c, name, index) for index, c in enumerate(get_chunked(items))])
             MirCompletionListener.completions[name] = items, item_defaults
-        completion_list.set_completions(completions, flags=sublime.AutoCompleteFlags.INHIBIT_WORD_COMPLETIONS | sublime.AutoCompleteFlags.INHIBIT_EXPLICIT_COMPLETIONS)
+        completion_list.set_completions(completions, flags=sublime.AutoCompleteFlags.INHIBIT_WORD_COMPLETIONS | sublime.AutoCompleteFlags.INHIBIT_EXPLICIT_COMPLETIONS )
+
+
+def format_completion(i: CompletionItem, provider_name: str, index: int):
+    label_details_description = i.get('labelDetails', {}).get('description') or ""
+    completion_item_kind = i.get('kind')
+    kind = COMPLETION_KINDS[completion_item_kind] if completion_item_kind else sublime.KIND_AMBIGUOUS
+    ci = sublime.CompletionItem(i['label'], label_details_description, 
+         f'mir_insert_completion {{"index":{index},"provider":"{provider_name}"}}', sublime.CompletionFormat.COMMAND, kind=kind)
+    if 'textEdit' in i:
+        ci.flags = sublime.COMPLETION_FLAG_KEEP_PREFIX
+    return ci
+
 
 class MirInsertCompletion(sublime_plugin.TextCommand):
     def run(self, edit: sublime.Edit, index: int, provider: str) -> None:

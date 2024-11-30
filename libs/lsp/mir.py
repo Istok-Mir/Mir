@@ -133,7 +133,7 @@ class mir:
         return results
 
     @staticmethod
-    async def completions(view: sublime.View, point: int) -> list[tuple[SourceName, list[CompletionItem] | CompletionList | None]]:
+    async def completions(view: sublime.View, prefix: str, locations: list[int]) -> list[tuple[SourceName, list[CompletionItem] | CompletionList | None]]:
         # STEP 1:
         # Trigger Canceling Providers
         providers = [provider for provider in Providers.completion_providers if provider.is_applicable() and is_applicable_view(view, provider.activation_events)]
@@ -146,7 +146,7 @@ class mir:
         # STEP 3:
         async def handle(provider: CompletionProvider):
             try:
-                result = await asyncio.wait_for(provider.provide_completion_items(view, point), MAX_WAIT_TIME)
+                result = await asyncio.wait_for(provider.provide_completion_items(view, prefix, locations), MAX_WAIT_TIME)
             except Exception as e:
                 print(f'Error happened in provider {provider.name}', e)
                 return (provider.name, None)

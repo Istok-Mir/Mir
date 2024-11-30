@@ -78,7 +78,8 @@ class LspCodeActionProvider(LspProvider, CodeActionProvider):
 
 
 class LspCompletionProvider(LspProvider, CompletionProvider):
-    async def provide_completion_items(self, view: sublime.View, point: int) -> list[CompletionItem] | CompletionList | None:
+    async def provide_completion_items(self, view: sublime.View, prefix, locations) -> list[CompletionItem] | CompletionList | None:
+        point = locations[0]
         uri = get_view_uri(view)
         req = self.server.send.completion({
             'textDocument': {

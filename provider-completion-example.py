@@ -9,7 +9,7 @@ class ExampleCompletionProvider(CompletionProvider):
 		'selector': 'source.js'
 	}
 
-	async def provide_completion_items(self, view, point) -> list[CompletionItem] | CompletionList | None:
+	async def provide_completion_items(self, view, prefix, locations) -> list[CompletionItem] | CompletionList | None:
 		return [{
 			'label': 'Helloo',
 		}]

@@ -94,7 +94,7 @@ class CompletionProvider(BaseProvider):
     name: str
     activation_events: ActivationEvents
 
-    async def provide_completion_items(self, view: sublime.View, point: int) -> list[CompletionItem] | CompletionList | None:
+    async def provide_completion_items(self, view: sublime.View, prefix:str, locations: list[int]) -> list[CompletionItem] | CompletionList | None:
         ...
 
     async def resolve_completion_item(self, completion_item: CompletionItem) -> CompletionItem:
