@@ -12,8 +12,6 @@ from typing import Any, Generator, List, Tuple, TypeVar
 from typing import cast
 from typing_extensions import TypeAlias, TypeGuard
 from .api.helpers import minihtml, MinihtmlKind
-import cProfile
-import pstats
 
 
 CompletionsStore: TypeAlias = Tuple[List[CompletionItem], CompletionItemDefaults]
