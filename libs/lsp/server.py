@@ -25,8 +25,6 @@ import shutil
 from .diagnostic_collection import DiagnosticCollection
 import importlib
 import functools
-import re
-
 
 ENCODING = "utf-8"
 
@@ -325,17 +323,6 @@ class LanguageServer:
                 if not line:
                     continue
                 body = await self._process.stdout.readexactly(num_bytes)
-                decoded_data = body.decode('utf-8')
-                match = re.search(r'"id":(\d+)', decoded_data)
-                if num_bytes > 1024*1024 and match: # 1mb
-                    req_id = match.group(1)
-                    await self._response_handler({
-                        'id': int(req_id),
-                        '__ignore': True,
-                        'result': None,
-                        'num_bytes': num_bytes
-                    })
-                    continue
                 run_future(self._handle_body(body))
         except (BrokenPipeError, ConnectionResetError) as e:
             print(f'Mir ({self.name}). BrokenPipeError, ConnectionResetError', e)
@@ -433,17 +420,14 @@ class LanguageServer:
     async def _response_handler(self, server_response: dict) -> None:
         response = self._response_handlers.pop(server_response["id"])
         response.request_end_time = datetime.datetime.now()
-        if "__ignore" in server_response:
-            self._communcation_logs.append(f'Received response "{response.method}" ({response.id}) - {response.duration}s\nResponse is overridden to be "{format_payload(server_response["result"])}" because the original response is too large ({server_response["num_bytes"]})')
-            response.result.set_result(server_response["result"])
-        elif "result" in server_response and "error" not in server_response:
-            self._communcation_logs.append(f'Received response "{response.method}" ({response.id}) - {response.duration}s\nResponse: {format_payload(server_response["result"])}')
+        if "result" in server_response and "error" not in server_response:
+            self._communcation_logs.append(f'Recieved response "{response.method}" ({response.id}) - {response.duration}s\nResponse: {format_payload(server_response["result"])}')
             response.result.set_result(server_response["result"])
         elif "result" not in server_response and "error" in server_response:
-            self._communcation_logs.append(f'Received error response "{response.method}" ({response.id}) - {response.duration}s\nResponse:{format_payload(server_response["error"])}')
+            self._communcation_logs.append(f'Recieved error response "{response.method}" ({response.id}) - {response.duration}s\nResponse:{format_payload(server_response["error"])}')
             response.result.set_exception(Error.from_lsp(server_response["error"]))
         else:
-            self._communcation_logs.append(f'Received error response "{response.method}" ({response.id}) - {response.duration}s\nResponse:{format_payload(server_response["error"])}')
+            self._communcation_logs.append(f'Recieved error response "{response.method}" ({response.id}) - {response.duration}s\nResponse:{format_payload(server_response["error"])}')
             response.result.set_exception(Error(ErrorCodes.InvalidRequest, ''))
 
     async def _request_handler(self, response: dict) -> None:
