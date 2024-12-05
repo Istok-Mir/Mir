@@ -5,6 +5,7 @@
             "mdpopups",
             "typing_extensions",
             "wcmatch",
+            "pysimdjson",
             "orjson",
             "watchdog"
         ]

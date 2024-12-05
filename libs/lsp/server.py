@@ -25,6 +25,8 @@ import shutil
 from .diagnostic_collection import DiagnosticCollection
 import importlib
 import functools
+import simdjson
+
 
 ENCODING = "utf-8"
 
@@ -323,7 +325,7 @@ class LanguageServer:
                 if not line:
                     continue
                 body = await self._process.stdout.readexactly(num_bytes)
-                run_future(self._handle_body(body))
+                run_future(self._handle_body(body, num_bytes))
         except (BrokenPipeError, ConnectionResetError) as e:
             print(f'Mir ({self.name}). BrokenPipeError, ConnectionResetError', e)
             pass
@@ -332,9 +334,19 @@ class LanguageServer:
             pass
         return self._received_shutdown
 
-    async def _handle_body(self, body: bytes) -> None:
+    parser = simdjson.Parser()
+    async def _handle_body(self, body: bytes, num_bytes: int) -> None:
         try:
-            await self._receive_payload(orjson.loads(body))
+            handled = False
+            if num_bytes > 1024*1024: # special handle large payloads
+                doc = self.parser.parse(body)
+                request_id = doc.get('id') # get id to get the request method
+                request = self._response_handlers.get(request_id)
+                if request and request.method == 'textDocument/completion': # only handle completions for now
+                    await self._receive_payload(doc)
+                    handled = True
+            if not handled:
+                await self._receive_payload(orjson.loads(body))
         except IOError as ex:
             self._log(f"Mir ({self.name})  malformed {ENCODING}: {ex}")
         except UnicodeDecodeError as ex:
@@ -418,17 +430,20 @@ class LanguageServer:
         })
 
     async def _response_handler(self, server_response: dict) -> None:
-        response = self._response_handlers.pop(server_response["id"])
-        response.request_end_time = datetime.datetime.now()
-        if "result" in server_response and "error" not in server_response:
-            self._communcation_logs.append(f'Recieved response "{response.method}" ({response.id}) - {response.duration}s\nResponse: {format_payload(server_response["result"])}')
-            response.result.set_result(server_response["result"])
+        request = self._response_handlers.pop(server_response["id"])
+        request.request_end_time = datetime.datetime.now()
+        if "__ignore" in server_response:
+            self._communcation_logs.append(f'Received response "{request.method}" ({request.id}) - {request.duration}s\nResponse is overridden to be "{format_payload(server_response["result"])}" because the original response is too large ({server_response["num_bytes"]})')
+            request.result.set_result(server_response["result"])
+        elif "result" in server_response and "error" not in server_response:
+            self._communcation_logs.append(f'Received response "{request.method}" ({request.id}) - {request.duration}s\nResponse: {format_payload(server_response["result"])}')
+            request.result.set_result(server_response["result"])
         elif "result" not in server_response and "error" in server_response:
-            self._communcation_logs.append(f'Recieved error response "{response.method}" ({response.id}) - {response.duration}s\nResponse:{format_payload(server_response["error"])}')
-            response.result.set_exception(Error.from_lsp(server_response["error"]))
+            self._communcation_logs.append(f'Received error response "{request.method}" ({request.id}) - {request.duration}s\nResponse:{format_payload(server_response["error"])}')
+            request.result.set_exception(Error.from_lsp(server_response["error"]))
         else:
-            self._communcation_logs.append(f'Recieved error response "{response.method}" ({response.id}) - {response.duration}s\nResponse:{format_payload(server_response["error"])}')
-            response.result.set_exception(Error(ErrorCodes.InvalidRequest, ''))
+            self._communcation_logs.append(f'Received error response "{request.method}" ({request.id}) - {request.duration}s\nResponse:{format_payload(server_response["error"])}')
+            request.result.set_exception(Error(ErrorCodes.InvalidRequest, ''))
 
     async def _request_handler(self, response: dict) -> None:
         method = response.get("method", "")

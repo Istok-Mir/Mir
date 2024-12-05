@@ -12,6 +12,7 @@ from typing import Any, Generator, List, Tuple, TypeVar
 from typing import cast
 from typing_extensions import TypeAlias, TypeGuard
 from .api.helpers import minihtml, MinihtmlKind
+import simdjson
 
 
 CompletionsStore: TypeAlias = Tuple[List[CompletionItem], CompletionItemDefaults]
@@ -36,10 +37,10 @@ class MirCompletionListener(sublime_plugin.ViewEventListener):
         items: list[CompletionItem] = []
         item_defaults : CompletionItemDefaults = {}
         for name, result in completions_results:
-            if isinstance(result, dict):
-                items = result['items']
+            if isinstance(result, dict) or isinstance(result, simdjson.Object):
+                items = result.get('items')
                 completions.extend([format_completion(c, name, index) for index, c in enumerate(get_chunked(items))])
-            elif isinstance(result, list):
+            elif isinstance(result, list) or isinstance(result, simdjson.Array):
                 items = result
                 completions.extend([format_completion(c, name, index) for index, c in enumerate(get_chunked(items))])
             MirCompletionListener.completions[name] = items, item_defaults
@@ -60,7 +61,10 @@ def format_completion(i: CompletionItem, provider_name: str, index: int):
 class MirInsertCompletion(sublime_plugin.TextCommand):
     def run(self, edit: sublime.Edit, index: int, provider: str) -> None:
         items, item_defaults = MirCompletionListener.completions[provider]
-        item = completion_with_defaults(items[index], item_defaults)
+        normalized_item = items[index]
+        if isinstance(normalized_item, simdjson.Object):
+            normalized_item: CompletionItem = normalized_item.as_dict()
+        item = completion_with_defaults(normalized_item, item_defaults)
         text_edit = item.get("textEdit")
         if text_edit:
             new_text = text_edit["newText"].replace("\r", "")
