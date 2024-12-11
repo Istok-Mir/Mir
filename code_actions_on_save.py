@@ -47,12 +47,16 @@ class MirCodeActionsOnSaveCommand(sublime_plugin.TextCommand):
                     format_with_provider = user_setting.replace('format.', '')
                     continue
                 if isinstance(code_action_provider, bool):
-                    matching_kinds.append(user_setting)
+                    # This can be tested with the biome LSP
+                    # if we uncomment this, biome will return some irrelevant code action fixes to suppress some linter rules, even if the linter is not enabled... which is a bug
+                    # matching_kinds.append(user_setting)
+                    continue
                 else:
                     code_action_kinds = code_action_provider.get('codeActionKinds')
                     if code_action_kinds and user_setting in code_action_kinds:
                         matching_kinds.append(user_setting)
-
+            if not matching_kinds: # don't send code actions if no matching code actions kinds are found
+                continue
             future = server.send.code_action({
                 'textDocument': {'uri': get_view_uri(self.view)},
                 'range': region_to_range(self.view, sublime.Region(0, self.view.size())),

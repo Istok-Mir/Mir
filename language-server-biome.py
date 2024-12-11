@@ -6,3 +6,7 @@ class BiomeLanguageServer(LanguageServer):
     activation_events={
         'selector': 'source.js | source.ts | source.jsx | source.tsx | source.js.jsx | source.js.react | source.ts.react | source.json | source.css | text.html.basic',
     }
+
+    def on_settings_change(self):
+        self.settings.update({"biome.lspBin": None, "biome.rename": None})
+
