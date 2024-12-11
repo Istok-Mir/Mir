@@ -6,7 +6,7 @@ from .libs.lsp.pull_diagnostics import pull_diagnostics
 
 from .libs.lsp.mir import mir
 
-from .libs.lsp.manage_servers import servers_for_view
+from .libs.lsp.manage_servers import server_for_view, servers_for_view
 from .libs.lsp.types import CodeActionOptions, CodeActionTriggerKind, Diagnostic
 from .libs.lsp.view_to_lsp import get_view_uri, region_to_range
 from .libs.event_loop import run_future
@@ -37,11 +37,11 @@ class MirCodeActionsOnSaveCommand(sublime_plugin.TextCommand):
 
         view_settings = self.view.settings()
         settings: list[str] = view_settings.get('mir.on_save', [])
+        format_with_provider: str | None = None
         for server in servers:
             await pull_diagnostics(server, get_view_uri(self.view))
             code_action_provider: bool | CodeActionOptions = server.capabilities.get('codeActionProvider')
             matching_kinds = []
-            format_with_provider: str | None = None
             for user_setting in settings:
                 if user_setting.startswith('format'): # `format.biome` or `format.vtsls`
                     format_with_provider = user_setting.replace('format.', '')
@@ -52,24 +52,6 @@ class MirCodeActionsOnSaveCommand(sublime_plugin.TextCommand):
                     code_action_kinds = code_action_provider.get('codeActionKinds')
                     if code_action_kinds and user_setting in code_action_kinds:
                         matching_kinds.append(user_setting)
-            if format_with_provider == server.name:
-                future = server.send.formatting({
-                    'textDocument': {'uri': get_view_uri(self.view)},
-                    'options': {
-                        'tabSize': int(view_settings.get("tab_size", 4)),
-                        'insertSpaces': bool(view_settings.get("translate_tabs_to_spaces", False)),
-                        'trimTrailingWhitespace': True,
-                        'insertFinalNewline': False,
-                        'trimFinalNewlines': False
-                    }
-                })
-                result = await future.result
-                if not result:
-                    continue
-                self.view.run_command('mir_apply_text_edits', {
-                    'text_edits': result
-                })
-                continue
 
             future = server.send.code_action({
                 'textDocument': {'uri': get_view_uri(self.view)},
@@ -92,6 +74,23 @@ class MirCodeActionsOnSaveCommand(sublime_plugin.TextCommand):
                     self.view.run_command('mir_apply_workspace_edit', {
                         'workspace_edit': edit
                     })
+
+        if format_with_provider and (formatting_server := server_for_view(format_with_provider,self.view)) and formatting_server.capabilities.has('documentFormattingProvider'):
+            future = formatting_server.send.formatting({
+                'textDocument': {'uri': get_view_uri(self.view)},
+                'options': {
+                    'tabSize': int(view_settings.get("tab_size", 4)),
+                    'insertSpaces': bool(view_settings.get("translate_tabs_to_spaces", False)),
+                    'trimTrailingWhitespace': True,
+                    'insertFinalNewline': False,
+                    'trimFinalNewlines': False
+                }
+            })
+            result = await future.result
+            if result:
+                self.view.run_command('mir_apply_text_edits', {
+                    'text_edits': result
+                })
 
         self.view.run_command('save')
         MirCodeActionsOnSaveCommand.running_code_actions_on_save = False
