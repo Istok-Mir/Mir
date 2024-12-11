@@ -35,18 +35,41 @@ class MirCodeActionsOnSaveCommand(sublime_plugin.TextCommand):
 
         servers = servers_for_view(self.view, 'codeActionProvider')
 
-        settings: list[str] = self.view.settings().get('mir.code_actions_on_save', [])
+        view_settings = self.view.settings()
+        settings: list[str] = view_settings.get('mir.on_save', [])
         for server in servers:
             await pull_diagnostics(server, get_view_uri(self.view))
             code_action_provider: bool | CodeActionOptions = server.capabilities.get('codeActionProvider')
             matching_kinds = []
+            format_with_provider: str | None = None
             for user_setting in settings:
+                if user_setting.startswith('format'): # `format.biome` or `format.vtsls`
+                    format_with_provider = user_setting.replace('format.', '')
+                    continue
                 if isinstance(code_action_provider, bool):
                     matching_kinds.append(user_setting)
                 else:
                     code_action_kinds = code_action_provider.get('codeActionKinds')
                     if code_action_kinds and user_setting in code_action_kinds:
                         matching_kinds.append(user_setting)
+            if format_with_provider == server.name:
+                future = server.send.formatting({
+                    'textDocument': {'uri': get_view_uri(self.view)},
+                    'options': {
+                        'tabSize': int(view_settings.get("tab_size", 4)),
+                        'insertSpaces': bool(view_settings.get("translate_tabs_to_spaces", False)),
+                        'trimTrailingWhitespace': True,
+                        'insertFinalNewline': False,
+                        'trimFinalNewlines': False
+                    }
+                })
+                result = await future.result
+                if not result:
+                    continue
+                self.view.run_command('mir_apply_text_edits', {
+                    'text_edits': result
+                })
+                continue
 
             future = server.send.code_action({
                 'textDocument': {'uri': get_view_uri(self.view)},

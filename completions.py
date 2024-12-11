@@ -92,7 +92,8 @@ class MirInsertCompletion(sublime_plugin.TextCommand):
         additional_edits = item.get('additionalTextEdits')
         if additional_edits:
             self.view.run_command('mir_apply_text_edits', {
-                'text_edits': additional_edits
+                'text_edits': additional_edits,
+                'show_edits_in_popup': True
             })
         command = item.get("command")
         if command:
@@ -165,7 +166,7 @@ def get_text_edit_range(text_edit: TextEdit | InsertReplaceEdit) -> Range:
     return text_edit['range']
 
 class MirApplyTextEditsCommand(sublime_plugin.TextCommand):
-    def run(self, edit: sublime.Edit, text_edits: list[TextEdit]) -> None:
+    def run(self, edit: sublime.Edit, text_edits: list[TextEdit], show_edits_in_popup=False) -> None:
         if not text_edits:
             return
         content = []
@@ -175,12 +176,11 @@ class MirApplyTextEditsCommand(sublime_plugin.TextCommand):
         content = f"""```diff
 {" ".join(content)}
 ```"""
-        formatted_content = content = minihtml(self.view, content, MinihtmlKind.FORMAT_MARKED_STRING | MinihtmlKind.FORMAT_MARKUP_CONTENT)
-
-
-        self.view.show_popup(
-            f"""<html style='box-sizing:border-box; background-color:var(--background); padding:0rem; margin:0'><body style='padding:0.3rem; margin:0; border-radius:4px; border: 1px solid color(var(--foreground) blend(var(--background) 20%));'><div style='padding: 0.0rem 0.2rem; font-size: 0.9rem;'>{formatted_content}</div></body></html>""",
-            sublime.PopupFlags.HIDE_ON_MOUSE_MOVE_AWAY,
-            max_width=800,
-        )
-        sublime.set_timeout(lambda: self.view.hide_popup(), 2000)
+        if show_edits_in_popup:
+            formatted_content = content = minihtml(self.view, content, MinihtmlKind.FORMAT_MARKED_STRING | MinihtmlKind.FORMAT_MARKUP_CONTENT)
+            self.view.show_popup(
+                f"""<html style='box-sizing:border-box; background-color:var(--background); padding:0rem; margin:0'><body style='padding:0.3rem; margin:0; border-radius:4px; border: 1px solid color(var(--foreground) blend(var(--background) 20%));'><div style='padding: 0.0rem 0.2rem; font-size: 0.9rem;'>{formatted_content}</div></body></html>""",
+                sublime.PopupFlags.HIDE_ON_MOUSE_MOVE_AWAY,
+                max_width=800,
+            )
+            sublime.set_timeout(lambda: self.view.hide_popup(), 2000)
