@@ -56,7 +56,7 @@ class MirTextChangeListener(sublime_plugin.TextChangeListener):
             else:
                 raise Exception(f'TextChangeListener. ${server.name} somehow managed to get here. textDocumentSyncKind is {textDocumentSyncKind}.')
             debounce_func = functools.partial(self.debounce_sending_changes, server, view, last_change_count=view.change_count())
-            sublime.set_timeout(debounce_func, 500)
+            sublime.set_timeout(debounce_func, 1000)
 
     def debounce_sending_changes(self, server: LanguageServer, view:sublime.View, last_change_count: int):
         if view.change_count() == last_change_count and server.status == 'ready':

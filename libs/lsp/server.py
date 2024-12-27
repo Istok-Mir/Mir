@@ -139,16 +139,16 @@ def register_language_server(server: LanguageServer):
         raise Exception(f'Specify a `cmd` static property` for {server.name}.')
     if not hasattr(server, 'activation_events'):
         raise Exception(f'Specify a `activation_events` static property` for {server.name}.')
-    if server.name in [s.name for s in ManageServers.language_servers_pluguins]:
+    if server.name in [s.name for s in ManageServers.language_servers_plugins]:
         print(f'register_language_server {server.name} is skipped because it was already registred.')
         return
-    ManageServers.language_servers_pluguins.append(server)
+    ManageServers.language_servers_plugins.append(server)
 
 
 def unregister_language_server(server: LanguageServer):
     from .manage_servers import ManageServers
     [s.stop() for servers in ManageServers.language_servers_per_window.values() for s in servers if s.name == server.name]
-    ManageServers.language_servers_pluguins = [s for s in ManageServers.language_servers_pluguins if s.name != server.name]
+    ManageServers.language_servers_plugins = [s for s in ManageServers.language_servers_plugins if s.name != server.name]
 
 
 server_callbacks_when_ready = []
@@ -301,6 +301,7 @@ class LanguageServer:
             self._process.stdout.set_exception(StopLoopException())
         if self._process:
             self._process.kill()
+            await self._process.wait()
             self._process = None
         self.status = 'off'
 

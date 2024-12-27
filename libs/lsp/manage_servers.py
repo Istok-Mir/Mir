@@ -31,7 +31,7 @@ async def open_document(view: sublime.View):
     window = view.window()
     if not window:
         return
-    for server in ManageServers.language_servers_pluguins:
+    for server in ManageServers.language_servers_plugins:
         if not is_applicable_view(view, server.activation_events):
             continue
         if server.name not in [s.name for s in ManageServers.servers_for_view(view)]:
@@ -70,7 +70,7 @@ def close_document(view: sublime.View):
 
 
 class ManageServers(sublime_plugin.EventListener):
-    language_servers_pluguins: list[LanguageServer] = []
+    language_servers_plugins: list[LanguageServer] = []
     language_servers_per_window: dict[int, list[LanguageServer]] = {}
 
     @classmethod
