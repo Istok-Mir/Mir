@@ -194,7 +194,7 @@ class LanguageServer:
         ...
 
     def __init__(self) -> None:
-        self.status: Literal['off', 'initializing','ready'] = 'off'
+        self.status: Literal['off', 'initializing','ready', 'error'] = 'off'
         self.send = LspRequest(self.send_request)
         self.notify = LspNotification(self.send_notification)
         self.capabilities = ServerCapabilities()
@@ -245,7 +245,9 @@ class LanguageServer:
                 env=os.environ.copy()
             )
             run_future(self._run_forever())
-
+            await asyncio.sleep(0.1)
+            if self._process.returncode: 
+                raise Exception('The server failed to start')
             folders = window.folders() if window else []
             first_foder = folders[0] if folders else ''
             self.workspace_folders = [{'name': Path(f).name, 'uri':file_name_to_uri(f)} for f in folders]
