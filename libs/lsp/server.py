@@ -194,7 +194,7 @@ class LanguageServer:
         ...
 
     def __init__(self) -> None:
-        self.status: Literal['off', 'initializing','ready', 'error'] = 'off'
+        self.status: Literal['off', 'initializing','ready'] = 'off'
         self.send = LspRequest(self.send_request)
         self.notify = LspNotification(self.send_notification)
         self.capabilities = ServerCapabilities()
