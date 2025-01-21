@@ -25,26 +25,14 @@ class MirGotoDefinitionCommand(sublime_plugin.TextCommand):
                     if 'targetUri' in d:
                         # open_view_with_uri(d['targetUri'], d['targetSelectionRange'], window)
                         _, file_name = parse_uri(d['targetUri'])
-                        view = window.find_open_file(file_name)
-                        if view:
-                            selected_sheets = window.selected_sheets()
-                            if view.sheet() in selected_sheets:
-                                window.select_sheets([view.sheet()])
-                        else:
-                            view = await open_view(file_name, window, flags=sublime.ENCODED_POSITION | sublime.ADD_TO_SELECTION | sublime.SEMI_TRANSIENT)
+                        view = await open_view(file_name, window, flags=sublime.ENCODED_POSITION | sublime.SEMI_TRANSIENT)
                         point = position_to_point(view, d['targetSelectionRange']['end'])
                         window.focus_view(view)
                         move_cursor_to(view, point)
                     else:
                         # open_view_with_uri(d['uri'], d['range'], window)
                         _, file_name = parse_uri(d['uri'])
-                        view = window.find_open_file(file_name)
-                        if view:
-                            selected_sheets = window.selected_sheets()
-                            if view.sheet() in selected_sheets:
-                                window.select_sheets([view.sheet()])
-                        else:
-                            view = await open_view(file_name, window, flags=sublime.NewFileFlags.ENCODED_POSITION | sublime.ADD_TO_SELECTION | sublime.SEMI_TRANSIENT)
+                        view = await open_view(file_name, window, flags=sublime.NewFileFlags.ENCODED_POSITION | sublime.SEMI_TRANSIENT)
                         point = position_to_point(view, d['range']['end'])
                         window.focus_view(view)
                         move_cursor_to(view, point)
