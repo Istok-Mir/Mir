@@ -61,15 +61,3 @@ def move_cursor_to(view: sublime.View, point: int) -> None:
     if not view.visible_region().contains(point):
         view.show_at_center(point)
 
-
-class MirJumpBack(sublime_plugin.TextCommand):
-    def run(self, edit: sublime.Edit) -> None:
-        self.view.run_command("jump_back")
-        w = self.view.window()
-        if not w:
-            return
-        selected_sheets = w.selected_sheets()[1:]
-        for sheet in selected_sheets:
-            v = sheet.view()
-            if v:
-                v.close()
