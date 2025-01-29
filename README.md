@@ -1,11 +1,15 @@
-Don't use it:
+Simply, don't use it now:
+- Mir API will change without notice, the features that it exposes will change or be removed without notice, it is experimental not stable and not usable for most people (except for the one developer working on this).
 - Registering/unregistering capabilities is not implemented properly.
 - Windows and Linux is not tested and probably doesn't work.
-- Mir is not stable and can stop working at any point in time.
-- LSP works. If you like something from Mir move it just to LSP.
-- Mir API will change.
-- The only reason why you see this code is beacause there is a reason.
+- It has some code that it should not have, for example ai.py.
+- `language-server-*.py` files should not be part of this repo.
+- the commit messages will most likely be gibberish `'asd'` and will stay that way until things start to become serious.
 
+Don't forget the LSP package for Sublime Text works. 
+If you like something from Mir move it just to LSP.
+
+The only thing that this code can give are ideas.
 
 # Mir
 
