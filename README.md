@@ -1,3 +1,12 @@
+Don't use it:
+- Registering/unregistering capabilities is not implemented properly.
+- Windows and Linux is not tested and probably doesn't work.
+- Mir is not stable and can stop working at any point in time.
+- LSP works. If you like something from Mir move it just to LSP.
+- Mir API will change.
+- The only reason why you see this code is beacause there is a reason.
+
+
 # Mir
 
 Mir is a Sublime Text package that speaks the LSP language but provides more on top of that.
@@ -104,13 +113,3 @@ class ExampleHoverProvider(HoverProvider):
 ```
 
 See `Mir/package-provider-*.py` files for examples.
-
-
----
-
-Features:
-- registering/unregistering capabilities
-- request cancelling
-- logs in panel
-
-Open the example.js file and trigger the autocomplete.
