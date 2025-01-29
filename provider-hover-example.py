@@ -17,5 +17,5 @@ class DiagnosticsHoverProvider(HoverProvider):
             diagnostics_under_cursor.extend([d for d in diagnostics if range_to_region(view, d['range']).contains(hover_point)])
 
         return {
-          'contents': [d['message'] for d in diagnostics_under_cursor]
+          'contents': [d['message'] + ' ' + d.get('source', '') for d in diagnostics_under_cursor]
         }

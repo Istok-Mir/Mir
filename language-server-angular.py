@@ -1,0 +1,52 @@
+from __future__ import annotations
+from .api import LanguageServer
+import sublime
+import sys
+import re
+import os
+
+class AngularLanguageServer(LanguageServer):
+    name='angular'
+    cmd='node "/Users/predrag/Library/Caches/Sublime Text/Package Storage/LSP-angular/20.18.0/server/node_modules/@angular/language-server/index.js" --logFile "/Users/predrag/Library/Caches/Sublime Text/Package Storage/LSP-angular/20.18.0/server/node_modules/@angular/language-server/ngls.log"  --ngProbeLocations "/Users/predrag/Library/Caches/Sublime Text/Package Storage/LSP-angular/20.18.0/server/node_modules/@angular/language-server/node_modules" --tsProbeLocations "/Users/predrag/Library/Caches/Sublime Text/Package Storage/LSP-angular/20.18.0/server/node_modules/@angular/language-server/node_modules" --stdio'
+    activation_events={
+        'selector': 'text.html.ngx | source.ts | source.js',
+    }
+
+    def on_settings_change(self):
+        dev_environment = self.settings.get("pyright.dev_environment")
+        extraPaths: list[str] = self.settings.get("python.analysis.extraPaths") or []
+        # if dev_environment in {"sublime_text_33", "sublime_text_38"}:
+        if dev_environment in {"sublime_text_38"}:
+            py_ver = self.detect_st_py_ver(dev_environment)
+            # add package dependencies into "python.analysis.extraPaths"
+            extraPaths.extend(self.find_package_dependency_dirs(py_ver))
+        self.settings.set("python.analysis.extraPaths", extraPaths)
+
+    def detect_st_py_ver(self, dev_environment: str) -> tuple[int, int]:
+        # default = (3, 3)
+        # if dev_environment == "sublime_text_33":
+        #     return (3, 3)
+        # if dev_environment == "sublime_text_38":
+        #     return (3, 8)
+        # return default
+        return (3, 8)
+
+    def find_package_dependency_dirs(self, py_ver: tuple[int, int] = (3, 3)) -> list[str]:
+        dep_dirs = sys.path.copy()
+        # replace paths for target Python version
+        # @see https://github.com/sublimelsp/LSP-pyright/issues/28
+        re_pattern = re.compile(r"(python3\.?)[38]", flags=re.IGNORECASE)
+        re_replacement = r"\g<1>8" if py_ver == (3, 8) else r"\g<1>3"
+        dep_dirs = [re_pattern.sub(re_replacement, dep_dir) for dep_dir in dep_dirs]
+
+        # move the "Packages/" to the last
+        # @see https://github.com/sublimelsp/LSP-pyright/pull/26#discussion_r520747708
+        packages_path = sublime.packages_path()
+        dep_dirs.remove(packages_path)
+        dep_dirs.append(packages_path)
+
+        # # sublime stubs - add as first
+        # if py_ver == (3, 3) and (server_dir := self._server_directory_path()):
+        #     dep_dirs.insert(0, os.path.join(server_dir, "resources", "typings", "sublime_text_py33"))
+
+        return list(filter(os.path.isdir, dep_dirs))
