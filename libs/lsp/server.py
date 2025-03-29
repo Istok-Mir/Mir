@@ -21,7 +21,6 @@ from wcmatch.glob import GLOBSTAR
 import asyncio
 import datetime
 import orjson
-import shutil
 from .diagnostic_collection import DiagnosticCollection
 import importlib
 import functools
@@ -235,8 +234,6 @@ class LanguageServer:
         self.before_initialize()
         try:
             self.status = 'initializing'
-            if not shutil.which(self.cmd.split()[0]):
-                raise RuntimeError(f"Command not found: {self.cmd}")
             self._process = await asyncio.create_subprocess_shell(
                 self.cmd,
                 stdout=asyncio.subprocess.PIPE,
@@ -246,8 +243,9 @@ class LanguageServer:
             )
             run_future(self._run_forever())
             await asyncio.sleep(0.1)
-            if self._process.returncode: 
-                raise Exception('The server failed to start')
+            if self._process.returncode and self._process.stderr: 
+                error_message = await self._process.stderr.read()
+                raise Exception(error_message.decode('utf-8', errors='ignore'))
             folders = window.folders() if window else []
             first_foder = folders[0] if folders else ''
             self.workspace_folders = [{'name': Path(f).name, 'uri':file_name_to_uri(f)} for f in folders]
