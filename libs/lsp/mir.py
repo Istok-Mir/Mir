@@ -32,7 +32,7 @@ class mir:
         # STEP 3:
         async def handle(provider: DefinitionProvider):
             try:
-                result = await provider.provide_definition(view, point)
+                result = await asyncio.wait_for(provider.provide_definition(view, point), 1)
             except Exception as e:
                 await provider.cancel()
                 print(f'Error happened in provider {provider.name}', e)
@@ -60,7 +60,7 @@ class mir:
         # STEP 3:
         async def handle(provider: ReferencesProvider):
             try:
-                result = await provider.provide_references(view, point)
+                result = await asyncio.wait_for(provider.provide_references(view, point), 1)
             except Exception as e:
                 await provider.cancel()
                 print(f'Error happened in provider {provider.name}', e)
@@ -88,7 +88,7 @@ class mir:
         # STEP 3:
         async def handle(provider: CodeActionProvider):
             try:
-                result = await provider.provide_code_actions(view, region, context)
+                result = await asyncio.wait_for(provider.provide_code_actions(view, region, context), 1)
             except Exception as e:
                 await provider.cancel()
                 print(f'Error happened in provider {provider.name}', e)
@@ -117,7 +117,7 @@ class mir:
         # STEP 3:
         async def handle(provider: HoverProvider):
             try:
-                result = await provider.provide_hover(view, hover_point, hover_zone)
+                result = await asyncio.wait_for(provider.provide_hover(view, hover_point, hover_zone), 1)
             except Exception as e:
                 await provider.cancel()
                 print(f'Error happened in provider {provider.name}', e)
@@ -134,7 +134,7 @@ class mir:
             print('Mir (HoverError):', e)
         return results
 
-    last_bit_completion_response = None
+    cache_completion_response = {}
     @staticmethod
     async def completions(view: sublime.View, prefix: str, locations: list[int]) -> list[tuple[SourceName, list[CompletionItem] | CompletionList | None]]:
         # STEP 1:
@@ -149,14 +149,15 @@ class mir:
         # STEP 3:
         async def handle(provider: CompletionProvider):
             try:
-                if mir.last_bit_completion_response is not None:
-                    return mir.last_bit_completion_response
-                result = await provider.provide_completion_items(view, prefix, locations)
+                cache = mir.cache_completion_response.get(provider.name)
+                if cache is not None:
+                    return cache
+                result = await asyncio.wait_for(provider.provide_completion_items(view, prefix, locations), 1)
                 if sizeof(result) > 1_000_000:
-                    mir.last_bit_completion_response = result
+                    mir.cache_completion_response[provider.name] = result
                     def reset():
-                        mir.last_bit_completion_response = None
-                    sublime.set_timeout(reset, 4000) # this prevent lag while typing for 4 seconds
+                        del mir.cache_completion_response[provider.name]
+                    sublime.set_timeout(reset, 60_000) # this prevent lag while typing for 6 seconds
             except Exception as e:
                 await provider.cancel()
                 print(f'Error happened in provider {provider.name}', e)
@@ -185,7 +186,7 @@ class mir:
         # STEP 3:
         async def handle(provider: DocumentSymbolProvider):
             try:
-                result = await provider.provide_document_symbol(view)
+                result = await asyncio.wait_for(provider.provide_document_symbol(view), 1)
             except Exception as e:
                 await provider.cancel()
                 print(f'Error happened in provider {provider.name}', e)

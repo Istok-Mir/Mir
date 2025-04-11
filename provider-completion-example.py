@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+import asyncio
 from .api import CompletionProvider
 from .api.types import CompletionItem, CompletionList
 
@@ -10,6 +12,7 @@ class ExampleCompletionProvider(CompletionProvider):
 	}
 
 	async def provide_completion_items(self, view, prefix, locations) -> list[CompletionItem] | CompletionList | None:
+		await asyncio.sleep(0.3)
 		return [{
 			'label': 'Helloo',
 		}]
