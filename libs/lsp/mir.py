@@ -32,7 +32,7 @@ class mir:
         # STEP 3:
         async def handle(provider: DefinitionProvider):
             try:
-                result = await asyncio.wait_for(provider.provide_definition(view, point), 1)
+                result = await asyncio.wait_for(provider.provide_definition(view, point), MAX_WAIT_TIME)
             except Exception as e:
                 await provider.cancel()
                 print(f'Error happened in provider {provider.name}', e)
@@ -60,7 +60,7 @@ class mir:
         # STEP 3:
         async def handle(provider: ReferencesProvider):
             try:
-                result = await asyncio.wait_for(provider.provide_references(view, point), 1)
+                result = await asyncio.wait_for(provider.provide_references(view, point), MAX_WAIT_TIME)
             except Exception as e:
                 await provider.cancel()
                 print(f'Error happened in provider {provider.name}', e)
@@ -88,7 +88,7 @@ class mir:
         # STEP 3:
         async def handle(provider: CodeActionProvider):
             try:
-                result = await asyncio.wait_for(provider.provide_code_actions(view, region, context), 1)
+                result = await asyncio.wait_for(provider.provide_code_actions(view, region, context), MAX_WAIT_TIME)
             except Exception as e:
                 await provider.cancel()
                 print(f'Error happened in provider {provider.name}', e)
@@ -117,7 +117,7 @@ class mir:
         # STEP 3:
         async def handle(provider: HoverProvider):
             try:
-                result = await asyncio.wait_for(provider.provide_hover(view, hover_point, hover_zone), 1)
+                result = await asyncio.wait_for(provider.provide_hover(view, hover_point, hover_zone), MAX_WAIT_TIME)
             except Exception as e:
                 await provider.cancel()
                 print(f'Error happened in provider {provider.name}', e)
@@ -152,7 +152,7 @@ class mir:
                 cache = mir.cache_completion_response.get(provider.name)
                 if cache is not None:
                     return cache
-                result = await asyncio.wait_for(provider.provide_completion_items(view, prefix, locations), 1)
+                result = await asyncio.wait_for(provider.provide_completion_items(view, prefix, locations), MAX_WAIT_TIME)
                 if sizeof(result) > 1_000_000:
                     mir.cache_completion_response[provider.name] = result
                     def reset():
@@ -186,7 +186,7 @@ class mir:
         # STEP 3:
         async def handle(provider: DocumentSymbolProvider):
             try:
-                result = await asyncio.wait_for(provider.provide_document_symbol(view), 1)
+                result = await asyncio.wait_for(provider.provide_document_symbol(view), MAX_WAIT_TIME)
             except Exception as e:
                 await provider.cancel()
                 print(f'Error happened in provider {provider.name}', e)
