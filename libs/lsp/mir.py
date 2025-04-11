@@ -156,7 +156,7 @@ class mir:
                     mir.last_bit_completion_response = result
                     def reset():
                         mir.last_bit_completion_response = None
-                    sublime.set_timeout(reset, 4000) # this prevent laggy typing for 4 seconds
+                    sublime.set_timeout(reset, 4000) # this prevent lag while typing for 4 seconds
             except Exception as e:
                 await provider.cancel()
                 print(f'Error happened in provider {provider.name}', e)
