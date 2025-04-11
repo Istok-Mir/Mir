@@ -65,7 +65,7 @@ class MirGoToPointCommand(sublime_plugin.TextCommand):
             return
         content = minihtml(self.view, message, MinihtmlKind.FORMAT_MARKED_STRING | MinihtmlKind.FORMAT_MARKUP_CONTENT)
         sublime.set_timeout(lambda: self.view.show_popup(
-            f"""<html style='box-sizing:border-box; background-color:var(--background); padding:0rem; margin:0'><body style='padding:0.3rem; margin:0; border-radius:4px; border: 1px solid color(var(--foreground) blend(var(--background) 20%));'><div style='padding: 0.0rem 0.2rem; font-size: 0.9rem;'>{content}</div></body></html>""",
+            f"""<html style='box-sizing:border-box; background-color:var(--background); padding:0rem; margin:0'><body style='padding:0.3rem; margin:0; border-radius:4px; padding: 0.5rem;border: 1px solid color(var(--foreground) blend(var(--background) 20%));'><div style='padding: 0.0rem 0.2rem; font-size: 0.9rem;'>{content}</div></body></html>""",
             sublime.PopupFlags.HIDE_ON_MOUSE_MOVE_AWAY,
             point,
             max_width=800,

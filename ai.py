@@ -37,7 +37,7 @@ class MirAiViewEventListenerCommand(sublime_plugin.ViewEventListener):
             full_path = first_folder.joinpath(filepath)
             exists = os.path.exists(full_path)
             self.view.show_popup(
-                f"""<html style='box-sizing:border-box; background-color:var(--background); padding:0rem; margin:0'><body style='padding:0.3rem; margin:0; border-radius:4px; border: 1px solid color(var(--foreground) blend(var(--background) 20%));'><div style='padding: 0.0rem 0.2rem; font-size: 0.9rem;'><a style="text-decoration: none" href="{sublime.html_format_command('subl:mir_create_file', {'file_name': str(full_path), 'content': code})}">{'Goto File' if exists else 'Create File'}</a></div></body></html>""",
+                f"""<html style='box-sizing:border-box; background-color:var(--background); padding:0rem; margin:0'><body style='padding:0.3rem; margin:0; border-radius:4px; padding: 0.5rem;border: 1px solid color(var(--foreground) blend(var(--background) 20%));'><div style='padding: 0.0rem 0.2rem; font-size: 0.9rem;'><a style="text-decoration: none" href="{sublime.html_format_command('subl:mir_create_file', {'file_name': str(full_path), 'content': code})}">{'Goto File' if exists else 'Create File'}</a></div></body></html>""",
                 sublime.PopupFlags.HIDE_ON_MOUSE_MOVE_AWAY,
                 hover_point,
                 max_width=800,
