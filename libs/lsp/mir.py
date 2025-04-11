@@ -3,7 +3,7 @@ import asyncio
 from typing import List
 
 from .commands import MirCommand
-
+import sys
 from .manage_servers import servers_for_view, servers_for_window
 from .providers import CodeActionProvider, Providers, HoverProvider, CompletionProvider, DefinitionProvider, DocumentSymbolProvider, ReferencesProvider
 from .server import is_applicable_view
@@ -14,7 +14,7 @@ import sublime
 SourceName = str
 """ The language server name or the provider name """
 
-MAX_WAIT_TIME=5 # second is a lot of time
+MAX_WAIT_TIME=1 # second is a lot of time
 
 class mir:
     commands = MirCommand
@@ -32,8 +32,9 @@ class mir:
         # STEP 3:
         async def handle(provider: DefinitionProvider):
             try:
-                result = await asyncio.wait_for(provider.provide_definition(view, point), MAX_WAIT_TIME)
+                result = await provider.provide_definition(view, point)
             except Exception as e:
+                await provider.cancel()
                 print(f'Error happened in provider {provider.name}', e)
                 return (provider.name, None)
             return (provider.name, result)
@@ -59,8 +60,9 @@ class mir:
         # STEP 3:
         async def handle(provider: ReferencesProvider):
             try:
-                result = await asyncio.wait_for(provider.provide_references(view, point), MAX_WAIT_TIME)
+                result = await provider.provide_references(view, point)
             except Exception as e:
+                await provider.cancel()
                 print(f'Error happened in provider {provider.name}', e)
                 return (provider.name, None)
             return (provider.name, result)
@@ -86,8 +88,9 @@ class mir:
         # STEP 3:
         async def handle(provider: CodeActionProvider):
             try:
-                result = await asyncio.wait_for(provider.provide_code_actions(view, region, context), MAX_WAIT_TIME)
+                result = await provider.provide_code_actions(view, region, context)
             except Exception as e:
+                await provider.cancel()
                 print(f'Error happened in provider {provider.name}', e)
                 return (provider.name, None)
             return (provider.name, result)
@@ -114,8 +117,9 @@ class mir:
         # STEP 3:
         async def handle(provider: HoverProvider):
             try:
-                result = await asyncio.wait_for(provider.provide_hover(view, hover_point, hover_zone), MAX_WAIT_TIME)
+                result = await provider.provide_hover(view, hover_point, hover_zone)
             except Exception as e:
+                await provider.cancel()
                 print(f'Error happened in provider {provider.name}', e)
                 return (provider.name, None)
             return (provider.name, result)
@@ -130,6 +134,7 @@ class mir:
             print('Mir (HoverError):', e)
         return results
 
+    last_bit_completion_response = None
     @staticmethod
     async def completions(view: sublime.View, prefix: str, locations: list[int]) -> list[tuple[SourceName, list[CompletionItem] | CompletionList | None]]:
         # STEP 1:
@@ -144,8 +149,16 @@ class mir:
         # STEP 3:
         async def handle(provider: CompletionProvider):
             try:
-                result = await asyncio.wait_for(provider.provide_completion_items(view, prefix, locations), MAX_WAIT_TIME)
+                if mir.last_bit_completion_response is not None:
+                    return mir.last_bit_completion_response
+                result = await provider.provide_completion_items(view, prefix, locations)
+                if sizeof(result) > 1_000_000:
+                    mir.last_bit_completion_response = result
+                    def reset():
+                        mir.last_bit_completion_response = None
+                    sublime.set_timeout(reset, 4000) # this prevent laggy typing for 4 seconds
             except Exception as e:
+                await provider.cancel()
                 print(f'Error happened in provider {provider.name}', e)
                 return (provider.name, None)
             return (provider.name, result)
@@ -169,12 +182,12 @@ class mir:
 
         # STEP 2 define return value
         results: list[tuple[SourceName, List[SymbolInformation] | List[DocumentSymbol] | None]] = []
-
         # STEP 3:
         async def handle(provider: DocumentSymbolProvider):
             try:
-                result = await asyncio.wait_for(provider.provide_document_symbol(view), MAX_WAIT_TIME)
+                result = await provider.provide_document_symbol(view)
             except Exception as e:
+                await provider.cancel()
                 print(f'Error happened in provider {provider.name}', e)
                 return (provider.name, None)
             return (provider.name, result)
@@ -221,3 +234,9 @@ class mir:
     @staticmethod
     def _notify_did_change_diagnostics(uris: list[str]):
         [cb(uris) for cb in mir._on_did_change_diagnostics_cbs]
+
+def sizeof(obj):
+    size = sys.getsizeof(obj)
+    if isinstance(obj, dict): return size + sum(map(sizeof, obj.keys())) + sum(map(sizeof, obj.values()))
+    if isinstance(obj, (list, tuple, set, frozenset)): return size + sum(map(sizeof, obj))
+    return size

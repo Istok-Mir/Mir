@@ -24,7 +24,6 @@ import orjson
 from .diagnostic_collection import DiagnosticCollection
 import importlib
 import functools
-import simdjson
 import sublime_aio
 import asyncio
 
@@ -337,19 +336,9 @@ class LanguageServer:
             pass
         return self._received_shutdown
 
-    parser = simdjson.Parser()
     async def _handle_body(self, body: bytes, num_bytes: int) -> None:
         try:
-            handled = False
-            if num_bytes > 1024*1024: # special handle large payloads
-                doc = self.parser.parse(body)
-                request_id = doc.get('id') # get id to get the request method
-                request = self._response_handlers.get(request_id)
-                if request and request.method == 'textDocument/completion': # only handle completions for now
-                    await self._receive_payload(doc)
-                    handled = True
-            if not handled:
-                await self._receive_payload(orjson.loads(body))
+            await self._receive_payload(orjson.loads(body))
         except IOError as ex:
             self._log(f"Mir ({self.name})  malformed {ENCODING}: {ex}")
         except UnicodeDecodeError as ex:
