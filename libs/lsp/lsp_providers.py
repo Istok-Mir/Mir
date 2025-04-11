@@ -3,7 +3,7 @@ from __future__ import annotations
 from .providers import CompletionProvider, DefinitionProvider, CodeActionProvider, HoverProvider, DocumentSymbolProvider, ReferencesProvider
 from .lsp_requests import Request
 from typing import TYPE_CHECKING
-from .view_to_lsp import get_view_uri, point_to_position, range_to_region, region_to_range
+from .view_to_lsp import get_view_uri, point_to_position, region_to_range
 import sublime
 if TYPE_CHECKING:
     import sublime

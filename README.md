@@ -31,18 +31,16 @@ Example completion package implementation:
 from __future__ import annotations
 import sublime
 import sublime_plugin
-from .api import mir, run_future
+from .api import mir
+import asyncio
+import sublime_aio
 
-class MirCompletionListener(sublime_plugin.ViewEventListener):
-    def on_query_completions(self, _prefix: str, locations: list[Point]):
+class MirCompletionListener(sublime_aio.ViewEventListener):
+    async def on_query_completions(self, _prefix: str, locations: list[Point]):
         completion_list = sublime.CompletionList()
-        run_future(self.do_completions(completion_list, locations[0]))
-        return completion_list
-
-    async def do_completions(self, completion_list: sublime.CompletionList, point: int):
-        completions_results = await mir.completions(self.view, point)
+        results = await mir.completions(self.view, point)
         completions: list[sublime.CompletionValue] = []
-        for name, result in completions_results:
+        for name, result in results:
             if isinstance(result, dict):
                 items = result['items']
                 for i in items:
@@ -52,6 +50,7 @@ class MirCompletionListener(sublime_plugin.ViewEventListener):
                 for i in items:
                     completions.append(sublime.CompletionItem(i['label']))
         completion_list.set_completions(completions, sublime.INHIBIT_WORD_COMPLETIONS)
+        return completion_list
 ```
 See `Mir/package-implemenation-*.py` files for examples.
 
@@ -77,6 +76,7 @@ See `Mir/package-language-server-*.py` files for examples.
 Language servers are not the only way to provide data to Mir.
 Provider packages can be written to enhance mir.
 
+Hover provider example:
 ```py
 # this is just a concept
 from .api.types import Hover, MarkupKind, Diagnostic
@@ -113,7 +113,25 @@ class ExampleHoverProvider(HoverProvider):
         return {
           'contents': ['Hover Content']
         }
+```
 
+Completion provider example:
+```py
+from __future__ import annotations
+from .api import CompletionProvider
+from .api.types import CompletionItem, CompletionList
+
+
+class ExampleCompletionProvider(CompletionProvider):
+    name='HellooCompletionsGoodbyeMyTime'
+    activation_events={
+        'selector': 'source.js'
+    }
+
+    async def provide_completion_items(self, view, prefix, locations) -> list[CompletionItem] | CompletionList | None:
+        return [{
+            'label': 'Helloo',
+        }]
 ```
 
 See `Mir/package-provider-*.py` files for examples.

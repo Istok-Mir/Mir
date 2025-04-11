@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+
 class MirCommand:
     _commands: dict[str, list[str]] = {}
     @staticmethod

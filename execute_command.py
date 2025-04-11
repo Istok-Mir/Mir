@@ -1,15 +1,13 @@
 from __future__ import annotations
-from .libs.event_loop import run_future
-from .libs.lsp.server import LanguageServer
+import sublime_aio
+
 from .libs.lsp.manage_servers import server_for_view
 from .libs.lsp.types import ExecuteCommandParams
 from typing import Any
 from .api import mir
-import sublime
-import sublime_plugin
 
-class MirExecuteCommandCommand(sublime_plugin.TextCommand):
-    def run(self, edit: sublime.Edit, server_name: str, command: str | None = None, arguments: list[Any] | None = None) -> None:
+class MirExecuteCommandCommand(sublime_aio.ViewCommand):
+    async def run(self, server_name: str, command: str | None = None, arguments: list[Any] | None = None) -> None:
         if not command:
             return
         sublime_commands = mir.commands.to_sublime_commands(command)
@@ -24,8 +22,5 @@ class MirExecuteCommandCommand(sublime_plugin.TextCommand):
             params: ExecuteCommandParams = {"command": command}
             if arguments:
                 params["arguments"] = arguments
-            run_future(self.execute_server_command(server, params))
-
-    async def execute_server_command(self, server: LanguageServer, params: ExecuteCommandParams):
-        req = server.send.execute_command(params)
-        result = await req.result
+            req = server.send.execute_command(params)
+            _ = await req.result

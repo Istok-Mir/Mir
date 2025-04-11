@@ -7,24 +7,26 @@ from .server_request_and_notification_handlers import attach_server_request_and_
 from .capabilities import CLIENT_CAPABILITIES, ServerCapabilities
 from .lsp_requests import LspRequest, LspNotification, Request
 from .types import DidChangeTextDocumentParams, ErrorCodes, MessageType, WorkspaceFolder
-from ..event_loop import run_future
 from .communcation_logs import CommmunicationLogs, format_payload
 from .view_to_lsp import file_name_to_uri, get_view_uri
 from pathlib import Path
 from sublime_plugin import sublime
-from typing import TYPE_CHECKING, Any, Callable, Dict, Literal, Optional, TypedDict, cast
+from typing import Any, Callable, Dict, Literal, Optional, TypedDict, cast
 from typing_extensions import NotRequired
 from wcmatch.glob import BRACE
 from .dotted_dict import DottedDict
 from wcmatch.glob import globmatch
 from wcmatch.glob import GLOBSTAR
 import asyncio
+import sublime_aio
 import datetime
 import orjson
 from .diagnostic_collection import DiagnosticCollection
 import importlib
 import functools
 import simdjson
+import sublime_aio
+import asyncio
 
 
 ENCODING = "utf-8"
@@ -241,7 +243,7 @@ class LanguageServer:
                 stderr=asyncio.subprocess.PIPE,
                 env=os.environ.copy()
             )
-            run_future(self._run_forever())
+            sublime_aio.run_coroutine(self._run_forever())
             await asyncio.sleep(0.1)
             if self._process.returncode and self._process.stderr: 
                 error_message = await self._process.stderr.read()
@@ -277,7 +279,7 @@ class LanguageServer:
 
     def stop(self):
         self.view.settings().clear_on_change('')
-        run_future(self.shutdown())
+        sublime_aio.run_coroutine(self.shutdown())
 
     def register_providers(self):
         from .providers import register_provider, unregister_provider
@@ -326,7 +328,7 @@ class LanguageServer:
                 if not line:
                     continue
                 body = await self._process.stdout.readexactly(num_bytes)
-                run_future(self._handle_body(body, num_bytes))
+                await self._handle_body(body, num_bytes)
         except (BrokenPipeError, ConnectionResetError) as e:
             print(f'Mir ({self.name}). BrokenPipeError, ConnectionResetError', e)
             pass
@@ -395,7 +397,7 @@ class LanguageServer:
         response = Request(self, request_id, method, params)
         self._response_handlers[request_id] = response
         self._communcation_logs.append(f'Sending request "{method}" ({request_id})\nParams: {format_payload(params)}')
-        run_future(self._send_payload(make_request(method, request_id, params)))
+        sublime_aio.run_coroutine(self._send_payload(make_request(method, request_id, params)))
         return response
 
     def _send_payload_sync(self, payload: dict) -> None:
@@ -487,4 +489,4 @@ class LanguageServer:
         self.pending_changes = {}
         for _, did_change_text_document_params in pending_changes:
             self.notify.did_change_text_document(did_change_text_document_params)
-            run_future(pull_diagnostics(self, did_change_text_document_params['textDocument']['uri']))
+            sublime_aio.run_coroutine(pull_diagnostics(self, did_change_text_document_params['textDocument']['uri']))

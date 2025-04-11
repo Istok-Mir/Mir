@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import List, Union, TYPE_CHECKING
+from typing import List, Union
 
 from sublime_plugin import importlib
 from .server import ActivationEvents

@@ -3,10 +3,9 @@ from __future__ import annotations
 from .libs.lsp.view_to_lsp import parse_uri, range_to_region
 from .libs.lsp.types import Location
 import sublime
-import sublime_plugin
-from .api import mir, run_future
+from .api import mir
+import sublime_aio
 from .api.helpers import position_to_point
-import operator
 from .open_view import open_view
 
 
@@ -64,14 +63,11 @@ class Cache:
 
 
 
-class MirNextReferenceCommand(sublime_plugin.TextCommand):
-    def run(self, edit):
+class MirNextReferenceCommand(sublime_aio.ViewCommand):
+    async def run(self):
         point = get_point(self.view)
         if point is None:
             return
-        run_future(self.goto_next(point))
-
-    async def goto_next(self, point: int):
         cache_hit = Cache.cache_hit(point, self.view)
         all_references: list[Location] = Cache.results if cache_hit else []
         if not cache_hit:
@@ -91,14 +87,11 @@ class MirNextReferenceCommand(sublime_plugin.TextCommand):
         point = position_to_point(view, location['range']['end'])
         view.run_command('mir_go_to_point', {'point': point, 'message': f"{ordinal_number} of {len(all_references)} referenecs"})
 
-class MirPrevReferenceCommand(sublime_plugin.TextCommand):
-    def run(self, edit):
+class MirPrevReferenceCommand(sublime_aio.ViewCommand):
+    async def run(self):
         point = get_point(self.view)
         if point is None:
             return
-        run_future(self.goto_prev(point))
-
-    async def goto_prev(self, point: int):
         cache_hit = Cache.cache_hit(point, self.view)
         all_references: list[Location] = Cache.results if cache_hit else []
         if not cache_hit:

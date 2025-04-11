@@ -2,7 +2,7 @@ from __future__ import annotations
 import datetime
 from typing import Any
 from sublime_plugin import sublime
-import orjson
+
 
 class CommmunicationLogs:
     def __init__(self, name: str, window: sublime.Window | None = None):

@@ -1,12 +1,12 @@
 from __future__ import annotations
 import sublime
-import sublime_plugin
-from .api import mir, run_future
+from .api import mir
+import sublime_aio
 from .api.types import DiagnosticSeverity, DiagnosticTag
 from .api.helpers import parse_uri, range_to_region
 
 
-class MirDiagnosticListener(sublime_plugin.ViewEventListener):
+class MirDiagnosticListener(sublime_aio.ViewEventListener):
     def __init__(self, view):
         super().__init__(view)
         self.cleanup = None
@@ -22,7 +22,7 @@ class MirDiagnosticListener(sublime_plugin.ViewEventListener):
         self.cleanup = mir.on_did_change_diagnostics(self.on_did_change_diagnostics)
 
     def on_did_change_diagnostics(self, uris: list[str]):
-        run_future(self.draw_diagnotsics(uris))
+        sublime_aio.run_coroutine(self.draw_diagnotsics(uris))
 
     async def draw_diagnotsics(self, uris: list[str]):
         window = self.view.window()

@@ -1,5 +1,4 @@
 from __future__ import annotations
-from pathlib import Path
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import sublime

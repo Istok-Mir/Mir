@@ -1,15 +1,12 @@
 from __future__ import annotations
 import sublime
-import sublime_plugin
-from .api import mir, run_future
+from .api import mir
+import sublime_aio
 from .api.helpers import minihtml, MinihtmlKind
 
 
-class MirHoverListener(sublime_plugin.ViewEventListener):
-    def on_hover(self, hover_point, hover_zone):
-        run_future(self.do_hover(hover_point, hover_zone))
-
-    async def do_hover(self, hover_point: int, hover_zone: sublime.HoverZone):
+class MirHoverListener(sublime_aio.ViewEventListener):
+    async def on_hover(self, hover_point, hover_zone):
         hovers = await mir.hover(self.view, hover_point, hover_zone)
         combined_content: list[str] = []
         for name, hover in hovers:

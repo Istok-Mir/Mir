@@ -1,21 +1,14 @@
 from __future__ import annotations
 import asyncio
-from .libs.event_loop import run_future
+import sublime_aio
 import sublime
-import sublime_plugin
 
 open_view_futures_map: dict[str, asyncio.Future[sublime.View]] = {}
 on_save_futures_map: dict[str, asyncio.Future] = {}
 
 
-class EventListener(sublime_plugin.EventListener):
-    def on_load(self, view):
-        run_future(self.async_load(view))
-
-    def on_post_save(self, view):
-        run_future(self.async_on_save(view))
-
-    async def async_load(self, view: sublime.View):
+class EventListener(sublime_aio.EventListener):
+    async def on_load(self, view):
         file_name = view.file_name() or ""
         if file_name not in open_view_futures_map:
             return
@@ -23,7 +16,7 @@ class EventListener(sublime_plugin.EventListener):
         if future:
             future.set_result(view)
 
-    async def async_on_save(self, view: sublime.View):
+    def on_post_save(self, view):
         file_name = view.file_name() or ""
         if file_name not in on_save_futures_map:
             return

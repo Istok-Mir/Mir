@@ -5,9 +5,9 @@ from .libs.lsp.mir import SourceName
 from .api.types import CodeActionTriggerKind, Diagnostic, CodeAction, Command, CodeActionKind, CodeActionContext
 from .api import mir
 from .api.helpers import range_to_region
-from .libs.event_loop import run_future
 import sublime
 import sublime_plugin
+import sublime_aio
 
 class CodeActionSelectionListener(sublime_plugin.ViewEventListener):
     def on_selection_modified(self):
@@ -23,7 +23,7 @@ class CodeActionSelectionListener(sublime_plugin.ViewEventListener):
         if not new_sel:
             return
         if region == new_sel[0].to_tuple():
-            run_future(self.draw_bulb())
+            sublime_aio.run_coroutine(self.draw_bulb())
 
     async def draw_bulb(self):
         sel = self.view.sel()
@@ -50,7 +50,7 @@ class CodeActionSelectionListener(sublime_plugin.ViewEventListener):
 
 class MirCodeActionsCommand(sublime_plugin.TextCommand):
     def run(self, edit):
-        run_future(self.show_popup())
+        sublime_aio.run_coroutine(self.show_popup())
 
     async def show_popup(self):
         sel = self.view.sel()
@@ -83,7 +83,7 @@ class MirCodeActionsCommand(sublime_plugin.TextCommand):
         def on_done(i: int):
             if i < 0:
                 return
-            run_future(on_done_async(i))
+            sublime_aio.run_coroutine(on_done_async(i))
 
         async def on_done_async(i: int):
             code_action = items[i][1]

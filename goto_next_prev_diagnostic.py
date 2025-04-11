@@ -1,7 +1,8 @@
 from __future__ import annotations
 import sublime
 import sublime_plugin
-from .api import mir, run_future
+from .api import mir
+import sublime_aio
 from .api.types import Diagnostic
 from .api.helpers import position_to_point
 import operator
@@ -32,11 +33,8 @@ def find_diagnostic(view: sublime.View, diagnostics: list[Diagnostic], forward: 
     return (diag_pos, diag)
 
 
-class MirNextDiagnosticCommand(sublime_plugin.TextCommand):
-    def run(self, edit):
-        run_future(self.goto_next())
-
-    async def goto_next(self):
+class MirNextDiagnosticCommand(sublime_aio.ViewCommand):
+    async def run(self):
         results = await mir.get_diagnostics(self.view)
         all_diagnostics = []
         for _, diagnostics in results:
@@ -44,11 +42,8 @@ class MirNextDiagnosticCommand(sublime_plugin.TextCommand):
         diag_pos, diagnostic = find_diagnostic(self.view, all_diagnostics, forward=True)
         self.view.run_command('mir_go_to_point', {'point': diag_pos, 'message': diagnostic['message'] if diagnostic else None})
 
-class MirPrevDiagnosticCommand(sublime_plugin.TextCommand):
-    def run(self, edit):
-        run_future(self.goto_prev())
-
-    async def goto_prev(self):
+class MirPrevDiagnosticCommand(sublime_aio.ViewCommand):
+    async def run(self):
         results = await mir.get_diagnostics(self.view)
         all_diagnostics = []
         for _, diagnostics in results:

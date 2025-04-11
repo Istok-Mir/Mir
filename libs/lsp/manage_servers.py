@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from .pull_diagnostics import pull_diagnostics
-from ..event_loop import run_future
+import sublime_aio
 from .view_to_lsp import get_view_uri, view_to_text_document_item
 from .server import LanguageServer, matches_activation_event_on_uri, is_applicable_view
 from .file_watcher import remove_file_watcher
@@ -98,7 +98,7 @@ class ManageServers(sublime_plugin.EventListener):
         del ManageServers.language_servers_per_window[window.id()]
 
     def on_init(self, views: list[sublime.View]):
-        run_future(self.initialize(views))
+        sublime_aio.run_coroutine(self.initialize(views))
 
     async def initialize(self, views: list[sublime.View]):
         for v in views:
@@ -117,7 +117,7 @@ class ManageServers(sublime_plugin.EventListener):
         print('EventListener on_revert', view)
 
     def on_load(self, view):
-        run_future(open_document(view))
+        sublime_aio.run_coroutine(open_document(view))
 
     def on_pre_close(self, view):
         close_document(view)

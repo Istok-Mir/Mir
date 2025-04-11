@@ -1,31 +1,27 @@
 from __future__ import annotations
 import asyncio
+import sublime_aio
 
 
 from .libs.lsp.mir import MAX_WAIT_TIME
 from .libs.lsp.types import PrepareRenameResult
 from .libs.lsp.manage_servers import server_for_view, servers_for_view
 from .libs.lsp.server import LanguageServer, is_applicable_view
-import sublime
-import sublime_plugin
-from .api import run_future
+import sublime_aio
+import asyncio
 from .api.helpers import  range_to_region, point_to_position, get_view_uri, is_range
 
 
-class MirRenameCommand(sublime_plugin.TextCommand):
-    def run(self, edit: sublime.Edit):
+class MirRenameCommand(sublime_aio.ViewCommand):
+    async def run(self):
         sel = self.view.sel()
         if not sel:
             return
         point = sel[0].b
-        run_future(self.prepare_rename(point))
-
-    async def prepare_rename(self, point: int):
         # STEP 1:
         servers = [server for server in servers_for_view(self.view, 'renameProvider') if is_applicable_view(self.view, server.activation_events)]
         # STEP 2 define return value
         results: list[tuple[str, PrepareRenameResult | None]] = []
-
         # STEP 3:
         async def handle(server: LanguageServer):
             try:
@@ -63,7 +59,7 @@ class MirRenameCommand(sublime_plugin.TextCommand):
             def on_done(new_name: str):
                 if not new_name.strip():
                     return
-                run_future(self.rename(server, point, new_name))
+                sublime_aio.run_coroutine(self.rename(server, point, new_name))
             v = w.show_input_panel('Mir Rename:', initial_text, on_done, None, None)
             v.run_command('select_all')
         else:

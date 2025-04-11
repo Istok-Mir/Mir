@@ -1,11 +1,11 @@
 from __future__ import annotations
 from typing import Any, TypedDict
 
-from .api import LanguageServer, mir, run_future
+from .api import LanguageServer, mir
+import sublime_aio
 from .api.helpers import server_for_view, get_view_uri
 from .api.types import DocumentUri, FormattingOptions, TextEdit
 import sublime
-import sublime_plugin
 
 class JsonServer(LanguageServer):
     name='json'
@@ -56,11 +56,8 @@ class JsonSortDocumentParams(TypedDict):
     options: FormattingOptions
 
 
-class MirJsonSortDocumentCommand(sublime_plugin.TextCommand):
-    def run(self, _: sublime.Edit, arguments=None) -> None:
-        run_future(self.sort())
-
-    async def sort(self):
+class MirJsonSortDocumentCommand(sublime_aio.ViewCommand):
+    async def run(self, arguments=None) -> None:
         server = server_for_view('json', self.view)
         if server is None:
             return

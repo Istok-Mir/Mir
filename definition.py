@@ -1,16 +1,13 @@
 from __future__ import annotations
 from .libs.lsp.view_to_lsp import parse_uri, position_to_point
 import sublime
-import sublime_plugin
-from .api import mir, run_future
+from .api import mir
+import sublime_aio
 from .open_view import open_view
 
 
-class MirGotoDefinitionCommand(sublime_plugin.TextCommand):
-    def run(self, edit):
-        run_future(self.goto_definition())
-
-    async def goto_definition(self):
+class MirGotoDefinitionCommand(sublime_aio.ViewCommand):
+    async def run(self):
         sel = self.view.sel()
         if sel is None:
             return

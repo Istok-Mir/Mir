@@ -1,8 +1,5 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Any, cast
-
-import sublime
-
 from .capabilities import method_to_capability
 from .view_to_lsp import get_view_uri, parse_uri
 from .types import ApplyWorkspaceEditParams, ApplyWorkspaceEditResult, RegistrationParams, UnregistrationParams, LogMessageParams, LogMessageParams, MessageType, ConfigurationParams, PublishDiagnosticsParams, DidChangeWatchedFilesRegistrationOptions, CreateFilesParams, RenameFilesParams, DeleteFilesParams, DidChangeWatchedFilesParams, WorkspaceFolder

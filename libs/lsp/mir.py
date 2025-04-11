@@ -4,14 +4,12 @@ from typing import List
 
 from .commands import MirCommand
 
-from .lsp_requests import Request
 from .manage_servers import servers_for_view, servers_for_window
 from .providers import CodeActionProvider, Providers, HoverProvider, CompletionProvider, DefinitionProvider, DocumentSymbolProvider, ReferencesProvider
 from .server import is_applicable_view
 from .types import CodeAction, CodeActionContext, Command, Definition, DocumentSymbol, Location, SymbolInformation, LocationLink, Hover, CompletionItem, CompletionList, DocumentUri, Diagnostic
-from .view_to_lsp import get_view_uri, point_to_position
+from .view_to_lsp import get_view_uri
 import sublime
-from typing import TypeVar, Generic
 
 SourceName = str
 """ The language server name or the provider name """

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from .libs.event_loop import run_future
+import sublime_aio
 from .open_view import open_view, save_view
 
 from .api.helpers import is_text_document_edit, parse_uri, is_text_edit, range_to_region
@@ -8,11 +8,8 @@ import sublime
 import sublime_plugin
 from .api.types import WorkspaceEdit, TextEdit, AnnotatedTextEdit, SnippetTextEdit
 
-class MirApplyWorkspaceEdit(sublime_plugin.TextCommand):
-    def run(self, edit: sublime.Edit, workspace_edit: WorkspaceEdit):
-        run_future(self.apply(workspace_edit))
-
-    async def apply(self, workspace_edit: WorkspaceEdit):
+class MirApplyWorkspaceEdit(sublime_aio.ViewCommand):
+    async def run(self, workspace_edit: WorkspaceEdit):
         window = self.view.window()
         if not window:
             return
@@ -57,7 +54,7 @@ class MirApplyTextDocumentEditsCommand(sublime_plugin.TextCommand):
                 print('Mir TODO implement edit for', e)
         for text_edit in reversed(text_edits):
             self.view.replace(edit, range_to_region(self.view, text_edit['range']), text_edit['newText'])
-        run_future(self.save(close_after_edit))
+        sublime_aio.run_coroutine(self.save(close_after_edit))
 
     async def save(self, close_after_edit: bool):
         await save_view(self.view)

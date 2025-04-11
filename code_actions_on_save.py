@@ -1,15 +1,10 @@
 from __future__ import annotations
-from asyncio import Future
-import asyncio
-
 from .libs.lsp.pull_diagnostics import pull_diagnostics
-
 from .libs.lsp.mir import mir
-
 from .libs.lsp.manage_servers import server_for_view, servers_for_view
 from .libs.lsp.types import CodeActionOptions, CodeActionTriggerKind, Diagnostic
 from .libs.lsp.view_to_lsp import get_view_uri, region_to_range
-from .libs.event_loop import run_future
+import sublime_aio
 import sublime_plugin
 import sublime
 
@@ -20,13 +15,10 @@ class MirCompletionListener(sublime_plugin.EventListener):
         view.run_command('mir_code_actions_on_save')
 
 
-class MirCodeActionsOnSaveCommand(sublime_plugin.TextCommand):
+class MirCodeActionsOnSaveCommand(sublime_aio.ViewCommand):
     running_code_actions_on_save = False
 
-    def run(self, edit: sublime.Edit):
-        run_future(self.run_code_actions_on_save())
-
-    async def run_code_actions_on_save(self):
+    async def run(self):
         MirCodeActionsOnSaveCommand.running_code_actions_on_save = True
         diagnostics_results = await mir.get_diagnostics(self.view)
         all_diagnostics: list[Diagnostic] = []

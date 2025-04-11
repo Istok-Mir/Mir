@@ -1,11 +1,10 @@
 from __future__ import annotations
-
 from .libs.lsp.providers import Providers
-
 from .libs.lsp.constants import COMPLETION_KINDS
 import sublime
 import sublime_plugin
-from .api import mir, run_future
+from .api import mir
+import sublime_aio
 from .api.helpers import range_to_region
 from .api.types import CompletionItem, CompletionItemDefaults, TextEdit, InsertReplaceEdit, EditRangeWithInsertReplace, Range, InsertTextFormat
 from typing import Any, Generator, List, Tuple, TypeVar
@@ -24,19 +23,16 @@ def get_chunked(items: list[T]) -> Generator[T]:
         yield item
 
 
-class MirCompletionListener(sublime_plugin.ViewEventListener):
+class MirCompletionListener(sublime_aio.ViewEventListener):
     completions: dict[str, CompletionsStore] = {}
-    def on_query_completions(self, prefix: str, locations: list[int]):
-        completion_list = sublime.CompletionList()
-        run_future(self.do_completions(completion_list, locations, prefix))
-        return completion_list
 
-    async def do_completions(self, completion_list: sublime.CompletionList, locations: list[int], prefix: str):
-        completions_results = await mir.completions(self.view, prefix, locations)
+    async def on_query_completions(self, prefix: str, locations: list[int]):
+        completion_list = sublime.CompletionList()
+        results = await mir.completions(self.view, prefix, locations)
         completions: list[sublime.CompletionValue] = []
         items: list[CompletionItem] = []
         item_defaults : CompletionItemDefaults = {}
-        for name, result in completions_results:
+        for name, result in results:
             if isinstance(result, dict) or isinstance(result, simdjson.Object):
                 items = result.get('items')
                 completions.extend([format_completion(c, name, index) for index, c in enumerate(get_chunked(items))])
@@ -45,6 +41,7 @@ class MirCompletionListener(sublime_plugin.ViewEventListener):
                 completions.extend([format_completion(c, name, index) for index, c in enumerate(get_chunked(items))])
             MirCompletionListener.completions[name] = items, item_defaults
         completion_list.set_completions(completions, flags=sublime.AutoCompleteFlags.INHIBIT_WORD_COMPLETIONS | sublime.AutoCompleteFlags.INHIBIT_EXPLICIT_COMPLETIONS )
+        return completion_list
 
 
 def format_completion(i: CompletionItem, provider_name: str, index: int):
@@ -86,7 +83,7 @@ class MirInsertCompletion(sublime_plugin.TextCommand):
             resolved_item = await resolve_completion_provider.resolve_completion_item(item)
             self._on_resolved(provider, resolved_item)
 
-        run_future(resolve())
+        sublime_aio.run_coroutine(resolve())
 
     def _on_resolved(self, server_name: str, item: CompletionItem) -> None:
         additional_edits = item.get('additionalTextEdits')

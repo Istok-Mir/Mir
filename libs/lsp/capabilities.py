@@ -3,6 +3,7 @@ from .dotted_dict import DottedDict
 from .types import ClientCapabilities, CompletionItemKind, CompletionItemTag, InsertTextMode, MarkupKind
 from typing import Any, Literal, cast
 
+
 CLIENT_CAPABILITIES: ClientCapabilities = {
     'general': {
         'regularExpressions': {'engine': 'ECMAScript'},
@@ -241,6 +242,7 @@ _METHOD_TO_CAPABILITY: dict[str, ServerCapability] = {
     'workspace/didChangeConfiguration': 'workspace.didChangeConfiguration',
     'textDocument/onTypeFormatting': 'documentOnTypeFormattingProvider'
 }
+
 
 def method_to_capability(method: str) -> ServerCapability:
     capability_path = _METHOD_TO_CAPABILITY.get(method, None)
