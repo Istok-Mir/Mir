@@ -3,11 +3,10 @@ from __future__ import annotations
 import sublime_aio
 from .open_view import open_view, save_view
 
-from Mir.api.helpers import is_text_document_edit, parse_uri, is_text_edit, range_to_region
+from Mir.api import is_text_document_edit, parse_uri, is_text_edit, range_to_region
 import sublime
 import sublime_plugin
-from Mir.api.types import WorkspaceEdit, TextEdit, AnnotatedTextEdit, SnippetTextEdit
-import uuid
+from Mir.types import WorkspaceEdit, TextEdit, AnnotatedTextEdit, SnippetTextEdit
 from .libs.lsp.workspace_edit import apply_edits_map
 
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 from .libs.lsp.view_to_lsp import parse_uri, position_to_point
 import sublime
-from .api import mir
+from Mir import mir
 import sublime_aio
 from .open_view import open_view
 

@@ -31,7 +31,7 @@ Example completion package implementation:
 from __future__ import annotations
 import sublime
 import sublime_plugin
-from .api import mir
+from Mir import mir
 import asyncio
 import sublime_aio
 
@@ -58,7 +58,7 @@ See `Mir/package-implemenation-*.py` files for examples.
 
 Example of a language server for Mir:
 ```py
-from .api import LanguageServer
+from Mir import LanguageServer
 
 class PackageVersionServer(LanguageServer):
     name='package-version-server'
@@ -79,9 +79,9 @@ Provider packages can be written to enhance mir.
 Hover provider example:
 ```py
 # this is just a concept
-from .api.types import Hover, MarkupKind, Diagnostic
-from .api import HoverProvider, mir
-from .api.helpers import range_to_region
+from Mir.types import Hover, MarkupKind, Diagnostic
+from Mir import HoverProvider, mir
+from Mir.api import range_to_region
 import sublime
 
 class ExampleHoverProvider(HoverProvider):
@@ -118,8 +118,8 @@ class ExampleHoverProvider(HoverProvider):
 Completion provider example:
 ```py
 from __future__ import annotations
-from .api import CompletionProvider
-from .api.types import CompletionItem, CompletionList
+from Mir import CompletionProvider
+from Mir.types import CompletionItem, CompletionList
 
 
 class ExampleCompletionProvider(CompletionProvider):

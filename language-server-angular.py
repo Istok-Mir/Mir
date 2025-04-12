@@ -1,5 +1,5 @@
 from __future__ import annotations
-from .api import LanguageServer
+from Mir import LanguageServer
 import sublime
 import sys
 import re

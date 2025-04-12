@@ -4,7 +4,7 @@ import uuid
 import asyncio
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from Mir.api.types import WorkspaceEdit
+    from Mir.types import WorkspaceEdit
 
 apply_edits_map: dict[uuid.UUID, asyncio.Future] = {}
 

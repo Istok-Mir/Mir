@@ -1,4 +1,4 @@
-from .api import LanguageServer
+from Mir import LanguageServer
 
 class TailwindcssLanguageServer(LanguageServer):
     name='tailwindcss'

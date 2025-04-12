@@ -1,12 +1,11 @@
 from __future__ import annotations
 import sublime
 import sublime_plugin
-from .api import mir
+from Mir import mir
 import sublime_aio
-from .api.types import Diagnostic
-from .api.helpers import position_to_point
+from Mir.types import Diagnostic
+from Mir.api import position_to_point, minihtml, MinihtmlKind
 import operator
-from .api.helpers import minihtml, MinihtmlKind
 
 
 def find_diagnostic(view: sublime.View, diagnostics: list[Diagnostic], forward: bool) -> tuple[int, Diagnostic|None]:

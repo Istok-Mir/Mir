@@ -1,7 +1,7 @@
 from __future__ import annotations
 import sublime_plugin
-from .api.types import URI, DocumentUri, TextEdit
-from .api import LanguageServer, mir
+from Mir.types import URI, DocumentUri, TextEdit
+from Mir import LanguageServer, mir
 from typing import Dict, List, Optional, Tuple, TypedDict
 
 class CspellLanguageServer(LanguageServer):

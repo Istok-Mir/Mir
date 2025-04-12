@@ -4,9 +4,9 @@ from .libs.lsp.workspace_edit import apply_workspace_edit
 from .libs.lsp.manage_servers import server_for_view
 from .libs.lsp.mir import SourceName
 
-from .api.types import CodeActionTriggerKind, Diagnostic, CodeAction, Command, CodeActionKind, CodeActionContext
-from .api import mir
-from .api.helpers import range_to_region
+from Mir.types import CodeActionTriggerKind, Diagnostic, CodeAction, Command, CodeActionKind, CodeActionContext
+from Mir import mir
+from Mir.api import range_to_region
 import sublime
 import sublime_plugin
 import sublime_aio

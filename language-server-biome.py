@@ -1,4 +1,4 @@
-from .api import LanguageServer
+from Mir import LanguageServer
 
 class BiomeLanguageServer(LanguageServer):
     name='biome'

@@ -1,4 +1,4 @@
-from .api import LanguageServer
+from Mir import LanguageServer
 
 class EslintLanguageServer(LanguageServer):
     name='eslint'

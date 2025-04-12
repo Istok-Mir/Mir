@@ -1,4 +1,4 @@
-from .api import LanguageServer
+from Mir import LanguageServer
 
 class PackageVersionServer(LanguageServer):
     name='package-version-server'

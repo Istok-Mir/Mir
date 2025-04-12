@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import asyncio
-from .api import CompletionProvider
-from .api.types import CompletionItem, CompletionList
+from Mir import CompletionProvider
+from Mir.types import CompletionItem, CompletionList
 
 
 class ExampleCompletionProvider(CompletionProvider):

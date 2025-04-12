@@ -3,14 +3,14 @@ from .libs.lsp.providers import Providers
 from .libs.lsp.constants import COMPLETION_KINDS
 import sublime
 import sublime_plugin
-from .api import mir
+from Mir import mir
 import sublime_aio
-from .api.helpers import range_to_region
-from .api.types import CompletionItem, CompletionItemDefaults, TextEdit, InsertReplaceEdit, EditRangeWithInsertReplace, Range, InsertTextFormat
+from Mir.api import range_to_region
+from Mir.types import CompletionItem, CompletionItemDefaults, TextEdit, InsertReplaceEdit, EditRangeWithInsertReplace, Range, InsertTextFormat
 from typing import Any, Generator, List, Tuple, TypeVar
 from typing import cast
 from typing_extensions import TypeAlias, TypeGuard
-from .api.helpers import minihtml, MinihtmlKind
+from Mir.api import minihtml, MinihtmlKind
 
 
 CompletionsStore: TypeAlias = Tuple[List[CompletionItem], CompletionItemDefaults]

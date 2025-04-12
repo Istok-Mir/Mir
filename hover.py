@@ -1,8 +1,8 @@
 from __future__ import annotations
 import sublime
-from .api import mir
+from Mir import mir
 import sublime_aio
-from .api.helpers import minihtml, MinihtmlKind
+from Mir.api import minihtml, MinihtmlKind
 
 
 class MirHoverListener(sublime_aio.ViewEventListener):

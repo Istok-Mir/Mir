@@ -1,10 +1,10 @@
 from __future__ import annotations
 from typing import Any, TypedDict
 
-from .api import LanguageServer, mir
+from Mir import LanguageServer, mir
 import sublime_aio
-from .api.helpers import server_for_view, get_view_uri
-from .api.types import DocumentUri, FormattingOptions, TextEdit
+from Mir.api import server_for_view, get_view_uri
+from Mir.types import DocumentUri, FormattingOptions, TextEdit
 import sublime
 
 class JsonServer(LanguageServer):
@@ -2781,31 +2781,31 @@ def get_schemas():
         "fileMatch": [
           "/*batch-job-config*.json"
         ],
-        "uri": "https://json-schema.api.strmprivacy.io/latest/strmprivacy.api.entities.v1.BatchJob.json"
+        "uri": "https://json-schemaMir.api.strmprivacy.io/latest/strmprivacyMir.api.entities.v1.BatchJob.json"
       },
       {
         "fileMatch": [
           "/*simple-schema*.json"
         ],
-        "uri": "https://json-schema.api.strmprivacy.io/latest/strmprivacy.api.entities.v1.Schema.SimpleSchemaDefinition.json"
+        "uri": "https://json-schemaMir.api.strmprivacy.io/latest/strmprivacyMir.api.entities.v1.Schema.SimpleSchemaDefinition.json"
       },
       {
         "fileMatch": [
           "/*stream.json"
         ],
-        "uri": "https://json-schema.api.strmprivacy.io/latest/strmprivacy.api.entities.v1.Stream.json"
+        "uri": "https://json-schemaMir.api.strmprivacy.io/latest/strmprivacyMir.api.entities.v1.Stream.json"
       },
       {
         "fileMatch": [
           "/*data-connector.json"
         ],
-        "uri": "https://json-schema.api.strmprivacy.io/latest/strmprivacy.api.entities.v1.DataConnector.json"
+        "uri": "https://json-schemaMir.api.strmprivacy.io/latest/strmprivacyMir.api.entities.v1.DataConnector.json"
       },
       {
         "fileMatch": [
           "/*contract.json"
         ],
-        "uri": "https://json-schema.api.strmprivacy.io/latest/strmprivacy.api.entities.v1.DataContract.json"
+        "uri": "https://json-schemaMir.api.strmprivacy.io/latest/strmprivacyMir.api.entities.v1.DataContract.json"
       },
       {
         "fileMatch": [

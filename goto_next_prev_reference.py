@@ -3,9 +3,9 @@ from __future__ import annotations
 from .libs.lsp.view_to_lsp import parse_uri, range_to_region
 from .libs.lsp.types import Location
 import sublime
-from .api import mir
+from Mir import mir
 import sublime_aio
-from .api.helpers import position_to_point
+from Mir.api import position_to_point
 from .open_view import open_view
 
 

@@ -1,7 +1,7 @@
 # this is just a concept
-from .api.types import Hover, Diagnostic
-from .api import HoverProvider, mir
-from .api.helpers import range_to_region
+from Mir.types import Hover, Diagnostic
+from Mir import HoverProvider, mir
+from Mir.api import range_to_region
 
 
 #Example of a hover provider
