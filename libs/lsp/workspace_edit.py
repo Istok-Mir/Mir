@@ -1,5 +1,5 @@
 from __future__ import annotations
-from .future_with_id import FutureWithId
+from ..future_with_id import FutureWithId
 import sublime
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:

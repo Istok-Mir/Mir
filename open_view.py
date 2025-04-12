@@ -1,6 +1,6 @@
 from __future__ import annotations
 import asyncio
-from .libs.lsp.future_with_id import FutureWithId
+from .libs.future_with_id import FutureWithId
 import sublime_aio
 import sublime
 

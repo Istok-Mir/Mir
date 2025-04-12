@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from .libs.lsp.future_with_id import FutureWithId
+from .libs.future_with_id import FutureWithId
 from .libs.lsp.workspace_edit import apply_text_document_edits
 import sublime_aio
 from .open_view import open_view, save_view
