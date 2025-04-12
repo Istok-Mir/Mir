@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from .libs.lsp.future_with_id import FutureWithId
+from .libs.lsp.workspace_edit import apply_text_document_edits
 import sublime_aio
 from .open_view import open_view, save_view
 
@@ -7,12 +9,10 @@ from Mir.api import is_text_document_edit, parse_uri, is_text_edit, range_to_reg
 import sublime
 import sublime_plugin
 from Mir.types import WorkspaceEdit, TextEdit, AnnotatedTextEdit, SnippetTextEdit
-from .libs.lsp.workspace_edit import apply_edits_map
 
-
+# use `from Mir.api import apply_workspace_edit`
 class MirApplyWorkspaceEdit(sublime_aio.ViewCommand):
-    async def run(self, edit_id: str, workspace_edit: WorkspaceEdit):
-        print('eehj')
+    async def run(self, future_id: str, workspace_edit: WorkspaceEdit):
         try:
             window = self.view.window()
             if not window:
@@ -20,41 +20,44 @@ class MirApplyWorkspaceEdit(sublime_aio.ViewCommand):
             document_changes = workspace_edit.get('documentChanges')
             if document_changes:
                 for change in document_changes:
-                    is_view_open = False
+                    was_open = False
                     if not is_text_document_edit(change):
                         print("Mir: TODO implement change", change)
                         continue
                     schema, file_path = parse_uri(change['textDocument']['uri'])
                     view = window.find_open_file(file_path)
                     if view:
-                        is_view_open = True
+                        was_open = True
                     else:
                         view = await open_view(file_path, window)
-                    view.run_command('mir_apply_text_document_edits', {'edits': change['edits'], 'close_after_edit': not is_view_open })
+                    await apply_text_document_edits(view, change['edits'])
+                    if not was_open:
+                        view.close()
                 return
             changes = workspace_edit.get('changes')
             if changes:
                 for uri, text_edits in changes.items():
-                    is_view_open = False
+                    was_open = False
                     schema, file_path = parse_uri(uri)
                     view = window.find_open_file(file_path)
                     if view:
-                        is_view_open = True
+                        was_open = True
                     else:
                         view = await open_view(file_path, window)
-                    print('eeh')
-                    view.run_command('mir_apply_text_document_edits', {'edits': text_edits, 'close_after_edit': not is_view_open })
+                    await apply_text_document_edits(view, text_edits)
+                    if not was_open:
+                        view.close()
                 return
             print('Mir: TODO implement workspace_edit for', document_changes)
         finally:
-            future = apply_edits_map.pop(edit_id)
+            future = FutureWithId.get(future_id)
             if future:
                 future.set_result(None)
-            
 
 
+# use `from Mir.api import apply_text_document_edits`
 class MirApplyTextDocumentEditsCommand(sublime_plugin.TextCommand):
-    def run(self, edit: sublime.Edit, edits: list[TextEdit | AnnotatedTextEdit | SnippetTextEdit], close_after_edit=False):
+    def run(self, edit: sublime.Edit, future_id: str, edits: list[TextEdit | AnnotatedTextEdit | SnippetTextEdit], close_after_edit=False):
         text_edits: list[TextEdit] = []
         for e in edits:
             if is_text_edit(e):
@@ -63,10 +66,11 @@ class MirApplyTextDocumentEditsCommand(sublime_plugin.TextCommand):
                 print('Mir TODO implement edit for', e)
         for text_edit in reversed(text_edits):
             self.view.replace(edit, range_to_region(self.view, text_edit['range']), text_edit['newText'])
-        sublime_aio.run_coroutine(self.save(close_after_edit))
+        sublime_aio.run_coroutine(self.save(future_id))
 
-    async def save(self, close_after_edit: bool):
+    async def save(self, future_id: str):
         await save_view(self.view)
-        if close_after_edit:
-            self.view.close()
+        future = FutureWithId.get(future_id)
+        if future:
+            future.set_result(None)
 
