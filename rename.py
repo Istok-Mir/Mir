@@ -1,6 +1,7 @@
 from __future__ import annotations
 import asyncio
 import sublime_aio
+from .libs.lsp.workspace_edit import apply_workspace_edit
 
 
 from .libs.lsp.mir import MAX_WAIT_TIME
@@ -72,6 +73,5 @@ class MirRenameCommand(sublime_aio.ViewCommand):
             'newName': new_name
         })
         result = await req.result
-        self.view.run_command('mir_apply_workspace_edit', {
-            'workspace_edit': result
-        })
+        if result:
+            await apply_workspace_edit(self.view, result)

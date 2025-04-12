@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+from .libs.lsp.workspace_edit import apply_workspace_edit
 from .libs.lsp.manage_servers import server_for_view
 from .libs.lsp.mir import SourceName
 
@@ -111,9 +113,7 @@ class MirCodeActionsCommand(sublime_plugin.TextCommand):
             if not edit:
                 return
             print('edit')
-            self.view.run_command('mir_apply_workspace_edit', {
-                'workspace_edit': edit
-            })
+            await apply_workspace_edit(self.view, edit)
             print('selected', items[i])
         self.view.show_popup_menu([i[0] for i in items], on_done)
 

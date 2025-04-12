@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+from .libs.lsp.workspace_edit import apply_workspace_edit
 from .libs.lsp.pull_diagnostics import pull_diagnostics
 from .libs.lsp.mir import mir
 from .libs.lsp.manage_servers import server_for_view, servers_for_view
@@ -67,9 +69,7 @@ class MirCodeActionsOnSaveCommand(sublime_aio.ViewCommand):
             for maybe_code_action in result:
                 edit = maybe_code_action.get('edit')
                 if edit:
-                    self.view.run_command('mir_apply_workspace_edit', {
-                        'workspace_edit': edit
-                    })
+                    await apply_workspace_edit(self.view, edit)
 
         if format_with_provider and (formatting_server := server_for_view(format_with_provider,self.view)) and formatting_server.capabilities.has('documentFormattingProvider'):
             future = formatting_server.send.formatting({

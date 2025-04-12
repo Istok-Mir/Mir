@@ -4,7 +4,7 @@ from .capabilities import method_to_capability
 from .view_to_lsp import get_view_uri, parse_uri
 from .types import ApplyWorkspaceEditParams, ApplyWorkspaceEditResult, RegistrationParams, UnregistrationParams, LogMessageParams, LogMessageParams, MessageType, ConfigurationParams, PublishDiagnosticsParams, DidChangeWatchedFilesRegistrationOptions, CreateFilesParams, RenameFilesParams, DeleteFilesParams, DidChangeWatchedFilesParams, WorkspaceFolder
 from .file_watcher import get_file_watcher, create_file_watcher
-
+from .workspace_edit import apply_workspace_edit
 if TYPE_CHECKING:
 	from .server import LanguageServer
 
@@ -119,9 +119,7 @@ def attach_server_request_and_notification_handlers(server: LanguageServer):
                 'failureReason': "I do not have a view available to trigger applying workspace edits"
             }
 
-        view.run_command('mir_apply_workspace_edit', {
-            'workspace_edit': params['edit']
-        })
+        await apply_workspace_edit(self.view, params['edit'])
         return {
             'applied': True # TODO improve, what can go wrong?
         }
