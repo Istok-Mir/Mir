@@ -29,11 +29,10 @@ definitions = await mir.definitions(self.view, point)
 Example completion package implementation:
 ```py
 from __future__ import annotations
-import sublime
-import sublime_plugin
 from Mir import mir
-import asyncio
+import sublime
 import sublime_aio
+
 
 class MirCompletionListener(sublime_aio.ViewEventListener):
     async def on_query_completions(self, _prefix: str, locations: list[Point]):
@@ -79,8 +78,8 @@ Provider packages can be written to enhance mir.
 Hover provider example:
 ```py
 # this is just a concept
-from Mir.types import Hover, MarkupKind, Diagnostic
 from Mir import HoverProvider, mir
+from Mir.types import Hover, MarkupKind, Diagnostic
 from Mir.api import range_to_region
 import sublime
 
