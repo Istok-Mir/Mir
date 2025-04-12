@@ -11,22 +11,12 @@ import sublime
 import sublime_plugin
 import sublime_aio
 
-class CodeActionSelectionListener(sublime_plugin.ViewEventListener):
-    def on_selection_modified(self):
-        sel = self.view.sel()
-        if not sel:
-            return
-        region = sel[0].to_tuple()
+class CodeActionSelectionListener(sublime_aio.ViewEventListener):
+    async def on_selection_modified(self):
         self.view.erase_regions('mir_bulb')
-        sublime.set_timeout(lambda: self.debounce(region), 1000)
-
-    def debounce(self, region: tuple[int, int]):
-        new_sel = self.view.sel()
-        if not new_sel:
-            return
-        if region == new_sel[0].to_tuple():
-            sublime_aio.run_coroutine(self.draw_bulb())
-
+        await self.draw_bulb()
+        
+    @sublime_aio.debounced(1000)
     async def draw_bulb(self):
         sel = self.view.sel()
         if not sel:
