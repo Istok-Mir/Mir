@@ -119,7 +119,7 @@ def attach_server_request_and_notification_handlers(server: LanguageServer):
                 'failureReason': "I do not have a view available to trigger applying workspace edits"
             }
 
-        await apply_workspace_edit(self.view, params['edit'])
+        await apply_workspace_edit(view, params['edit'])
         return {
             'applied': True # TODO improve, what can go wrong?
         }
