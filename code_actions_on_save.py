@@ -4,7 +4,7 @@ from .libs.lsp.workspace_edit import apply_workspace_edit
 from .libs.lsp.pull_diagnostics import pull_diagnostics
 from .libs.lsp.mir import mir
 from .libs.lsp.manage_servers import server_for_view, servers_for_view
-from .libs.lsp.types import CodeActionOptions, CodeActionTriggerKind
+from .libs.lsp.types import CodeActionOptions
 from .libs.lsp.view_to_lsp import get_view_uri, region_to_range
 import sublime_aio
 import sublime_plugin
