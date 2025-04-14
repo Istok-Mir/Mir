@@ -3,6 +3,7 @@ from Mir.types import Hover, Diagnostic
 from Mir import HoverProvider, mir
 from Mir.api import range_to_region
 from Mir.types import DiagnosticSeverity
+from sublime_aio import sublime, sublime_plugin
 
 
 #Example of a hover provider
@@ -23,8 +24,22 @@ class DiagnosticsHoverProvider(HoverProvider):
                 styles = 'color: var(--redish)'
             elif d.get('severity') == DiagnosticSeverity.Warning:
                 styles = 'color:var(--yellowish)'
-            return f"<div style='{styles}'>{d['message']}</div>"
-            
+            return f"""<div>
+                <a style='text-decoration: none; {styles}' href='{sublime.command_url('mir_copy_text', {
+                    'text': d['message']
+                })}'> {d['message']}
+                </a>
+            </div>"""
+
         return {
           'contents': [format(d) + ' ' + d.get('source', '') for d in diagnostics_under_cursor]
         }
+
+
+class MirCopyTextCommand(sublime_plugin.TextCommand):
+    def run(self, edit, text: str):
+        print('run', text)
+        w = self.view.window()
+        if w:
+            w.status_message('Copied')
+        sublime.set_clipboard(text.replace(' ', ''))
