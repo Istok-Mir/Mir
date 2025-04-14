@@ -25,7 +25,7 @@ class DiagnosticsHoverProvider(HoverProvider):
             elif d.get('severity') == DiagnosticSeverity.Warning:
                 styles = 'color:var(--yellowish)'
             return f"""<div>
-                <a style='text-decoration: none; {styles}' href='{sublime.command_url('mir_copy_text', {
+                <a title="Click to copy" style='text-decoration: none; {styles}' href='{sublime.command_url('mir_copy_text', {
                     'text': d['message']
                 })}'> {d['message']}
                 </a>
