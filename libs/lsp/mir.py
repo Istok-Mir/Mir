@@ -2,13 +2,15 @@ from __future__ import annotations
 import asyncio
 from typing import List
 
+from sublime_aio import overload
+
 from .commands import MirCommand
 import sys
-from .manage_servers import servers_for_view, servers_for_window
+from .manage_servers import server_for_view, servers_for_view, servers_for_window
 from .providers import CodeActionProvider, Providers, HoverProvider, CompletionProvider, DefinitionProvider, DocumentSymbolProvider, ReferencesProvider
 from .server import is_applicable_view
 from .types import CodeAction, CodeActionContext, Command, Definition, DocumentSymbol, Location, SymbolInformation, LocationLink, Hover, CompletionItem, CompletionList, DocumentUri, Diagnostic
-from .view_to_lsp import get_view_uri
+from .view_to_lsp import get_view_uri, range_to_region
 import sublime
 
 SourceName = str
@@ -88,6 +90,9 @@ class mir:
         # STEP 3:
         async def handle(provider: CodeActionProvider):
             try:
+                diagnostics = await mir.get_diagnostics(provider.name, view)
+                diagnostics_in_region = [d for d in diagnostics if region.intersects(range_to_region(view, d['range']))]
+                context['diagnostics'].extend(diagnostics_in_region)
                 result = await asyncio.wait_for(provider.provide_code_actions(view, region, context), MAX_WAIT_TIME)
             except Exception as e:
                 await provider.cancel()
@@ -203,26 +208,28 @@ class mir:
             print('Mir (DocumentSymbolError):', e)
         return results
 
+    @overload
     @staticmethod
-    async def get_diagnostics(view_or_window: sublime.View | sublime.Window) -> list[tuple[DocumentUri, list[Diagnostic]]]:
-        result: list[tuple[DocumentUri, list[Diagnostic]]] = []
-        map_result: dict[DocumentUri, list[Diagnostic]] = {}
-        if isinstance(view_or_window, sublime.View):
-            servers = servers_for_view(view_or_window)
-            for server in servers:
-                uri = get_view_uri(view_or_window)
-                if uri not in map_result:
-                    map_result[uri] = []
-                map_result[uri].extend(server.diagnostics.get(uri))
-        elif isinstance(view_or_window, sublime.Window):
-            servers = servers_for_window(view_or_window)
-            for server in servers:
-                for uri, diagnostics in server.diagnostics.items():
-                    if uri not in map_result:
-                        map_result[uri] = []
-                    map_result[uri].extend(diagnostics)
+    async def get_diagnostics(view: sublime.View) -> list[tuple[SourceName, list[Diagnostic]]]:
+        result: list[tuple[SourceName, list[Diagnostic]]] = []
+        map_result: dict[SourceName, list[Diagnostic]] = {}
+        servers = servers_for_view(view)
+        uri = get_view_uri(view)
+        for server in servers:
+            if server.name not in map_result:
+                map_result[server.name] = []
+            map_result[server.name].extend(server.diagnostics.get(uri))
         result = list(map_result.items())
         return result
+
+    @overload
+    @staticmethod
+    async def get_diagnostics(name: str, view: sublime.View) -> list[Diagnostic]:
+        uri = get_view_uri(view)
+        server = server_for_view(name, view)
+        if not server:
+            return []
+        return server.diagnostics.get(uri)
 
     _on_did_change_diagnostics_cbs = []
     @staticmethod

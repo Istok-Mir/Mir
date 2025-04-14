@@ -22,11 +22,6 @@ class MirCodeActionsOnSaveCommand(sublime_aio.ViewCommand):
 
     async def run(self):
         MirCodeActionsOnSaveCommand.running_code_actions_on_save = True
-        diagnostics_results = await mir.get_diagnostics(self.view)
-        all_diagnostics: list[Diagnostic] = []
-        for _, diagnostics in diagnostics_results:
-            all_diagnostics.extend(diagnostics)
-
         servers = servers_for_view(self.view, 'codeActionProvider')
 
         view_settings = self.view.settings()
@@ -51,12 +46,14 @@ class MirCodeActionsOnSaveCommand(sublime_aio.ViewCommand):
                         matching_kinds.append(user_setting)
             if not matching_kinds: # don't send code actions if no matching code actions kinds are found
                 continue
+            diagnostics = await mir.get_diagnostics(server.name, self.view)
+
             future = server.send.code_action({
                 'textDocument': {'uri': get_view_uri(self.view)},
                 'range': region_to_range(self.view, sublime.Region(0, self.view.size())),
                 'context': {
                     'only': matching_kinds,
-                    'diagnostics': all_diagnostics,
+                    'diagnostics': diagnostics,
                     'triggerKind': CodeActionTriggerKind.Automatic
                 }
             })

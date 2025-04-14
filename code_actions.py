@@ -118,15 +118,8 @@ def get_point(view: sublime.View):
 
 
 async def get_code_actions(view: sublime.View, region: sublime.Region, trigger_kind: CodeActionTriggerKind, only_kinds: list[CodeActionKind] | None=None) -> list[tuple[SourceName, list[Command | CodeAction]]]:
-    # get diagnostics
-    diagnostics_results = await mir.get_diagnostics(view)
-    all_diagnostics: list[Diagnostic] = []
-    for _, diagnostics in diagnostics_results:
-        all_diagnostics.extend(diagnostics)
-
-    diagnostics_in_region = [d for d in all_diagnostics if region.intersects(range_to_region(view, d['range']))]
     context: CodeActionContext = {
-        'diagnostics': diagnostics_in_region,
+        'diagnostics': [],
         'triggerKind': trigger_kind
     }
     if only_kinds:
