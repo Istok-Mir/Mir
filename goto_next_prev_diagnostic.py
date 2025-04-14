@@ -1,4 +1,6 @@
 from __future__ import annotations
+import html
+from .hover import strip_html_tags
 import sublime
 import sublime_plugin
 from Mir import mir
@@ -63,6 +65,13 @@ class MirGoToPointCommand(sublime_plugin.TextCommand):
         if not message:
             return
         content = minihtml(self.view, message, MinihtmlKind.FORMAT_MARKED_STRING | MinihtmlKind.FORMAT_MARKUP_CONTENT)
+        content = f"""
+         <a title="Click to copy" style='text-decoration: none; display: block; color: var(--foreground)' href='{sublime.command_url('mir_copy_text', {
+            'text': html.unescape(strip_html_tags(content))
+        })}'>
+             {content}
+         </a>
+        """
         sublime.set_timeout(lambda: self.view.show_popup(
             f"""<html style='box-sizing:border-box; background-color:var(--background); padding:0rem; margin:0'><body style='padding:0.3rem; margin:0; border-radius:4px; padding: 0.5rem;border: 1px solid color(var(--foreground) blend(var(--background) 20%));'><div style='padding: 0.0rem 0.2rem; font-size: 0.9rem;'>{content}</div></body></html>""",
             sublime.PopupFlags.HIDE_ON_MOUSE_MOVE_AWAY,

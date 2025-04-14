@@ -15,11 +15,18 @@ class MirHoverListener(sublime_aio.ViewEventListener):
         for name, hover in hovers:
             if isinstance(hover, dict):
                 content = hover['contents']
+                mir_copy_text = ''
+                if isinstance(content, str):
+                    mir_copy_text = content
+                elif isinstance(content, dict):
+                    mir_copy_text = content.get('value', '')
+                elif isinstance(content, list):
+                    mir_copy_text = " ".join([c for c in content])
                 content = minihtml(self.view, content, MinihtmlKind.FORMAT_MARKED_STRING | MinihtmlKind.FORMAT_MARKUP_CONTENT)
                 if content:
                     content = f"""
                     <a title="Click to copy" style='text-decoration: none; display: block; color: var(--foreground)' href='{sublime.command_url('mir_copy_text', {
-                        'text': html.unescape(strip_html_tags(content))
+                        'text': html.unescape(strip_html_tags(mir_copy_text.replace(' ', ' ')))
                     })}'>
                         {content}
                     </a>"""
@@ -39,7 +46,7 @@ class MirCopyTextCommand(sublime_plugin.TextCommand):
         w = self.view.window()
         if w:
             w.status_message('Copied')
-        sublime.set_clipboard(text.replace(' ', ' '))
+        sublime.set_clipboard(text)
 
 
 def strip_html_tags(html_string) -> str:

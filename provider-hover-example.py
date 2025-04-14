@@ -3,8 +3,6 @@ from Mir.types import Hover, Diagnostic
 from Mir import HoverProvider, mir
 from Mir.api import range_to_region
 from Mir.types import DiagnosticSeverity
-from sublime_aio import sublime, sublime_plugin
-
 
 #Example of a hover provider
 class DiagnosticsHoverProvider(HoverProvider):
@@ -27,7 +25,6 @@ class DiagnosticsHoverProvider(HoverProvider):
             elif d.get('severity') == DiagnosticSeverity.Warning:
                 message_styles = 'color:var(--yellowish)'
                 source_styles: str = 'opacity: 0.4; padding: 0 0.3rem; border-radius: 4px; color: var(--yellowish); background-color: color(var(--yellowish) alpha(0.1))'
-
             source = d.get('source', '')
             formatted_source = ''
             if source:
