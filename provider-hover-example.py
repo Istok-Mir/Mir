@@ -38,7 +38,6 @@ class DiagnosticsHoverProvider(HoverProvider):
 
 class MirCopyTextCommand(sublime_plugin.TextCommand):
     def run(self, edit, text: str):
-        print('run', text)
         w = self.view.window()
         if w:
             w.status_message('Copied')
