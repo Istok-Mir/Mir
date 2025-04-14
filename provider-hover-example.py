@@ -32,21 +32,9 @@ class DiagnosticsHoverProvider(HoverProvider):
             formatted_source = ''
             if source:
                 formatted_source = f"<span style='{source_styles}'>{source}</span>"
-            return f"""<div>
-                <a title="Click to copy" style='text-decoration: none; {message_styles}' href='{sublime.command_url('mir_copy_text', {
-                    'text': f"{source} " + d['message']
-                })}'>{d['message']} {formatted_source}
-                </a>
-            </div>"""
+            return f"<div style='{message_styles}'>{d['message']} {formatted_source}</div>"
 
         return {
           'contents': [format(d) for d in diagnostics_under_cursor]
         }
 
-
-class MirCopyTextCommand(sublime_plugin.TextCommand):
-    def run(self, edit, text: str):
-        w = self.view.window()
-        if w:
-            w.status_message('Copied')
-        sublime.set_clipboard(text.replace(' ', ''))
