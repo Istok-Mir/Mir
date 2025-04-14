@@ -1,12 +1,11 @@
 from __future__ import annotations
 import asyncio
-from typing import List
 
 from sublime_aio import overload
 
 from .commands import MirCommand
 import sys
-from .manage_servers import server_for_view, servers_for_view, servers_for_window
+from .manage_servers import server_for_view, servers_for_view
 from .providers import CodeActionProvider, Providers, HoverProvider, CompletionProvider, DefinitionProvider, DocumentSymbolProvider, ReferencesProvider
 from .server import is_applicable_view
 from .types import CodeAction, CodeActionContext, Command, Definition, DocumentSymbol, Location, SymbolInformation, LocationLink, Hover, CompletionItem, CompletionList, DocumentUri, Diagnostic
@@ -90,7 +89,7 @@ class mir:
         # STEP 3:
         async def handle(provider: CodeActionProvider):
             try:
-                diagnostics = await mir.get_diagnostics(provider.name, view)
+                diagnostics = await mir.get_diagnostics(view, provider.name)
                 diagnostics_in_region = [d for d in diagnostics if region.intersects(range_to_region(view, d['range']))]
                 context['diagnostics'].extend(diagnostics_in_region)
                 result = await asyncio.wait_for(provider.provide_code_actions(view, region, context), MAX_WAIT_TIME)
@@ -162,9 +161,8 @@ class mir:
                     mir.cache_completion_response[provider.name] = result
                     def reset():
                         del mir.cache_completion_response[provider.name]
-                    sublime.set_timeout(reset, 60_000) # this prevent lag while typing for 6 seconds
+                    sublime.set_timeout(reset, 6_000) # this prevent lag while typing for 6 seconds
             except Exception as e:
-                await provider.cancel()
                 print(f'Error happened in provider {provider.name}', e)
                 return (provider.name, None)
             return (provider.name, result)
@@ -187,7 +185,7 @@ class mir:
             await provider.cancel()
 
         # STEP 2 define return value
-        results: list[tuple[SourceName, List[SymbolInformation] | List[DocumentSymbol] | None]] = []
+        results: list[tuple[SourceName, list[SymbolInformation] | list[DocumentSymbol] | None]] = []
         # STEP 3:
         async def handle(provider: DocumentSymbolProvider):
             try:
@@ -211,25 +209,34 @@ class mir:
     @overload
     @staticmethod
     async def get_diagnostics(view: sublime.View) -> list[tuple[SourceName, list[Diagnostic]]]:
-        result: list[tuple[SourceName, list[Diagnostic]]] = []
-        map_result: dict[SourceName, list[Diagnostic]] = {}
-        servers = servers_for_view(view)
-        uri = get_view_uri(view)
-        for server in servers:
-            if server.name not in map_result:
-                map_result[server.name] = []
-            map_result[server.name].extend(server.diagnostics.get(uri))
-        result = list(map_result.items())
-        return result
+        ...
 
     @overload
     @staticmethod
-    async def get_diagnostics(name: str, view: sublime.View) -> list[Diagnostic]:
-        uri = get_view_uri(view)
-        server = server_for_view(name, view)
-        if not server:
-            return []
-        return server.diagnostics.get(uri)
+    async def get_diagnostics(view: sublime.View, name: str) -> list[Diagnostic]:
+        ...
+
+    @staticmethod
+    async def get_diagnostics(view: sublime.View, name: str | None = None) -> list[tuple[SourceName, list[Diagnostic]]] | list[Diagnostic]:
+        if name is None:
+            # Logic for when name is not provided (first overload)
+            result: list[tuple[SourceName, list[Diagnostic]]] = []
+            map_result: dict[SourceName, list[Diagnostic]] = {}
+            servers = servers_for_view(view)
+            uri = get_view_uri(view)
+            for server in servers:
+                if server.name not in map_result:
+                    map_result[server.name] = []
+                map_result[server.name].extend(server.diagnostics.get(uri))
+            result = list(map_result.items())
+            return result
+        else:
+            # Logic for when name is provided (second overload)
+            uri = get_view_uri(view)
+            server = server_for_view(name, view)
+            if not server:
+                return []
+            return server.diagnostics.get(uri)
 
     _on_did_change_diagnostics_cbs = []
     @staticmethod

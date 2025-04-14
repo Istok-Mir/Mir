@@ -23,7 +23,6 @@ class MirCodeActionsOnSaveCommand(sublime_aio.ViewCommand):
     async def run(self):
         MirCodeActionsOnSaveCommand.running_code_actions_on_save = True
         servers = servers_for_view(self.view, 'codeActionProvider')
-
         view_settings = self.view.settings()
         settings: list[str] = view_settings.get('mir.on_save', [])
         format_with_provider: str | None = None
@@ -46,7 +45,7 @@ class MirCodeActionsOnSaveCommand(sublime_aio.ViewCommand):
                         matching_kinds.append(user_setting)
             if not matching_kinds: # don't send code actions if no matching code actions kinds are found
                 continue
-            diagnostics = await mir.get_diagnostics(server.name, self.view)
+            diagnostics = await mir.get_diagnostics(self.view, server.name)
 
             future = server.send.code_action({
                 'textDocument': {'uri': get_view_uri(self.view)},
