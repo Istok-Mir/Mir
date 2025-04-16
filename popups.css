@@ -1,0 +1,25 @@
+html.mir_popup {
+    box-sizing: border-box;
+    background-color: var(--background);
+    padding: 0;
+    margin: 0;
+}
+
+.mir_popup body {
+    margin: 0;
+    border-radius: 4px;
+    border: 1px solid color(var(--foreground) blend(var(--background) 20%));
+}
+.mir_popup_content {
+    padding: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.mir_popup h1,
+.mir_popup h2,
+.mir_popup h3,
+.mir_popup h4,
+.mir_popup h5,
+.mir_popup h6 {
+    font-size: 0.9rem;
+}

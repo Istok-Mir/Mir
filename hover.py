@@ -6,6 +6,7 @@ import sublime_aio
 from Mir.api import minihtml, MinihtmlKind
 import sublime_plugin
 import html
+from .libs.hover_template import hover_template
 
 
 class MirHoverListener(sublime_aio.ViewEventListener):
@@ -34,7 +35,7 @@ class MirHoverListener(sublime_aio.ViewEventListener):
         combined_content = [c for c in combined_content if c]
         if combined_content:
             self.view.show_popup(
-                f"""<html style='box-sizing:border-box; background-color:var(--background); padding:0rem; margin:0'><body style='padding:0.3rem; margin:0; border-radius:4px; padding: 0.5rem;border: 1px solid color(var(--foreground) blend(var(--background) 20%));'><div style='padding: 0.0rem 0.2rem; font-size: 0.9rem;'>{'<hr style="border-top: 1px solid color(var(--foreground) blend(var(--background) 20%)); display:block; margin-bottom: 0.5rem"/>'.join(combined_content)}</div></body></html>""",
+                hover_template("""<hr style="border-top: 1px solid color(var(--foreground) blend(var(--background) 20%)); display:block; margin-bottom: 0.5rem"/>""".join(combined_content)),
                 sublime.PopupFlags.HIDE_ON_MOUSE_MOVE_AWAY,
                 hover_point,
                 max_width=800,
@@ -45,7 +46,7 @@ class MirCopyTextCommand(sublime_plugin.TextCommand):
     def run(self, edit, text: str):
         w = self.view.window()
         if w:
-            w.status_message('Copied')
+            w.status_message('Copied: ' + text[:20] + "...")
         sublime.set_clipboard(text)
 
 
