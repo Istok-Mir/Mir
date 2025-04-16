@@ -10,6 +10,7 @@ def hover_template(content: str):
         <body>
         <div class="mir_popup_content">
             {content}
+        </div>
         </body>
     </html>"""
 
