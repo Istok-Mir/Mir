@@ -1,6 +1,6 @@
 from __future__ import annotations
 from .dotted_dict import DottedDict
-from .types import ClientCapabilities, CompletionItemKind, CompletionItemTag, InsertTextMode, MarkupKind
+from .types import ClientCapabilities, CodeActionKind, CompletionItemKind, CompletionItemTag, FoldingRangeKind, InsertTextMode, MarkupKind, PrepareSupportDefaultBehavior, SymbolKind, SymbolTag,DiagnosticTag, TokenFormat
 from typing import Any, Literal, cast
 
 
@@ -34,9 +34,35 @@ CLIENT_CAPABILITIES: ClientCapabilities = {
                 'insertTextModeSupport': {'valueSet': [InsertTextMode.AdjustIndentation]},
                 'labelDetailsSupport': True},
                 'completionItemKind': {
-                    'valueSet': [v.value for v in CompletionItemKind]
+                    'valueSet': [
+                        CompletionItemKind.Text,
+                        CompletionItemKind.Method,
+                        CompletionItemKind.Function,
+                        CompletionItemKind.Constructor,
+                        CompletionItemKind.Field,
+                        CompletionItemKind.Variable,
+                        CompletionItemKind.Class,
+                        CompletionItemKind.Interface,
+                        CompletionItemKind.Module,
+                        CompletionItemKind.Property,
+                        CompletionItemKind.Unit,
+                        CompletionItemKind.Value,
+                        CompletionItemKind.Enum,
+                        CompletionItemKind.Keyword,
+                        CompletionItemKind.Snippet,
+                        CompletionItemKind.Color,
+                        CompletionItemKind.File,
+                        CompletionItemKind.Reference,
+                        CompletionItemKind.Folder,
+                        CompletionItemKind.EnumMember,
+                        CompletionItemKind.Constant,
+                        CompletionItemKind.Struct,
+                        CompletionItemKind.Event,
+                        CompletionItemKind.Operator,
+                        CompletionItemKind.TypeParameter,
+                    ]
                 },
-                'insertTextMode': 2,
+                'insertTextMode': InsertTextMode.AdjustIndentation,
                 'completionList': {
                     'itemDefaults': ['editRange', 'insertTextFormat', 'data']
                 }
@@ -56,9 +82,36 @@ CLIENT_CAPABILITIES: ClientCapabilities = {
             'dynamicRegistration': True,
             'hierarchicalDocumentSymbolSupport': True,
             'symbolKind': {
-                'valueSet': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]
+                'valueSet': [
+                    SymbolKind.File,
+                    SymbolKind.Module,
+                    SymbolKind.Namespace,
+                    SymbolKind.Package,
+                    SymbolKind.Class,
+                    SymbolKind.Method,
+                    SymbolKind.Property,
+                    SymbolKind.Field,
+                    SymbolKind.Constructor,
+                    SymbolKind.Enum,
+                    SymbolKind.Interface,
+                    SymbolKind.Function,
+                    SymbolKind.Variable,
+                    SymbolKind.Constant,
+                    SymbolKind.String,
+                    SymbolKind.Number,
+                    SymbolKind.Boolean,
+                    SymbolKind.Array,
+                    SymbolKind.Object,
+                    SymbolKind.Key,
+                    SymbolKind.Null,
+                    SymbolKind.EnumMember,
+                    SymbolKind.Struct,
+                    SymbolKind.Event,
+                    SymbolKind.Operator,
+                    SymbolKind.TypeParameter,
+                ]
             },
-            'tagSupport': {'valueSet': [1]}
+            'tagSupport': {'valueSet': [SymbolTag.Deprecated]}
         },
         'documentLink': {
             'dynamicRegistration': True,
@@ -74,7 +127,7 @@ CLIENT_CAPABILITIES: ClientCapabilities = {
             'dynamicRegistration': True,
             'codeActionLiteralSupport': {
                 'codeActionKind': {
-                    'valueSet': ['quickfix', 'refactor', 'refactor.extract', 'refactor.inline', 'refactor.rewrite', 'source.fixAll', 'source.organizeImports']
+                    'valueSet': [CodeActionKind.QuickFix, CodeActionKind.Refactor, CodeActionKind.RefactorMove,CodeActionKind.RefactorExtract, CodeActionKind.RefactorInline, CodeActionKind.RefactorRewrite, CodeActionKind.Source, CodeActionKind.SourceFixAll, CodeActionKind.SourceOrganizeImports]
                 }},
                 'dataSupport': True,
                 'isPreferredSupport': True,
@@ -83,13 +136,13 @@ CLIENT_CAPABILITIES: ClientCapabilities = {
         'rename': {
             'dynamicRegistration': True,
             'prepareSupport': True,
-            'prepareSupportDefaultBehavior': 1
+            'prepareSupportDefaultBehavior': PrepareSupportDefaultBehavior.Identifier
         },
         'colorProvider': {'dynamicRegistration': True},
         'publishDiagnostics': {
             'relatedInformation': True,
             'tagSupport': {
-                'valueSet': [1, 2]
+                'valueSet': [DiagnosticTag.Unnecessary, DiagnosticTag.Deprecated]
             },
             'versionSupport': True,
             'codeDescriptionSupport': True,
@@ -100,7 +153,7 @@ CLIENT_CAPABILITIES: ClientCapabilities = {
         'foldingRange': {
             'dynamicRegistration': True,
             'foldingRangeKind': {
-                'valueSet': ['comment', 'imports', 'region']
+                'valueSet': [FoldingRangeKind.Comment, FoldingRangeKind.Imports, FoldingRangeKind.Region]
             }
         },
         'codeLens': {'dynamicRegistration': True},
@@ -113,7 +166,7 @@ CLIENT_CAPABILITIES: ClientCapabilities = {
             'requests': {'range': True, 'full': {'delta': True}},
             'tokenTypes': ['namespace', 'type', 'class', 'enum', 'interface', 'struct', 'typeParameter', 'parameter', 'variable', 'property', 'enumMember', 'event', 'function', 'method', 'macro', 'keyword', 'modifier', 'comment', 'string', 'number', 'regexp', 'operator', 'decorator', 'member'],
             'tokenModifiers': ['declaration', 'definition', 'readonly', 'static', 'deprecated', 'abstract', 'async', 'modification', 'documentation', 'defaultLibrary'],
-            'formats': ['relative'],
+            'formats': [TokenFormat.Relative],
             'overlappingTokenSupport': False,
             'multilineTokenSupport': True,
             'augmentsSyntaxTokens': True},
@@ -132,9 +185,36 @@ CLIENT_CAPABILITIES: ClientCapabilities = {
         'symbol': {
             'dynamicRegistration': True,
             'resolveSupport': {'properties': ['location.range']},
-            'symbolKind': {'valueSet': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]},
+            'symbolKind': {'valueSet': [
+                SymbolKind.File,
+                SymbolKind.Module,
+                SymbolKind.Namespace,
+                SymbolKind.Package,
+                SymbolKind.Class,
+                SymbolKind.Method,
+                SymbolKind.Property,
+                SymbolKind.Field,
+                SymbolKind.Constructor,
+                SymbolKind.Enum,
+                SymbolKind.Interface,
+                SymbolKind.Function,
+                SymbolKind.Variable,
+                SymbolKind.Constant,
+                SymbolKind.String,
+                SymbolKind.Number,
+                SymbolKind.Boolean,
+                SymbolKind.Array,
+                SymbolKind.Object,
+                SymbolKind.Key,
+                SymbolKind.Null,
+                SymbolKind.EnumMember,
+                SymbolKind.Struct,
+                SymbolKind.Event,
+                SymbolKind.Operator,
+                SymbolKind.TypeParameter,
+            ]},
             'tagSupport': {
-                'valueSet': [1]
+                'valueSet': [SymbolTag.Deprecated]
             }
         },
         'configuration': True,
