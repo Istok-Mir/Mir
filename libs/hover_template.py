@@ -1,6 +1,6 @@
 import sublime
 
-css = sublime.load_resource("Packages/Mir/popups.css")
+css = sublime.load_resource("Packages/Mir/popup.css")
 
 def hover_template(content: str):
     global css
