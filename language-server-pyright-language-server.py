@@ -7,7 +7,7 @@ import os
 
 class PyrightLanguageServer(LanguageServer):
     name='pyright-langserver'
-    cmd='pyright-langserver --stdio'
+    cmd=['pyright-langserver', '--stdio']
     activation_events={
         'selector': 'source.python',
     }

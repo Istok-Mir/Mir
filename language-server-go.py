@@ -2,7 +2,7 @@ from Mir import LanguageServer
 
 class GoplsLanguageServer(LanguageServer):
     name='gopls'
-    cmd="/Users/predrag/Library/Caches/Sublime\ Text/Package\ Storage/LSP-gopls/bin/gopls"
+    cmd=["/Users/predrag/Library/Caches/Sublime\ Text/Package\ Storage/LSP-gopls/bin/gopls"]
     activation_events={
         'selector': 'source.go',
     }

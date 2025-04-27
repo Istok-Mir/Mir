@@ -9,7 +9,7 @@ import sublime
 
 class JsonServer(LanguageServer):
     name='json'
-    cmd='node "/Users/predrag/Library/Caches/Sublime Text/Package Storage/LSP-json/20.18.0/language-server/out/node/jsonServerMain.js" --stdio'
+    cmd=['node', "/Users/predrag/Library/Caches/Sublime Text/Package Storage/LSP-json/20.18.0/language-server/out/node/jsonServerMain.js", '--stdio']
     activation_events={
         'selector': 'source.json',
     }

@@ -6,7 +6,7 @@ class VtslsLanguageServer(LanguageServer):
     name='vtsls'
     # cmd='vtsls --stdio'
     # cmd='typescript-language-server --stdio'
-    cmd='node /Users/predrag/Documents/sandbox/typescript-language-server/lib/cli.mjs --stdio'
+    cmd=['node', '/Users/predrag/Documents/sandbox/typescript-language-server/lib/cli.mjs', '--stdio']
     activation_events={
         'selector': 'source.js, source.jsx, source.ts, source.tsx',
     }

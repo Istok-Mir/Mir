@@ -155,7 +155,7 @@ server_callbacks_when_ready = []
 
 class LanguageServer:
     name: str
-    cmd: str
+    cmd: list[str]
     activation_events: ActivationEvents
 
     def __init_subclass__(cls, **kwargs):
@@ -235,8 +235,8 @@ class LanguageServer:
         self.before_initialize()
         try:
             self.status = 'initializing'
-            self._process = await asyncio.create_subprocess_shell(
-                self.cmd,
+            self._process = await asyncio.create_subprocess_exec(
+                *self.cmd,
                 stdout=asyncio.subprocess.PIPE,
                 stdin=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
