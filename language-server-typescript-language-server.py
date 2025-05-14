@@ -1,7 +1,7 @@
 from typing import TypedDict
 from Mir import LanguageServer
 import sublime
-from .runtimes import deno
+from .runtime import deno
 from .package_storage import PackageStorage, run_command_sync
 
 

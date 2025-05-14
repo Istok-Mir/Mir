@@ -3,7 +3,7 @@ import sublime_plugin
 from Mir.types import URI, DocumentUri, TextEdit
 from Mir import LanguageServer, mir
 from typing import Dict, List, Optional, Tuple, TypedDict
-from .runtimes import deno
+from .runtime import deno
 
 class CspellLanguageServer(LanguageServer):
     name='cSpell'

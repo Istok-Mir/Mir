@@ -8,7 +8,7 @@ from os import path
 from sublime_lib import ActivityIndicator
 from pathlib import Path
 
-runtime_storage_path = PackageStorage('Mir', tag='runtimes')
+runtime_storage_path = PackageStorage('Mir', tag='runtime')
 
 class Yarn:
     def __init__(self) -> None:

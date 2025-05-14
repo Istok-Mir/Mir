@@ -6,7 +6,7 @@ import sublime
 import sys
 import re
 import os
-from .runtimes import deno
+from .runtime import deno
 
 server_storage = PackageStorage(__package__, tag='0.0.2', sync_folder="./language-server")
 server_path = server_storage / "language-server" / "node_modules" / "pyright" / "langserver.index.js"
