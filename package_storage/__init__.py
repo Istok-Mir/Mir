@@ -3,7 +3,6 @@ from os import path
 import sublime
 from pathlib import Path
 import shutil
-import hashlib
 import asyncio
 import os
 import zipfile
