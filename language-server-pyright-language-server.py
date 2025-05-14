@@ -17,7 +17,7 @@ class PyrightLanguageServer(LanguageServer):
     }
 
     async def activate(self):
-        # setup runtime and install dependecies
+        # setup runtime and install dependencies
         await deno.setup()
         server_path = server_storage / "language-server" / "node_modules" / "pyright" / "langserver.index.js"
         if not server_path.exists():
