@@ -8,7 +8,6 @@ from .package_storage import PackageStorage, run_command_sync
 storage = PackageStorage(__package__, '0.0.2')
 storage.copy("./language-server")
 server_path = storage / "language-server" / 'node_modules' / 'typescript-language-server' / 'lib' / 'cli.mjs'
-print('server_path', str(server_path))
 if not server_path.exists():
     run_command_sync([deno.path, "install"], cwd=str(storage / "language-server"))
 
