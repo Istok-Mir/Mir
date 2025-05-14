@@ -6,12 +6,16 @@ import sublime_aio
 import os
 from os import path
 from sublime_lib import ActivityIndicator
+from pathlib import Path
+
+runtime_storage_path = PackageStorage('Mir', 'runtimes')
 
 class Yarn:
     def __init__(self) -> None:
-        self.package_storage = PackageStorage('Mir', 'runtimes', 'yarn')
+        self.package_storage = runtime_storage_path / 'yarn'
         self._path = None
 
+    @property
     def path(self) -> str:
         if not self._path or not path.isfile(self._path):
             raise Exception('Yarn binary not found')
@@ -20,7 +24,7 @@ class Yarn:
     async def setup(self):
         with ActivityIndicator(sublime.active_window(), f'Downloading Yarn'):
             yarn_url = 'https://github.com/yarnpkg/yarn/releases/download/v1.22.22/yarn-1.22.22.js'
-            self._yarn_path = await self.package_storage.download(yarn_url, 'yarn.js')
+            self._yarn_path = await runtime_storage_path.download(yarn_url, 'yarn.js')
 
 
 DenoVersion = Literal['2.2',]
@@ -30,16 +34,19 @@ class Deno:
         if deno_version not in deno_versions:
             raise Exception(f'{deno_version} is not supported, please specify one of f{deno_versions}')
         self.deno_version = deno_version
-        self.package_storage = PackageStorage('Mir', 'runtimes', 'deno', self.deno_version)
+        self.package_storage = runtime_storage_path / 'deno' / self.deno_version
 
+    @property
     def path(self) -> str:
-        return str(self.package_storage.storage_dir / 'deno' / 'deno')
+        return str(self.package_storage / 'deno' / 'deno')
 
     async def setup(self):
         with ActivityIndicator(sublime.active_window(), f'Downloading Deno {self.deno_version}'):
             fetch_url, archive_filename = self._archive_on_github()
-            downloaded_archive_path = await self.package_storage.download(fetch_url, archive_filename)
-            unzip(downloaded_archive_path, new_name='deno')
+            if not Path(self.path).exists():
+                save_to = self.package_storage / archive_filename
+                await runtime_storage_path.download(fetch_url, save_to)
+                unzip(save_to, new_name='deno')
             
     def _archive_on_github(self) -> tuple[str, str]:
         platform = sublime.platform()
@@ -87,26 +94,28 @@ class Electron:
         if node_version not in node_versions:
             raise Exception(f'{node_version} is not supported, please specify one of f{node_versions}')
         self.node_version = node_version
-        self.package_storage = PackageStorage('Mir', 'runtimes', 'electron_node', self.node_version)
+        self.package_storage = runtime_storage_path / 'electron_node' / self.node_version
 
+    @property
     def path(self) -> str:
         binary_path: str | None = None
         platform = sublime.platform()
         if platform == 'osx':
-            binary_path = str(self.package_storage.storage_dir / 'electron' / 'Electron.app' / 'Contents' / 'MacOS' / 'Electron')
+            binary_path = str(self.package_storage / 'electron' / 'Electron.app' / 'Contents' / 'MacOS' / 'Electron')
         elif platform == 'windows':
-            binary_path = str(self.package_storage.storage_dir / 'electron' / 'electron.exe')
+            binary_path = str(self.package_storage / 'electron' / 'electron.exe')
         else:
-            binary_path = str(self.package_storage.storage_dir / 'electron' / 'electron')
-        if not binary_path or not path.isfile(binary_path):
-            raise Exception('Electron NodeJS binary not found')
+            binary_path = str(self.package_storage / 'electron' / 'electron')
         return binary_path
 
     async def setup(self):
         with ActivityIndicator(sublime.active_window(), f'Downloading Node.js {self.node_version}'):
             fetch_url, archive_filename = self._archive_on_github()
-            downloaded_archive_path = await self.package_storage.download(fetch_url, archive_filename)
-            unzip(downloaded_archive_path, new_name='electron')
+            if not Path(self.path).exists():
+                save_to = self.package_storage / archive_filename
+                await runtime_storage_path.download(fetch_url, save_to)
+                unzip(save_to, new_name='electron')
+
             
     def _archive_on_github(self) -> tuple[str, str]:
         platform = sublime.platform()
@@ -132,8 +141,12 @@ os.environ.update({'ELECTRON_RUN_AS_NODE': 'true'})
 electron_node_22 = Electron('22')
 electron_node_20 = Electron('20')
 electron_node_18 = Electron('18')
+# electron_node is always latest
+electron_node = electron_node_22
 
 deno2_2 = Deno('2.2')
+# deno is always latest
+deno = deno2_2
 
 yarn = Yarn()
 
@@ -141,7 +154,7 @@ yarn = Yarn()
 async def run():
     await deno2_2.setup()
     await electron_node_22.setup()
-    await electron_node_20.setup()
-    await yarn.setup()
+    # await electron_node_20.setup()
+    # await yarn.setup()
 
 sublime_aio.run_coroutine(run())

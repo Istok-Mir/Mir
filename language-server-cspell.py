@@ -3,11 +3,11 @@ import sublime_plugin
 from Mir.types import URI, DocumentUri, TextEdit
 from Mir import LanguageServer, mir
 from typing import Dict, List, Optional, Tuple, TypedDict
-from .node_js import deno2_2
+from .runtimes import deno
 
 class CspellLanguageServer(LanguageServer):
     name='cSpell'
-    cmd=[deno2_2.path(), 'run', '-A', "/Users/predrag/Library/Caches/Sublime Text/Package Storage/LSP-cspell/20.18.0/language-server/_server/main.cjs", '--stdio']
+    cmd=[deno.path, 'run', '-A', "/Users/predrag/Library/Caches/Sublime Text/Package Storage/LSP-cspell/20.18.0/language-server/_server/main.cjs", '--stdio']
     activation_events={
         'selector': 'source.dosbatch | source.c | source.c++ | source.objc | source.objc++ | source.clojure | source.cs | source.cake | source.css | source.dart | source.diff | source.dockerfile | source.elixir | source.erlang | source.fsharp | text.git-commit | source.go | source.gomod | source.graphql | source.haskell | text.html.basic | source.ini | source.java | source.jsx | source.js.react | source.js | source.tsx | source.ts | source.json | source.julia | text.tex.latex | source.less | source.lua | source.makefile | text.html.markdown | source.perl | text.html.twig | text.blade | embedding.php | text.plain | source.powershell | source.python | source.r | source.ruby | source.rust | source.scala | source.scss | source.sql | source.swift | text.html.vue | text.xml | text.html.svelte | source.yml | source.yaml',
     }

@@ -1,13 +1,23 @@
 from __future__ import annotations
+from pathlib import Path
 from Mir import LanguageServer
+from .package_storage import PackageStorage, run_command_sync
 import sublime
 import sys
 import re
 import os
+from .runtimes import deno
+
+storage = PackageStorage(__package__, '0.0.2')
+storage.copy("./language-server")
+server_path = storage / "language-server" / "node_modules" / "pyright" / "langserver.index.js"
+
+if not server_path.exists():
+    run_command_sync([deno.path, "install"], cwd=str(storage / "language-server"))
 
 class PyrightLanguageServer(LanguageServer):
     name='pyright-langserver'
-    cmd=['pyright-langserver', '--stdio']
+    cmd=[deno.path, server_path, '--stdio']
     activation_events={
         'selector': 'source.python',
     }

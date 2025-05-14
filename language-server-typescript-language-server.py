@@ -1,12 +1,20 @@
 from typing import TypedDict
 from Mir import LanguageServer
 import sublime
+from .runtimes import deno
+from .package_storage import PackageStorage, run_command_sync
+
+
+storage = PackageStorage(__package__, '0.0.2')
+storage.copy("./language-server")
+server_path = storage / 'node_modules' / 'typescript-language-server' / 'lib' / 'cli.mjs'
+
+if not server_path.exists():
+    run_command_sync([deno.path, "install"], cwd=str(storage / "language-server"))
 
 class VtslsLanguageServer(LanguageServer):
     name='vtsls'
-    # cmd='vtsls --stdio'
-    # cmd='typescript-language-server --stdio'
-    cmd=['node', '/Users/predrag/Documents/sandbox/typescript-language-server/lib/cli.mjs', '--stdio']
+    cmd=[deno.path, server_path, '--stdio']
     activation_events={
         'selector': 'source.js, source.jsx, source.ts, source.tsx',
     }

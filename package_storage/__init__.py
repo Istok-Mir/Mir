@@ -11,28 +11,25 @@ import urllib.request
 import subprocess
 
 class PackageStorage:
-    def __init__(self, *pathsegments: str):
-        first, *rest = pathsegments
-        self.name = first
-        self.storage_dir = (Path(sublime.cache_path()) / ".." / "Package Storage" / self.name).joinpath(*rest).resolve()
-        self.package_dir = Path(sublime.packages_path()) / self.name
-        self.storage_dir.mkdir(parents=True, exist_ok=True)
+    def __init__(self, name: str, version: str):
+        self.name = name
+        self.version = version
+        self._storage_dir = (Path(sublime.cache_path()) / ".." / "Package Storage" / name / version).resolve()
+        self._package_dir = Path(sublime.packages_path()) / name
+        if not self._package_dir.exists():
+            raise Exception(f'"NAME" must match Package Name, but it was called with PackageStorage("{self.name}")')
+        self._storage_dir.mkdir(parents=True, exist_ok=True)
 
-    def is_same(self, file_path: str):
-        """Compare file in "Package Storage/MyPackage/file_path" and in "Packages/MyPackage/file_path" to see if the content is the same. """
-        try:
-            print(str("Packages" / Path(self.name) / file_path))
-            package_file_contents = sublime.load_resource(str("Packages" / Path(self.name) / file_path))
-        except:
-            return False
-
-        storage_file = self.storage_dir / file_path
-        if not storage_file.exists():
-            return False
-
-        with open(storage_file) as my_file:
-            storage_file_contents = my_file.read()
-        return self._hash_file(package_file_contents) == self._hash_file(storage_file_contents)
+    async def download(self, url: str, save_to_path: Path) -> None:
+        if save_to_path.exists():
+            return
+        async def download_sync():
+            with urllib.request.urlopen(url) as response:
+                save_to_path.parent.mkdir(parents=True, exist_ok=True)
+                with open(save_to_path, 'wb') as f:
+                    shutil.copyfileobj(response, f)
+                    return
+        await download_sync()
 
     def rm(self, relative_path):
         """ Remove folder/file from Package Storage """
@@ -43,36 +40,19 @@ class PackageStorage:
             else:
                 target.unlink()
 
-    def exists(self, filename: str) -> bool:
-        return path.isfile(self.storage_dir / filename) or path.isdir(self.storage_dir / filename)
-
-    async def download(self, url: str, file_name: str) -> str:
-        file_path = (self.storage_dir / file_name)
-        if file_path.exists():
-            return str(file_path)
-        async def download_sync():
-            with urllib.request.urlopen(url) as response:
-                with open(file_path, 'wb') as f:
-                    shutil.copyfileobj(response, f)
-                    return
-        await download_sync()
-        return str(file_path)
-
-    def copy(self, relative_path: str):
+    def copy(self, relative_path: str) -> None:
         """Copy file from `Packages/MyPackage/relative_path` to `Package Storage/MyPackage/relative_path` """
-        source = self.package_dir / relative_path
-        target = self.storage_dir / relative_path
-
+        source = self._package_dir / relative_path
+        target = self._storage_dir / relative_path
+        if target.exists():
+            return
         if source.is_dir():
             shutil.copytree(source, target, dirs_exist_ok=True)
         else:
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy(source, target)
 
-    async def run_command(self, command_dict):
-        cwd = command_dict.get('cwd')
-        cmd = command_dict.get('cmd')
-
+    async def run_command(self, cmd: list[str], cwd=None):
         process = await asyncio.create_subprocess_exec(
             *cmd,
             cwd=cwd,
@@ -90,23 +70,17 @@ class PackageStorage:
             raise Exception(f"Command failed with return code {process.returncode}")
 
     def __truediv__(self, other): # used to define the behavior of the true division operator /
-        return self.storage_dir / other
-
-    def _hash_file(self, content: str):
-        hasher = hashlib.sha256()
-        hasher.update(content.encode('utf-8')) #important to encode the string
-        return hasher.hexdigest()
+        return self._storage_dir / other
 
 
-def unzip(archive: str, new_name: str | None=None) -> None: # archive will be `folder/some.zip`
-    archive_path = Path(archive)
+def unzip(archive_path: Path, new_name: str | None=None) -> None: # archive will be `folder/some.zip`
     filename: str = archive_path.name # file name will be `some.zip`
     where_to_extract: str = str(archive_path.parent / archive_path.stem) # will be `folder/some` if new_name is not provided
     if new_name:
         where_to_extract = str(archive_path.parent / new_name)
     try:
         if sublime.platform() == 'windows':
-             with zipfile.ZipFile(archive) as f:
+             with zipfile.ZipFile(str(archive_path)) as f:
                 names = f.namelist()
                 _, _ = next(x for x in names if '/' in x).split('/', 1)
                 bad_members = [x for x in names if x.startswith('/') or x.startswith('..')]
@@ -114,16 +88,12 @@ def unzip(archive: str, new_name: str | None=None) -> None: # archive will be `f
                     raise Exception('{} appears to be malicious, bad filenames: {}'.format(filename, bad_members))
                 f.extractall(where_to_extract)
         else:
-            _, error = run_command_sync(['unzip', archive, '-d', where_to_extract], cwd=str(archive_path.parent))
+            _, error = run_command_sync(['unzip', str(archive_path), '-d', where_to_extract], cwd=str(archive_path.parent))
             if error:
                 raise Exception('Error unzipping electron archive: {}'.format(error))
 
     except Exception as ex:
         raise ex
-    finally:
-        ...
-        # os.remove(archive)                
-
 
 
 is_windows = sublime.platform() == 'windows'
