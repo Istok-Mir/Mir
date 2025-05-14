@@ -1,7 +1,7 @@
 from __future__ import annotations
 from pathlib import Path
 from Mir import LanguageServer
-from .package_storage import PackageStorage, run_command_sync
+from .package_storage import PackageStorage, run_command
 import sublime
 import sys
 import re
@@ -9,17 +9,60 @@ import os
 from .runtime import deno
 
 server_storage = PackageStorage(__package__, tag='0.0.2', sync_folder="./language-server")
-server_path = server_storage / "language-server" / "node_modules" / "pyright" / "langserver.index.js"
-
-if not server_path.exists():
-    run_command_sync([deno.path, "install"], cwd=str(server_storage / "language-server"))
 
 class PyrightLanguageServer(LanguageServer):
     name='pyright-langserver'
-    cmd=[deno.path, 'run', '-A', server_path, '--stdio']
     activation_events={
         'selector': 'source.python',
     }
+
+    async def activate(self):
+        # setup runtime and install dependecies
+        await deno.setup()
+        server_path = server_storage / "language-server" / "node_modules" / "pyright" / "langserver.index.js"
+        if not server_path.exists():
+            await run_command([deno.path, "install"], cwd=str(server_storage / "language-server"))
+
+        # start process
+        await self.connect('stdio', {
+            'cmd': [deno.path, 'run', '-A', server_path, '--stdio'],
+            'initialization_options': {'completionDisableFilterText': True, 'disableAutomaticTypingAcquisition': False, 'locale': 'en', 'maxTsServerMemory': 0, 'npmLocation': '', 'plugins': [], 'preferences': {'allowIncompleteCompletions': True, 'allowRenameOfImportPath': True, 'allowTextChangesInNewFiles': True, 'autoImportFileExcludePatterns': [], 'disableSuggestions': False, 'displayPartsForJSDoc': True, 'excludeLibrarySymbolsInNavTo': True, 'generateReturnInDocTemplate': True, 'importModuleSpecifierEnding': 'auto', 'importModuleSpecifierPreference': 'shortest', 'includeAutomaticOptionalChainCompletions': True, 'includeCompletionsForImportStatements': True, 'includeCompletionsForModuleExports': True, 'includeCompletionsWithClassMemberSnippets': True, 'includeCompletionsWithInsertText': True, 'includeCompletionsWithObjectLiteralMethodSnippets': True, 'includeCompletionsWithSnippetText': True, 'includePackageJsonAutoImports': 'auto', 'interactiveInlayHints': True, 'jsxAttributeCompletionStyle': 'auto', 'lazyConfiguredProjectsFromExternalProject': False, 'organizeImportsAccentCollation': True, 'organizeImportsCaseFirst': False, 'organizeImportsCollation': 'ordinal', 'organizeImportsCollationLocale': 'en', 'organizeImportsIgnoreCase': 'auto', 'organizeImportsNumericCollation': False, 'providePrefixAndSuffixTextForRename': True, 'provideRefactorNotApplicableReason': True, 'quotePreference': 'auto', 'useLabelDetailsInCompletionEntries': True}, 'tsserver': {'fallbackPath': '', 'logDirectory': '', 'logVerbosity': 'off', 'path': '', 'trace': 'off', 'useSyntaxServer': 'auto'}},
+            'settings': {
+                "statusText": "{% set parts = [] %}{% if server_version %}{% do parts.append('v' + server_version) %}{% endif %}{% if venv %}{% do parts.append('venv: ' + venv.venv_prompt) %}{% do parts.append('py: ' + venv.python_version) %}{% do parts.append('by: ' + venv.finder_name) %}{% endif %}{{ parts|join('; ') }}",
+                "venvStrategies": [
+                    "local_dot_venv",
+                    "env_var_conda_prefix",
+                    "env_var_virtual_env",
+                    "rye",
+                    "poetry",
+                    "pdm",
+                    "hatch",
+                    "pipenv",
+                    "pyenv",
+                    "any_subdirectory",
+                ],
+                "pyright.dev_environment": "",
+                "pyright.dev_environment_blender.binary": "blender",
+                "pyright.dev_environment_gdb.binary": "gdb",
+                "python.analysis.autoImportCompletions": True,
+                "python.analysis.autoSearchPaths": True,
+                "python.analysis.extraPaths": [],
+                "python.analysis.stubPath": "./typings",
+                "python.analysis.diagnosticMode": "openFilesOnly",
+                "python.analysis.diagnosticSeverityOverrides": {
+                },
+                "python.analysis.logLevel": "Information",
+                "python.analysis.typeCheckingMode": "standard",
+                "python.analysis.typeshedPaths": [],
+                "python.analysis.useLibraryCodeForTypes": True,
+                "pyright.disableLanguageServices": False,
+                "pyright.disableOrganizeImports": False,
+                "pyright.disableTaggedHints": False,
+                "python.pythonPath": "",
+                "python.venvPath": "",
+            }
+        })
+
 
     def on_settings_change(self):
         dev_environment = self.settings.get("pyright.dev_environment")

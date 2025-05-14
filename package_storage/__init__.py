@@ -53,23 +53,6 @@ class PackageStorage:
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy(source, target)
 
-    async def run_command(self, cmd: list[str], cwd=None):
-        process = await asyncio.create_subprocess_exec(
-            *cmd,
-            cwd=cwd,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
-        )
-        stdout, stderr = await process.communicate()
-
-        if process.returncode != 0:
-            print(f"Command failed: {cmd}")
-            if stdout:
-                print(f"stdout: {stdout.decode()}")
-            if stderr:
-                print(f"stderr: {stderr.decode()}")
-            raise Exception(f"Command failed with return code {process.returncode}")
-
     def __truediv__(self, other): # used to define the behavior of the true division operator /
         return self._storage_dir / other
 
@@ -129,3 +112,21 @@ def run_command_sync(
         return (output.decode('utf-8', 'ignore').strip(), None)
     except subprocess.CalledProcessError as error:
         return ('', error.output.decode('utf-8', 'ignore').strip())
+
+
+async def run_command(cmd: list[str], cwd=None):
+    process = await asyncio.create_subprocess_exec(
+        *cmd,
+        cwd=cwd,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE
+    )
+    stdout, stderr = await process.communicate()
+
+    if process.returncode != 0:
+        print(f"Command failed: {cmd}")
+        if stdout:
+            print(f"stdout: {stdout.decode()}")
+        if stderr:
+            print(f"stderr: {stderr.decode()}")
+        raise Exception(f"Command failed with return code {process.returncode}")

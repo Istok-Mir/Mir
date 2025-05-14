@@ -86,14 +86,12 @@ class MirCodeActionsCommand(sublime_plugin.TextCommand):
                 code_action = await req.result
             command = code_action.get('command')
             if isinstance(command, dict):
-                print('cmd dict', server_name, code_action)
                 self.view.run_command('mir_execute_command', {
                     'server_name': server_name,
                     'command': command['command'],
                     'arguments': command.get('arguments')
                 })
             if isinstance(command, str):
-                print('cmd str')
                 self.view.run_command('mir_execute_command', {
                     'server_name': server_name,
                     'command': command,

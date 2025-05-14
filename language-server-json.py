@@ -9,42 +9,40 @@ import sublime
 
 class JsonServer(LanguageServer):
     name='json'
-    cmd=['node', "/Users/predrag/Library/Caches/Sublime Text/Package Storage/LSP-json/20.18.0/language-server/out/node/jsonServerMain.js", '--stdio']
     activation_events={
         'selector': 'source.json',
     }
-
-    def before_initialize(self):
-        self.initialization_options.assign({
-            "customCapabilities.rangeFormatting.editLimit": 1000,
-            "handledSchemaProtocols": ["https", "http", "file"],
-            "provideFormatter": True,
-        })
-
-
-    def on_settings_change(self):
-        self.settings.update({
-            "json.validate.enable": True,
-            "json.format.enable": True,
-            "json.resultLimit": 5000,
-            "json.jsonFoldingLimit": 5000,
-            "json.jsoncFoldingLimit": 5000,
-            "json.jsonColorDecoratorLimit": 5000,
-            "json.jsoncColorDecoratorLimit": 5000,
-            "jsonc.patterns": [
-                "buffer://*",
-                ".babelrc",
-                ".eslintrc",
-                ".eslintrc.json",
-                ".hintrc",
-                ".jsfmtrc",
-                ".jshintrc",
-                ".jsonc",
-                ".swcrc",
-                "/.ember-cli",
-                "/.vscode/*.json",
-                "/babel.config.json",
-            ],
+    async def activate(self):
+        await self.connect('stdio', {
+            'cmd': ['node', "/Users/predrag/Library/Caches/Sublime Text/Package Storage/LSP-json/20.18.0/language-server/out/node/jsonServerMain.js", '--stdio'],
+            'initialization_options': {
+                "customCapabilities.rangeFormatting.editLimit": 1000,
+                "handledSchemaProtocols": ["https", "http", "file"],
+                "provideFormatter": True,
+            },
+            'settings': {
+              "json.validate.enable": True,
+              "json.format.enable": True,
+              "json.resultLimit": 5000,
+              "json.jsonFoldingLimit": 5000,
+              "json.jsoncFoldingLimit": 5000,
+              "json.jsonColorDecoratorLimit": 5000,
+              "json.jsoncColorDecoratorLimit": 5000,
+              "jsonc.patterns": [
+                  "buffer://*",
+                  ".babelrc",
+                  ".eslintrc",
+                  ".eslintrc.json",
+                  ".hintrc",
+                  ".jsfmtrc",
+                  ".jshintrc",
+                  ".jsonc",
+                  ".swcrc",
+                  "/.ember-cli",
+                  "/.vscode/*.json",
+                  "/babel.config.json",
+              ],
+          }
         })
         self.send_notification('json/schemaAssociations', [get_schemas()])
 

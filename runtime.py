@@ -147,12 +147,3 @@ deno2_2 = Deno('2.2')
 deno = deno2_2
 
 yarn = Yarn()
-
-# TODO remove this
-async def run():
-    await deno2_2.setup()
-    await electron_node_22.setup()
-    await electron_node_20.setup()
-    await yarn.setup()
-
-sublime_aio.run_coroutine(run())

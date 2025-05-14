@@ -6,7 +6,7 @@ from .pull_diagnostics import pull_diagnostics
 from .server_request_and_notification_handlers import attach_server_request_and_notification_handlers
 from .capabilities import CLIENT_CAPABILITIES, ServerCapabilities
 from .lsp_requests import LspRequest, LspNotification, Request
-from .types import DidChangeTextDocumentParams, ErrorCodes, MessageType, WorkspaceFolder
+from .types import DidChangeTextDocumentParams, ErrorCodes, LSPAny, MessageType, WorkspaceFolder
 from .communcation_logs import CommmunicationLogs, format_payload
 from .view_to_lsp import file_name_to_uri, get_view_uri
 from pathlib import Path
@@ -135,8 +135,6 @@ def register_language_server(server: LanguageServer):
     from .manage_servers import ManageServers
     if not hasattr(server, 'name'):
         raise Exception(f'Specify a `name` static property for {server.__name__}.')
-    if not hasattr(server, 'cmd'):
-        raise Exception(f'Specify a `cmd` static property` for {server.name}.')
     if not hasattr(server, 'activation_events'):
         raise Exception(f'Specify a `activation_events` static property` for {server.name}.')
     if server.name in [s.name for s in ManageServers.language_servers_plugins]:
@@ -153,9 +151,14 @@ def unregister_language_server(server: LanguageServer):
 
 server_callbacks_when_ready = []
 
+class LanguageServerConnectionOptions(TypedDict):
+    cmd: list[str]
+    env: NotRequired[dict]
+    initialization_options: NotRequired[dict]
+    settings: NotRequired[dict]
+
 class LanguageServer:
     name: str
-    cmd: list[str]
     activation_events: ActivationEvents
 
     def __init_subclass__(cls, **kwargs):
@@ -187,11 +190,40 @@ class LanguageServer:
         else:
             run()
 
-    def before_initialize(self):
+    async def activate(self):
         ...
 
     def on_settings_change(self):
         ...
+
+    async def connect(self, transport: Literal['stdio', 'tcp'], options: LanguageServerConnectionOptions):
+        if "initialization_options" in options:
+            self.initialization_options.update(options['initialization_options'])
+        if "settings" in options:
+            self.settings.update(options['settings'])
+        env = os.environ.copy()
+        if 'env' in options:
+            env.update(options['env'])
+
+        if transport == 'stdio':
+            try:
+                self.status = 'initializing'
+                self._process = await asyncio.create_subprocess_exec(
+                    *options['cmd'],
+                    stdout=asyncio.subprocess.PIPE,
+                    stdin=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
+                    env=env
+                )
+                sublime_aio.run_coroutine(self._run_forever())
+                if self._process.returncode and self._process.stderr: 
+                    error_message = await self._process.stderr.read()
+                    raise Exception(error_message.decode('utf-8', errors='ignore'))
+            except Exception as e:
+                print(f'Mir ({self.name}) Error while creating subprocess.', e)
+                self.status = 'off'
+        else: 
+            raise Exception('Mir: Only transport stdio is supported at the moment.')
 
     def __init__(self) -> None:
         self.status: Literal['off', 'initializing','ready'] = 'off'
@@ -232,49 +264,34 @@ class LanguageServer:
         self.window = window
         self._communcation_logs = CommmunicationLogs(self.name, window)
 
-        self.before_initialize()
-        try:
-            self.status = 'initializing'
-            self._process = await asyncio.create_subprocess_exec(
-                *self.cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stdin=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-                env=os.environ.copy()
-            )
-            sublime_aio.run_coroutine(self._run_forever())
-            await asyncio.sleep(0.1)
-            if self._process.returncode and self._process.stderr: 
-                error_message = await self._process.stderr.read()
-                raise Exception(error_message.decode('utf-8', errors='ignore'))
-            folders = window.folders() if window else []
-            first_foder = folders[0] if folders else ''
-            self.workspace_folders = [{'name': Path(f).name, 'uri':file_name_to_uri(f)} for f in folders]
-            first_folder_uri = self.workspace_folders[0]['uri'] if self.workspace_folders else None
-            initialize_result = await self.send.initialize({
-                'processId': self._process.pid,
-                'workspaceFolders': self.workspace_folders,
-                'rootUri': first_folder_uri,  # @deprecated in favour of `workspaceFolders`
-                'rootPath': first_foder,  # @deprecated in favour of `rootUri`.
-                'capabilities': CLIENT_CAPABILITIES,
-                'initializationOptions': self.initialization_options.get()
-            }).result
-            self.capabilities.assign(cast(dict, initialize_result['capabilities']))
-            self.register_providers()
-            self.notify.initialized({})
-            self.status = 'ready'
+        await self.activate()
+            
+        folders = window.folders() if window else []
+        first_foder = folders[0] if folders else ''
+        self.workspace_folders = [{'name': Path(f).name, 'uri':file_name_to_uri(f)} for f in folders]
+        first_folder_uri = self.workspace_folders[0]['uri'] if self.workspace_folders else None
+        initialize_result = await self.send.initialize({
+            'processId': self._process.pid,
+            'workspaceFolders': self.workspace_folders,
+            'rootUri': first_folder_uri,  # @deprecated in favour of `workspaceFolders`
+            'rootPath': first_foder,  # @deprecated in favour of `rootUri`.
+            'capabilities': CLIENT_CAPABILITIES,
+            'initializationOptions': self.initialization_options.get()
+        }).result
+        self.capabilities.assign(cast(dict, initialize_result['capabilities']))
+        self.register_providers()
+        self.notify.initialized({})
+        self.status = 'ready'
 
-            def update_settings_on_change():
-                self.settings.update(view.settings().to_dict())
-                self.on_settings_change()
-                self.notify.workspace_did_change_configuration({'settings': {}}) # https://github.com/microsoft/language-server-protocol/issues/567#issuecomment-420589320
-
+        def update_settings_on_change():
+            self.settings.update(view.settings().to_dict())
             self.on_settings_change()
-            self.view.settings().add_on_change('', update_settings_on_change)
             self.notify.workspace_did_change_configuration({'settings': {}}) # https://github.com/microsoft/language-server-protocol/issues/567#issuecomment-420589320
-        except Exception as e:
-            print(f'Mir ({self.name}) Error while creating subprocess.', e)
-            self.status = 'off'
+
+        self.on_settings_change()
+        self.view.settings().add_on_change('', update_settings_on_change)
+        self.notify.workspace_did_change_configuration({'settings': {}}) # https://github.com/microsoft/language-server-protocol/issues/567#issuecomment-420589320
+
 
     def stop(self):
         self.view.settings().clear_on_change('')
