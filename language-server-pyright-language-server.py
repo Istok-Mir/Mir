@@ -17,7 +17,7 @@ if not server_path.exists():
 
 class PyrightLanguageServer(LanguageServer):
     name='pyright-langserver'
-    cmd=[deno.path, server_path, '--stdio']
+    cmd=[deno.path, 'run', '-A', server_path, '--stdio']
     activation_events={
         'selector': 'source.python',
     }
