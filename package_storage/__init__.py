@@ -11,14 +11,16 @@ import urllib.request
 import subprocess
 
 class PackageStorage:
-    def __init__(self, name: str, version: str):
+    def __init__(self, name: str, tag: str, sync_folder: str = None):
         self.name = name
-        self.version = version
-        self._storage_dir = (Path(sublime.cache_path()) / ".." / "Package Storage" / name / version).resolve()
+        self.tag = tag
+        self._storage_dir = (Path(sublime.cache_path()) / ".." / "Package Storage" / name / tag).resolve()
         self._package_dir = Path(sublime.packages_path()) / name
         if not self._package_dir.exists():
             raise Exception(f'"NAME" must match Package Name, but it was called with PackageStorage("{self.name}")')
         self._storage_dir.mkdir(parents=True, exist_ok=True)
+        if sync_folder:
+            self.copy(sync_folder)
 
     async def download(self, url: str, save_to_path: Path) -> None:
         if save_to_path.exists():

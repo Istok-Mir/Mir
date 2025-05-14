@@ -8,12 +8,11 @@ import re
 import os
 from .runtimes import deno
 
-storage = PackageStorage(__package__, '0.0.2')
-storage.copy("./language-server")
-server_path = storage / "language-server" / "node_modules" / "pyright" / "langserver.index.js"
+server_storage = PackageStorage(__package__, tag='0.0.2', sync_folder="./language-server")
+server_path = server_storage / "language-server" / "node_modules" / "pyright" / "langserver.index.js"
 
 if not server_path.exists():
-    run_command_sync([deno.path, "install"], cwd=str(storage / "language-server"))
+    run_command_sync([deno.path, "install"], cwd=str(server_storage / "language-server"))
 
 class PyrightLanguageServer(LanguageServer):
     name='pyright-langserver'
