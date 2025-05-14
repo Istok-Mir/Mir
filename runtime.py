@@ -13,18 +13,16 @@ runtime_storage_path = PackageStorage('Mir', tag='runtime')
 class Yarn:
     def __init__(self) -> None:
         self.package_storage = runtime_storage_path / 'yarn'
-        self._path = None
 
     @property
     def path(self) -> str:
-        if not self._path or not path.isfile(self._path):
-            raise Exception('Yarn binary not found')
-        return self._path
+        return self.package_storage / 'yarn.js'
 
     async def setup(self):
         with ActivityIndicator(sublime.active_window(), f'Downloading Yarn'):
             yarn_url = 'https://github.com/yarnpkg/yarn/releases/download/v1.22.22/yarn-1.22.22.js'
-            self._yarn_path = await runtime_storage_path.download(yarn_url, 'yarn.js')
+            save_to = self.package_storage / 'yarn.js'
+            await runtime_storage_path.download(yarn_url, save_to)
 
 
 DenoVersion = Literal['2.2',]
@@ -154,7 +152,7 @@ yarn = Yarn()
 async def run():
     await deno2_2.setup()
     await electron_node_22.setup()
-    # await electron_node_20.setup()
-    # await yarn.setup()
+    await electron_node_20.setup()
+    await yarn.setup()
 
 sublime_aio.run_coroutine(run())
