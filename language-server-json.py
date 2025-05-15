@@ -13,6 +13,29 @@ class JsonServer(LanguageServer):
         'selector': 'source.json',
     }
     async def activate(self):
+        self.settings.update({
+            "json.validate.enable": True,
+            "json.format.enable": True,
+            "json.resultLimit": 5000,
+            "json.jsonFoldingLimit": 5000,
+            "json.jsoncFoldingLimit": 5000,
+            "json.jsonColorDecoratorLimit": 5000,
+            "json.jsoncColorDecoratorLimit": 5000,
+            "jsonc.patterns": [
+                "buffer://*",
+                ".babelrc",
+                ".eslintrc",
+                ".eslintrc.json",
+                ".hintrc",
+                ".jsfmtrc",
+                ".jshintrc",
+                ".jsonc",
+                ".swcrc",
+                "/.ember-cli",
+                "/.vscode/*.json",
+                "/babel.config.json",
+            ],
+        })
         await self.connect('stdio', {
             'cmd': ['node', "/Users/predrag/Library/Caches/Sublime Text/Package Storage/LSP-json/20.18.0/language-server/out/node/jsonServerMain.js", '--stdio'],
             'initialization_options': {
@@ -20,29 +43,6 @@ class JsonServer(LanguageServer):
                 "handledSchemaProtocols": ["https", "http", "file"],
                 "provideFormatter": True,
             },
-            'settings': {
-              "json.validate.enable": True,
-              "json.format.enable": True,
-              "json.resultLimit": 5000,
-              "json.jsonFoldingLimit": 5000,
-              "json.jsoncFoldingLimit": 5000,
-              "json.jsonColorDecoratorLimit": 5000,
-              "json.jsoncColorDecoratorLimit": 5000,
-              "jsonc.patterns": [
-                  "buffer://*",
-                  ".babelrc",
-                  ".eslintrc",
-                  ".eslintrc.json",
-                  ".hintrc",
-                  ".jsfmtrc",
-                  ".jshintrc",
-                  ".jsonc",
-                  ".swcrc",
-                  "/.ember-cli",
-                  "/.vscode/*.json",
-                  "/babel.config.json",
-              ],
-          }
         })
         self.send_notification('json/schemaAssociations', [get_schemas()])
 

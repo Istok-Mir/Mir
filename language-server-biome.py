@@ -7,8 +7,8 @@ class BiomeLanguageServer(LanguageServer):
     }
 
     async def activate(self):
+        self.settings.update({"biome.lspBin": None, "biome.rename": None})
         await self.connect('stdio', {
             'cmd': ['node', "/Users/predrag/Library/Caches/Sublime Text/Package Storage/LSP-biome/20.18.0/language-server/node_modules/@biomejs/biome/bin/biome", 'lsp-proxy'],
-            'settings': {"biome.lspBin": None, "biome.rename": None}
         })
 

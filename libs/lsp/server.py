@@ -155,7 +155,6 @@ class LanguageServerConnectionOptions(TypedDict):
     cmd: list[str]
     env: NotRequired[dict]
     initialization_options: NotRequired[dict]
-    settings: NotRequired[dict]
 
 class LanguageServer:
     name: str
@@ -199,8 +198,6 @@ class LanguageServer:
     async def connect(self, transport: Literal['stdio', 'tcp'], options: LanguageServerConnectionOptions):
         if "initialization_options" in options:
             self.initialization_options.update(options['initialization_options'])
-        if "settings" in options:
-            self.settings.update(options['settings'])
         env = os.environ.copy()
         if 'env' in options:
             env.update(options['env'])

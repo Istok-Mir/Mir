@@ -3,6 +3,7 @@ from Mir import LanguageServer
 import sublime
 from .runtime import deno
 from .package_storage import PackageStorage, run_command
+from sublime_lib import ActivityIndicator
 
 
 server_storage = PackageStorage(__package__, tag='0.0.2', sync_folder="./language-server")
@@ -17,7 +18,8 @@ class VtslsLanguageServer(LanguageServer):
         await deno.setup()
         server_path = server_storage / "language-server" / 'node_modules' / 'typescript-language-server' / 'lib' / 'cli.mjs'
         if not server_path.exists():
-            await run_command([deno.path, "install"], cwd=str(server_storage / "language-server"))
+            with ActivityIndicator(sublime.active_window(), f'installing {self.name}'):
+                await run_command([deno.path, "install"], cwd=str(server_storage / "language-server"))
 
         self.on_request('custom_request', custom_request_handler)
         self.on_notification('$/typescriptVersion', on_typescript_version)
