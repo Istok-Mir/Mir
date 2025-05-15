@@ -159,6 +159,7 @@ class LanguageServerConnectionOptions(TypedDict):
 class LanguageServer:
     name: str
     activation_events: ActivationEvents
+    settings_file: NotRequired[str]
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -192,8 +193,6 @@ class LanguageServer:
     async def activate(self):
         ...
 
-    def on_settings_change(self):
-        ...
 
     async def connect(self, transport: Literal['stdio', 'tcp'], options: LanguageServerConnectionOptions):
         if "initialization_options" in options:
@@ -224,20 +223,29 @@ class LanguageServer:
 
     def __init__(self) -> None:
         self.status: Literal['off', 'initializing','ready'] = 'off'
+
         self.send = LspRequest(self.send_request)
         self.notify = LspNotification(self.send_notification)
         self.capabilities = ServerCapabilities()
+
         self.view: sublime.View = sublime.View(-1)
         self.open_views: list[sublime.View] = []
         self.window: sublime.Window = sublime.Window(-1)
-        self.settings = DottedDict()
+
+        default_setting = sublime.load_settings(self.settings_file).to_dict() if hasattr(self, 'settings_file') else None
+        self.settings = DottedDict(default_setting)
+
         self.initialization_options = DottedDict()
+
         self.diagnostics = DiagnosticCollection()
+
         self._process = None
         self._received_shutdown = False
+
         self.workspace_folders: list[WorkspaceFolder] = []
 
         self.pending_changes: dict[int, DidChangeTextDocumentParams] = {}
+
         self.request_id = 1
         # equests sent from client
         self._response_handlers: Dict[Any, Request] = {}
@@ -254,7 +262,7 @@ class LanguageServer:
 
     async def start(self, view: sublime.View):
         self.view = view
-        self.settings.update(view.settings().to_dict())
+        self.settings.update(view.settings().get('mir.language_server_settings', {}))
         window = view.window()
         if not window:
             raise Exception('A window must exists now')
@@ -281,17 +289,15 @@ class LanguageServer:
         self.status = 'ready'
 
         def update_settings_on_change():
-            self.settings.update(view.settings().to_dict())
-            self.on_settings_change()
+            self.settings.update(view.settings().get('mir.language_server_settings', {}))
             self.notify.workspace_did_change_configuration({'settings': {}}) # https://github.com/microsoft/language-server-protocol/issues/567#issuecomment-420589320
 
-        self.on_settings_change()
-        self.view.settings().add_on_change('', update_settings_on_change)
+        self.view.settings().add_on_change('mir-settings-listener', update_settings_on_change)
         self.notify.workspace_did_change_configuration({'settings': {}}) # https://github.com/microsoft/language-server-protocol/issues/567#issuecomment-420589320
 
 
     def stop(self):
-        self.view.settings().clear_on_change('')
+        self.view.settings().clear_on_change('mir-settings-listener')
         sublime_aio.run_coroutine(self.shutdown())
 
     def register_providers(self):

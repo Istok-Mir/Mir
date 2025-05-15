@@ -16,6 +16,7 @@ class PyrightLanguageServer(LanguageServer):
     activation_events={
         'selector': 'source.python',
     }
+    settings_file="PyrightLanguageServer.sublime-settings"
 
     async def activate(self):
         # setup runtime and install dependencies
@@ -25,40 +26,7 @@ class PyrightLanguageServer(LanguageServer):
             with ActivityIndicator(sublime.active_window(), f'installing {self.name}'):
                 await run_command([deno.path, "install"], cwd=str(server_storage / "language-server"))
 
-        self.settings.update({
-            "statusText": "{% set parts = [] %}{% if server_version %}{% do parts.append('v' + server_version) %}{% endif %}{% if venv %}{% do parts.append('venv: ' + venv.venv_prompt) %}{% do parts.append('py: ' + venv.python_version) %}{% do parts.append('by: ' + venv.finder_name) %}{% endif %}{{ parts|join('; ') }}",
-            "venvStrategies": [
-                "local_dot_venv",
-                "env_var_conda_prefix",
-                "env_var_virtual_env",
-                "rye",
-                "poetry",
-                "pdm",
-                "hatch",
-                "pipenv",
-                "pyenv",
-                "any_subdirectory",
-            ],
-            "pyright.dev_environment": "sublime_text_38",
-            "pyright.dev_environment_blender.binary": "blender",
-            "pyright.dev_environment_gdb.binary": "gdb",
-            "python.analysis.autoImportCompletions": True,
-            "python.analysis.autoSearchPaths": True,
-            "python.analysis.extraPaths": [],
-            "python.analysis.stubPath": "./typings",
-            "python.analysis.diagnosticMode": "openFilesOnly",
-            "python.analysis.diagnosticSeverityOverrides": {
-            },
-            "python.analysis.logLevel": "Information",
-            "python.analysis.typeCheckingMode": "standard",
-            "python.analysis.typeshedPaths": [],
-            "python.analysis.useLibraryCodeForTypes": True,
-            "pyright.disableLanguageServices": False,
-            "pyright.disableOrganizeImports": False,
-            "pyright.disableTaggedHints": False,
-            "python.pythonPath": "",
-            "python.venvPath": "",
-        })
+        # tweak settings
         dev_environment = self.settings.get("pyright.dev_environment")
         extraPaths: list[str] = self.settings.get("python.analysis.extraPaths") or []
         # if dev_environment in {"sublime_text_33", "sublime_text_38"}:
