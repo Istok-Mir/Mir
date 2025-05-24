@@ -100,9 +100,7 @@ class MirCodeActionsCommand(sublime_plugin.TextCommand):
             edit = code_action.get('edit')
             if not edit:
                 return
-            print('edit')
             await apply_workspace_edit(self.view, edit)
-            print('selected', items[i])
         self.view.show_popup_menu([i[0] for i in items], on_done)
 
 

@@ -3,6 +3,7 @@ from ..libs.lsp.view_to_lsp import open_view_with_uri, range_to_region, region_t
 from ..libs.lsp.minihtml import minihtml, MinihtmlKind
 from ..libs.lsp.manage_servers import servers_for_view, servers_for_window, server_for_view
 from ..libs.lsp.workspace_edit import apply_workspace_edit, apply_text_document_edits
+from ..libs.activity_indicator import ActivityIndicator
 from ..open_view import save_view, open_view
 
 __all__ = (
@@ -28,5 +29,7 @@ __all__ = (
     'server_for_view',
 
     'save_view',
-    'open_view'
+    'open_view',
+
+    'ActivityIndicator'
 )

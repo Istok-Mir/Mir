@@ -1,4 +1,5 @@
 from __future__ import annotations
+from .maintainers.clone_projects import CloneMirProjectsCommand, OpenMirProjectsCommand
 from .libs.lsp.manage_servers import ManageServers
 from .libs.lsp.text_change_listener import MirTextChangeListener
 from .libs.lsp.providers import callbacks_when_ready

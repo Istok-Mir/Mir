@@ -1,0 +1,40 @@
+{
+    "packages": [
+        {
+            "details": "https://github.com/Istok-Mir/Mir-basedpyright",
+            "name": "Mir-basedpyright"
+        },
+        {
+            "details": "https://github.com/Istok-Mir/Mir-biome",
+            "name": "Mir-biome"
+        },
+        {
+            "details": "https://github.com/Istok-Mir/Mir-cspell",
+            "name": "Mir-cspell"
+        },
+        {
+            "details": "https://github.com/Istok-Mir/Mir-eslint",
+            "name": "Mir-eslint"
+        },
+        {
+            "details": "https://github.com/Istok-Mir/Mir-gopls",
+            "name": "Mir-gopls"
+        },
+        {
+            "details": "https://github.com/Istok-Mir/Mir-json",
+            "name": "Mir-json"
+        },
+        {
+            "details": "https://github.com/Istok-Mir/Mir-package-version",
+            "name": "Mir-package-version"
+        },
+        {
+            "details": "https://github.com/Istok-Mir/Mir-tailwindcss",
+            "name": "Mir-tailwindcss"
+        },
+        {
+            "details": "https://github.com/Istok-Mir/Mir-typescript",
+            "name": "Mir-typescript"
+        }
+    ]
+}

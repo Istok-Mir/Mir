@@ -8,6 +8,7 @@ import os
 import zipfile
 import urllib.request
 import subprocess
+import tarfile
 
 class PackageStorage:
     def __init__(self, name: str, tag: str, sync_folder: str = None):
@@ -71,10 +72,15 @@ def unzip(archive_path: Path, new_name: str | None=None) -> None: # archive will
                 if bad_members:
                     raise Exception('{} appears to be malicious, bad filenames: {}'.format(filename, bad_members))
                 f.extractall(where_to_extract)
-        else:
+        elif str(archive_path).endswith('.zip'):
             _, error = run_command_sync(['unzip', str(archive_path), '-d', where_to_extract], cwd=str(archive_path.parent))
             if error:
                 raise Exception('Error unzipping electron archive: {}'.format(error))
+        elif str(archive_path).endswith('.tar.gz'):
+             with tarfile.open(archive_path) as f:
+                 f.extractall(where_to_extract)
+        else:
+            raise Exception(f'Mir: Failed unzipping this file: {archive_path}')
 
     except Exception as ex:
         raise ex

@@ -1,6 +1,6 @@
 from __future__ import annotations
 import os
-
+import re
 from .pull_diagnostics import pull_diagnostics
 
 from .server_request_and_notification_handlers import attach_server_request_and_notification_handlers
@@ -211,13 +211,20 @@ class LanguageServer:
                     stderr=asyncio.subprocess.PIPE,
                     env=env
                 )
+
+                await asyncio.sleep(0.2)
+                if self._process.returncode and self._process.stderr:
+                    error_message = (await self._process.stderr.read()).decode('utf-8', errors='ignore')
+                    error_message_wihout_ascii_chars = re.sub(r'(?:\x1B[@-_]|[\x80-\x9F])[0-?]*[ -/]*[@-~]',' ', error_message)
+                    final_message = f"Command: '{' '.join([str(o) for o in options['cmd']])}'" + '\nExited with: ' + error_message_wihout_ascii_chars
+                    self._communcation_logs.append(final_message)
+                    raise Exception(final_message)
+
                 sublime_aio.run_coroutine(self._run_forever())
-                if self._process.returncode and self._process.stderr: 
-                    error_message = await self._process.stderr.read()
-                    raise Exception(error_message.decode('utf-8', errors='ignore'))
             except Exception as e:
                 print(f'Mir ({self.name}) Error while creating subprocess.', e)
                 self.status = 'off'
+                raise e
         else: 
             raise Exception('Mir: Only transport stdio is supported at the moment.')
 
@@ -258,8 +265,6 @@ class LanguageServer:
 
         self.diagnostics_previous_result_id: str | None = None
 
-        attach_server_request_and_notification_handlers(self)
-
     async def start(self, view: sublime.View):
         self.view = view
         self.settings.update(view.settings().get('mir.language_server_settings', {}))
@@ -269,8 +274,8 @@ class LanguageServer:
         self.window = window
         self._communcation_logs = CommmunicationLogs(self.name, window)
 
-        await self.activate()
-            
+        await self.activate() # lots of stuff can fail here
+
         folders = window.folders() if window else []
         first_foder = folders[0] if folders else ''
         self.workspace_folders = [{'name': Path(f).name, 'uri':file_name_to_uri(f)} for f in folders]
@@ -284,9 +289,12 @@ class LanguageServer:
             'initializationOptions': self.initialization_options.get()
         }).result
         self.capabilities.assign(cast(dict, initialize_result['capabilities']))
+
         self.register_providers()
-        self.notify.initialized({})
+        attach_server_request_and_notification_handlers(self) # call this only after a successful initialize
         self.status = 'ready'
+
+        self.notify.initialized({})
 
         def update_settings_on_change():
             self.settings.update(view.settings().get('mir.language_server_settings', {}))
@@ -315,6 +323,7 @@ class LanguageServer:
     async def shutdown(self):
         for cb in self.before_shutdown:
             cb()
+        self.cancel_all_requests('Cancelling requests due to shutting down.')
         await self.send.shutdown().result
         self._received_shutdown = True
         self.notify.exit()
@@ -348,6 +357,7 @@ class LanguageServer:
                     continue
                 body = await self._process.stdout.readexactly(num_bytes)
                 await self._handle_body(body, num_bytes)
+            self.cancel_all_requests('The process exited so stopping all requests.')
         except (BrokenPipeError, ConnectionResetError) as e:
             print(f'Mir ({self.name}). BrokenPipeError, ConnectionResetError', e)
             pass
@@ -408,6 +418,11 @@ class LanguageServer:
         self._communcation_logs.append(f'Sending request "{method}" ({request_id})\nParams: {format_payload(params)}')
         sublime_aio.run_coroutine(self._send_payload(make_request(method, request_id, params)))
         return response
+
+    def cancel_all_requests(self, message: str):
+        for request_id in self._response_handlers:
+            response = self._response_handlers[request_id]
+            response.result.set_exception(Exception(message))
 
     def _send_payload_sync(self, payload: dict) -> None:
         if not self._process or not self._process.stdin:
@@ -499,3 +514,10 @@ class LanguageServer:
         for _, did_change_text_document_params in pending_changes:
             self.notify.did_change_text_document(did_change_text_document_params)
             sublime_aio.run_coroutine(pull_diagnostics(self, did_change_text_document_params['textDocument']['uri']))
+
+def strip_ansi_codes(text):
+    """
+    Removes ANSI escape codes from a string.
+    """
+    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+    return ansi_escape.sub('', text)

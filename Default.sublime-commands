@@ -1,0 +1,17 @@
+[
+    {
+        "caption": "Preferences: Mir Maintainers Settings",
+        "command": "edit_settings",
+        "args": {
+            "base_file": "${packages}/Mir/maintainers/mir_maintainers.sublime-settings",
+        }
+    },
+    {
+        "caption": "Mir Maintainers: Clone Projects",
+        "command": "clone_mir_projects"
+    },
+    {
+        "caption": "Mir Maintainers: Open Projects",
+        "command": "open_mir_projects"
+    }
+]
