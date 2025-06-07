@@ -8,7 +8,7 @@ import sys
 from .manage_servers import server_for_view, servers_for_view
 from .providers import CodeActionProvider, Providers, HoverProvider, CompletionProvider, DefinitionProvider, DocumentSymbolProvider, ReferencesProvider
 from .server import is_applicable_view
-from .types import CodeAction, CodeActionContext, Command, Definition, DocumentSymbol, Location, SymbolInformation, LocationLink, Hover, CompletionItem, CompletionList, DocumentUri, Diagnostic
+from Mir.types.lsp import CodeAction, CodeActionContext, Command, Definition, DocumentSymbol, Location, SymbolInformation, LocationLink, Hover, CompletionItem, CompletionList, DocumentUri, Diagnostic
 from .view_to_lsp import get_view_uri, range_to_region
 import sublime
 

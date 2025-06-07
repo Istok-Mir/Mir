@@ -1,7 +1,7 @@
 from __future__ import annotations
 import sublime
 from typing import Tuple
-from .types import CompletionItemKind
+from Mir.types.lsp import CompletionItemKind
 
 SublimeKind = Tuple[int, str, str]
 

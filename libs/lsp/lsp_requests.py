@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 # Code generated. DO NOT EDIT.
-from . import types as lsp_types
+import Mir.types.lsp as lsp_types
 from typing import TYPE_CHECKING, List, Union, TypeVar, Generic
 import asyncio
 import datetime

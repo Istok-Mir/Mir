@@ -7,7 +7,7 @@ from .view_to_lsp import get_view_uri, point_to_position, region_to_range
 import sublime
 if TYPE_CHECKING:
     import sublime
-    from .types import CompletionItem, CompletionList, Definition, LocationLink, Hover, SymbolInformation, DocumentSymbol, Location, CodeAction, Command, CodeActionContext
+    from Mir.types.lsp import CompletionItem, CompletionList, Definition, LocationLink, Hover, SymbolInformation, DocumentSymbol, Location, CodeAction, Command, CodeActionContext
     from .capabilities import ServerCapability
     from .server import LanguageServer
 

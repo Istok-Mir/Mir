@@ -3,7 +3,7 @@ from typing import List, Union
 
 from sublime_plugin import importlib
 from .server import ActivationEvents
-from .types import CodeActionContext, CompletionItem, Hover, CompletionList, Definition, Location, LocationLink, SymbolInformation, DocumentSymbol, Command, CodeAction
+from Mir.types.lsp import CodeActionContext, CompletionItem, Hover, CompletionList, Definition, Location, LocationLink, SymbolInformation, DocumentSymbol, Command, CodeAction
 import sublime
 
 callbacks_when_ready = []

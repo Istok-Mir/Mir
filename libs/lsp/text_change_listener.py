@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Iterable, TYPE_CHECKING
 
 from .manage_servers import servers_for_view
-from .types import TextDocumentContentChangeEvent, TextDocumentSyncKind, TextDocumentSyncOptions
+from Mir.types.lsp import TextDocumentContentChangeEvent, TextDocumentSyncKind, TextDocumentSyncOptions
 from .view_to_lsp import get_view_uri
 import sublime_plugin
 import sublime

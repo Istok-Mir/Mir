@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import List, Tuple, Iterator
-from .types import DocumentUri, Diagnostic  # Assuming you're importing these from `lsp_types`
+from Mir.types.lsp import DocumentUri, Diagnostic
 
 
 class DiagnosticCollection:

@@ -1,6 +1,6 @@
 from __future__ import annotations
 from .dotted_dict import DottedDict
-from .types import ClientCapabilities, CodeActionKind, CompletionItemKind, CompletionItemTag, FoldingRangeKind, InsertTextMode, MarkupKind, PrepareSupportDefaultBehavior, SymbolKind, SymbolTag,DiagnosticTag, TokenFormat
+from Mir.types.lsp import ClientCapabilities, CodeActionKind, CompletionItemKind, CompletionItemTag, FoldingRangeKind, InsertTextMode, MarkupKind, PrepareSupportDefaultBehavior, SymbolKind, SymbolTag,DiagnosticTag, TokenFormat
 from typing import Any, Literal, cast
 
 

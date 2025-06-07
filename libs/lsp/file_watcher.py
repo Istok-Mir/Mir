@@ -3,7 +3,7 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import sublime
 from wcmatch.glob import globmatch, GLOBSTAR
-from .types import CreateFilesParams, RenameFilesParams, DeleteFilesParams, DidChangeWatchedFilesParams, FileChangeType
+from Mir.types.lsp import CreateFilesParams, RenameFilesParams, DeleteFilesParams, DidChangeWatchedFilesParams, FileChangeType
 from .view_to_lsp import file_name_to_uri
 from typing import TypedDict, Callable
 import posixpath

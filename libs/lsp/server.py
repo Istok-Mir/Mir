@@ -6,7 +6,7 @@ from .pull_diagnostics import pull_diagnostics
 from .server_request_and_notification_handlers import attach_server_request_and_notification_handlers
 from .capabilities import CLIENT_CAPABILITIES, ServerCapabilities
 from .lsp_requests import LspRequest, LspNotification, Request
-from .types import DidChangeTextDocumentParams, ErrorCodes, InitializeParams, LSPAny, MessageType, WorkspaceFolder
+from Mir.types.lsp import DidChangeTextDocumentParams, ErrorCodes, InitializeParams, LSPAny, MessageType, WorkspaceFolder
 from .communcation_logs import CommmunicationLogs, format_payload
 from .view_to_lsp import file_name_to_uri, get_view_uri
 from pathlib import Path
