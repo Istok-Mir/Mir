@@ -130,9 +130,9 @@ async def command(cmd: list[str], cwd=None):
     stdout, stderr = await process.communicate()
 
     if process.returncode != 0:
-        mir_logger.debug(f"Command failed: {cmd}")
+        mir_logger.error(f"Command failed: {cmd}")
         if stdout:
-            mir_logger.debug(f"stdout: {stdout.decode()}")
+            mir_logger.error(f"stdout: {stdout.decode()}")
         if stderr:
-            mir_logger.debug(f"stderr: {stderr.decode()}")
+            mir_logger.error(f"stderr: {stderr.decode()}")
         raise Exception(f"Command failed with return code {process.returncode}")

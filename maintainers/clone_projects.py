@@ -19,13 +19,13 @@ def clone(window: sublime.Window):
     for package in packages:
         already_exist = os.path.exists(os.path.join(packages_path, package['name']))
         if already_exist:
-            mir_logger.debug('Project {} already exist'.format(package['name']))
+            mir_logger.info('Project {} already exist'.format(package['name']))
             continue
         ssh_repo_link = package['details'].replace("https://github.com/", "git@github.com:") + ".git"
         setup_command = "git clone {} ${{packages}}/{}".format(ssh_repo_link, package['name'])
         cmd = setup_command.split(" ")
         cmd = sublime.expand_variables(cmd, variables)
-        mir_logger.debug('Running setup command for {}:\n{}'.format(package['name'], cmd))
+        mir_logger.info('Running setup command for {}:\n{}'.format(package['name'], cmd))
         window.status_message('Setting up {}.'.format(package['name']))
         run_command(cmd)
 

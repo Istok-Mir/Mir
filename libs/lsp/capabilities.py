@@ -349,7 +349,7 @@ class ServerCapabilities(DottedDict):
         capability = self.get(server_capability)
         if isinstance(capability, str):
             msg = f"{server_capability} is already registered. Skipping."
-            mir_logger.debug(msg)
+            mir_logger.info(msg)
             return
         self.set(server_capability, options)
 
@@ -359,6 +359,6 @@ class ServerCapabilities(DottedDict):
     ) -> None:
         capability = self.get(server_capability)
         if not capability:
-            mir_logger.debug(f"{server_capability} is not present in the current capabilities. Skipping.")
+            mir_logger.info(f"{server_capability} is not present in the current capabilities. Skipping.")
             return
         self.remove(server_capability)

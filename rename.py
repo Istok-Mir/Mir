@@ -31,7 +31,7 @@ class MirRenameCommand(sublime_aio.ViewCommand):
                 })
                 result = await asyncio.wait_for(req.result, MAX_WAIT_TIME)
             except Exception as e:
-                mir_logger(f'Error happened in provider {server.name}', e)
+                mir_logger.error(f'Error happened in provider {server.name}', e)
                 return (server.name, None)
             return (server.name, result)
 
@@ -42,7 +42,7 @@ class MirRenameCommand(sublime_aio.ViewCommand):
                 *[handle(server) for server in servers],
             )
         except Exception as e:
-            mir_logger('Mir (Prepare Rename):', e)
+            mir_logger.error('Mir (Prepare Rename):', e)
 
         server_name, response = next(iter([(server_name, response) for (server_name, response) in results if response]), ('', None))
         w = self.view.window()
@@ -63,7 +63,7 @@ class MirRenameCommand(sublime_aio.ViewCommand):
             v = w.show_input_panel('Mir Rename:', initial_text, on_done, None, None)
             v.run_command('select_all')
         else:
-            mir_logger('TODO implemet other rename reponses')
+            mir_logger.info('TODO implemet other rename reponses')
 
     async def rename(self, server: LanguageServer, point: int, new_name: str):
         req = server.send.rename({

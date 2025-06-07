@@ -20,7 +20,7 @@ class MirApplyWorkspaceEdit(sublime_aio.ViewCommand):
                 for change in document_changes:
                     was_open = False
                     if not is_text_document_edit(change):
-                        mir_logger.debug("Mir: TODO implement change", change)
+                        mir_logger.info("Mir: TODO implement change", change)
                         continue
                     schema, file_path = parse_uri(change['textDocument']['uri'])
                     view = window.find_open_file(file_path)
@@ -46,7 +46,7 @@ class MirApplyWorkspaceEdit(sublime_aio.ViewCommand):
                     if not was_open:
                         view.close()
                 return
-            mir_logger.debug('Mir: TODO implement workspace_edit for', document_changes)
+            mir_logger.info('Mir: TODO implement workspace_edit for', document_changes)
         finally:
             future = FutureWithId.get(future_id)
             if future:
@@ -61,7 +61,7 @@ class MirApplyTextDocumentEditsCommand(sublime_plugin.TextCommand):
             if is_text_edit(e):
                 text_edits.append(e)
             else:
-                mir_logger.debug('Mir TODO implement edit for', e)
+                mir_logger.info('Mir TODO implement edit for', e)
         for text_edit in reversed(text_edits):
             self.view.replace(edit, range_to_region(self.view, text_edit['range']), text_edit['newText'])
         sublime_aio.run_coroutine(self.save(future_id))
