@@ -1,10 +1,9 @@
 from __future__ import annotations
 import sublime_aio
 
-from .libs.lsp.manage_servers import server_for_view
-from .libs.lsp.types import ExecuteCommandParams
+from Mir.types.lsp import ExecuteCommandParams
+from Mir import mir, server_for_view
 from typing import Any
-from Mir import mir
 
 class MirExecuteCommandCommand(sublime_aio.ViewCommand):
     async def run(self, server_name: str, command: str | None = None, arguments: list[Any] | None = None) -> None:

@@ -2,10 +2,10 @@ from __future__ import annotations
 import html
 from .hover import strip_html_tags
 import sublime
+import sublime_aio
 import sublime_plugin
 from Mir import mir, position_to_point, minihtml, MinihtmlKind
-from Mir.types import Diagnostic
-import sublime_aio
+from Mir.types.lsp import Diagnostic
 import operator
 
 

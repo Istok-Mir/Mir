@@ -1,9 +1,7 @@
 from __future__ import annotations
-from .libs.lsp.view_to_lsp import parse_uri, position_to_point
 import sublime
-from Mir import mir
+from Mir import mir, parse_uri, position_to_point, open_view
 import sublime_aio
-from .open_view import open_view
 
 
 class MirGotoDefinitionCommand(sublime_aio.ViewCommand):

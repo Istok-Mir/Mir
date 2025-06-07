@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-from .libs.lsp.workspace_edit import apply_workspace_edit
-from .libs.lsp.manage_servers import server_for_view
 from .libs.lsp.mir import SourceName
 
-from Mir.types import CodeActionTriggerKind, Diagnostic, CodeAction, Command, CodeActionKind, CodeActionContext
-from Mir import mir, range_to_region
+from Mir.types.lsp import CodeActionTriggerKind, CodeAction, Command, CodeActionKind, CodeActionContext
+from Mir import mir, apply_workspace_edit, server_for_view
 import sublime
 import sublime_plugin
 import sublime_aio

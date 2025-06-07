@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 from .libs.future_with_id import FutureWithId
-from .libs.lsp.workspace_edit import apply_text_document_edits
 import sublime_aio
 
-from Mir import is_text_document_edit, parse_uri, is_text_edit, range_to_region, open_view, save_view
+from Mir import is_text_document_edit, parse_uri, is_text_edit, range_to_region, open_view, save_view, apply_text_document_edits
+from Mir.types.lsp import WorkspaceEdit, TextEdit, AnnotatedTextEdit, SnippetTextEdit
 import sublime
 import sublime_plugin
-from Mir.types import WorkspaceEdit, TextEdit, AnnotatedTextEdit, SnippetTextEdit
 
 # use `from Mir import apply_workspace_edit`
 class MirApplyWorkspaceEdit(sublime_aio.ViewCommand):

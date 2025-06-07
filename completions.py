@@ -1,11 +1,11 @@
 from __future__ import annotations
-from .libs.lsp.providers import Providers
+from .libs.lsp.providers import Providers # Bad, should not expose it like this
 from .libs.lsp.constants import COMPLETION_KINDS
 import sublime
 import sublime_plugin
 from Mir import mir, range_to_region, minihtml, MinihtmlKind
 import sublime_aio
-from Mir.types import CompletionItem, CompletionItemDefaults, TextEdit, InsertReplaceEdit, EditRangeWithInsertReplace, Range, InsertTextFormat
+from Mir.types.lsp import CompletionItem, CompletionItemDefaults, TextEdit, InsertReplaceEdit, EditRangeWithInsertReplace, Range, InsertTextFormat
 from typing import Any, Generator, List, Tuple, TypeVar
 from typing import cast
 from typing_extensions import TypeAlias, TypeGuard

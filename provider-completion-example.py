@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from Mir import CompletionProvider
-from Mir.types import CompletionItem, CompletionList
+from Mir.types.lsp import CompletionItem, CompletionList
 
 
 class ExampleCompletionProvider(CompletionProvider):

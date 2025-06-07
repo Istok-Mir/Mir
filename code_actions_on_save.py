@@ -1,11 +1,8 @@
 from __future__ import annotations
 
-from .libs.lsp.workspace_edit import apply_workspace_edit
+from Mir import mir, apply_workspace_edit, server_for_view, servers_for_view, get_view_uri, region_to_range
 from .libs.lsp.pull_diagnostics import pull_diagnostics
-from .libs.lsp.mir import mir
-from .libs.lsp.manage_servers import server_for_view, servers_for_view
-from .libs.lsp.types import CodeActionOptions, CodeActionTriggerKind
-from .libs.lsp.view_to_lsp import get_view_uri, region_to_range
+from Mir.types.lsp import CodeActionOptions, CodeActionTriggerKind
 import sublime_aio
 import sublime_plugin
 import sublime

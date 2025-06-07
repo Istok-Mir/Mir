@@ -79,7 +79,7 @@ Hover provider example:
 ```py
 # this is just a concept
 from Mir import HoverProvider, mir, range_to_region
-from Mir.types import Hover, MarkupKind, Diagnostic
+from Mir.types.lsp import Hover, MarkupKind, Diagnostic
 import sublime
 
 class ExampleHoverProvider(HoverProvider):
@@ -117,7 +117,7 @@ Completion provider example:
 ```py
 from __future__ import annotations
 from Mir import CompletionProvider
-from Mir.types import CompletionItem, CompletionList
+from Mir.types.lsp import CompletionItem, CompletionList
 
 
 class ExampleCompletionProvider(CompletionProvider):

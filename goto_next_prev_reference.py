@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from .libs.lsp.view_to_lsp import parse_uri, range_to_region
-from .libs.lsp.types import Location
+from Mir import parse_uri, range_to_region
+from Mir.types.lsp import Location
 import sublime
 from Mir import mir, position_to_point, open_view
 import sublime_aio

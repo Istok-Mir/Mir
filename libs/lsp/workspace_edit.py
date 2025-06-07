@@ -3,7 +3,7 @@ from ..future_with_id import FutureWithId
 import sublime
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from Mir.types import WorkspaceEdit, TextEdit, AnnotatedTextEdit, SnippetTextEdit
+    from Mir.types.lsp import WorkspaceEdit, TextEdit, AnnotatedTextEdit, SnippetTextEdit
 
 
 async def apply_workspace_edit(view: sublime.View, workspace_edit: WorkspaceEdit):
