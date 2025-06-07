@@ -9,7 +9,7 @@ from .libs.lsp.workspace_edit import apply_workspace_edit, apply_text_document_e
 from .libs.activity_indicator import LoaderInStatusBar
 from .open_view import save_view, open_view
 from .runtime import deno, deno2_2, yarn, electron_node, electron_node_18, electron_node_20, electron_node_22
-from .package_storage import PackageStorage, run_command, unzip
+from .package_storage import PackageStorage, command, unzip
 
 __all__ = (
     # the most useful
@@ -29,7 +29,7 @@ __all__ = (
 
     # Package Storage
     'PackageStorage',
-    'run_command',
+    'command',
     'unzip',
 
     # ui

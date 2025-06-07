@@ -120,7 +120,7 @@ def run_command_sync(
         return ('', error.output.decode('utf-8', 'ignore').strip())
 
 
-async def run_command(cmd: list[str], cwd=None):
+async def command(cmd: list[str], cwd=None):
     process = await asyncio.create_subprocess_exec(
         *cmd,
         cwd=cwd,
