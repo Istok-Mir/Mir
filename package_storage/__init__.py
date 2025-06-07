@@ -9,13 +9,25 @@ import zipfile
 import urllib.request
 import subprocess
 import tarfile
+import sys
 
 class PackageStorage:
-    def __init__(self, name: str, tag: str, sync_folder: str = None):
-        self.name = name
+    def __init__(self, tag: str, sync_folder: str = None):
+        # Initially PackageStorage was instanced in code like:
+        # PackageStorage('Mir', tag='0.0.1', sync_folder='./some-folder')
+        # but            ^^^^^ always needed to match the actual package name, in order to copy files successufly
+        # so Package authors could write
+        # PackageStorage(__package__, tag='0.0.1', sync_folder='./some-folder')
+        # but it got repetitive and bolilerplaty, so the latest API is
+        # PackageStorage(tag='0.0.1', sync_folder='./some-folder')
+        # it the "package name" is inferred by the sys._getframe(1).f_globals.get('__package__')
+        caller_frame = sys._getframe(1)
+        package_name =caller_frame.f_globals.get('__package__')
+        self.name = package_name.split('.')[0] # if called inside Mir-XYS.some_nested_filem, grab just 'Mir-XYS'
+
         self.tag = tag
-        self._storage_dir = (Path(sublime.cache_path()) / ".." / "Package Storage" / name / tag).resolve()
-        self._package_dir = Path(sublime.packages_path()) / name
+        self._storage_dir = (Path(sublime.cache_path()) / ".." / "Package Storage" / self.name / tag).resolve()
+        self._package_dir = Path(sublime.packages_path()) / self.name
         if not self._package_dir.exists():
             raise Exception(f'"NAME" must match Package Name, but it was called with PackageStorage("{self.name}")')
         self._storage_dir.mkdir(parents=True, exist_ok=True)

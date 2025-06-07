@@ -6,7 +6,7 @@ import os
 from Mir import LoaderInStatusBar
 from pathlib import Path
 
-runtime_storage_path = PackageStorage('Mir', tag='runtime')
+runtime_storage_path = PackageStorage(tag='runtime')
 
 class Yarn:
     def __init__(self) -> None:
