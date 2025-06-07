@@ -3,7 +3,7 @@ from typing import Literal
 from .package_storage import PackageStorage, unzip
 import sublime
 import os
-from sublime_lib import ActivityIndicator
+from Mir import LoaderInStatusBar
 from pathlib import Path
 
 runtime_storage_path = PackageStorage('Mir', tag='runtime')
@@ -17,7 +17,7 @@ class Yarn:
         return self.package_storage / 'yarn.js'
 
     async def setup(self):
-        with ActivityIndicator(sublime.active_window(), f'Downloading Yarn'):
+        with LoaderInStatusBar(f'Downloading Yarn'):
             yarn_url = 'https://github.com/yarnpkg/yarn/releases/download/v1.22.22/yarn-1.22.22.js'
             save_to = self.package_storage / 'yarn.js'
             await runtime_storage_path.download(yarn_url, save_to)
@@ -37,7 +37,7 @@ class Deno:
         return str(self.package_storage / 'deno' / 'deno')
 
     async def setup(self):
-        with ActivityIndicator(sublime.active_window(), f'Downloading Deno {self.deno_version}'):
+        with LoaderInStatusBar(f'Downloading Deno {self.deno_version}'):
             fetch_url, archive_filename = self._archive_on_github()
             if not Path(self.path).exists():
                 save_to = self.package_storage / archive_filename
@@ -105,7 +105,7 @@ class Electron:
         return binary_path
 
     async def setup(self):
-        with ActivityIndicator(sublime.active_window(), f'Downloading Node.js {self.node_version}'):
+        with LoaderInStatusBar(f'Downloading Node.js {self.node_version}'):
             fetch_url, archive_filename = self._archive_on_github()
             if not Path(self.path).exists():
                 save_to = self.package_storage / archive_filename

@@ -12,7 +12,7 @@ import weakref
 from threading import Lock
 
 
-__all__ = ['ActivityIndicator']
+__all__ = ['LoaderInStatusBar']
 
 class StatusTarget(metaclass=ABCMeta):  # pragma: no cover
     @abstractmethod
@@ -64,7 +64,7 @@ def _weak_method(method: Callable) -> Callable:
     return wrapped
 
 
-class ActivityIndicator:
+class LoaderInStatusBar:
     """
     An animated text-based indicator to show that some activity is in progress.
 
@@ -72,7 +72,7 @@ class ActivityIndicator:
     The indicator will be shown in the status bar of that view or window.
     If `label` is provided, then it will be shown next to the animation.
 
-    :class:`ActivityIndicator` can be used as a context manager.
+    :class:`LoaderInStatusBar` can be used as a context manager.
 
     .. versionadded:: 1.4
     """
@@ -87,12 +87,14 @@ class ActivityIndicator:
     _frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
     def __init__(
         self,
-        target: Union[StatusTarget, sublime.View, sublime.Window],
-        label: str | None = None,
+        label: str,
+        target: StatusTarget | sublime.View | sublime.Window | None = None,
     ) -> None:
         self.label = label
 
-        if isinstance(target, sublime.View):
+        if self._target is None:
+            self._target = WindowTarget(sublime.active_window())
+        elif isinstance(target, sublime.View):
             self._target = ViewTarget(target)
         elif isinstance(target, sublime.Window):
             self._target = WindowTarget(target)
