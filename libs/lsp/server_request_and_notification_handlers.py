@@ -93,7 +93,7 @@ def attach_server_request_and_notification_handlers(server: LanguageServer):
             MessageType.Debug: 'Debug',
             MessageType.Log: 'Log',
         }.get(params.get('type', MessageType.Log))
-        server.console.log(f"Mir | {message_type}: {params.get('message')}")
+        server.console.log(f"{message_type}: {params.get('message')}")
 
     def on_show_message(params: ShowMessageParams):
         message_type = {
@@ -103,7 +103,7 @@ def attach_server_request_and_notification_handlers(server: LanguageServer):
             MessageType.Debug: 'Debug',
             MessageType.Log: 'Log',
         }.get(params.get('type', MessageType.Log))
-        sublime.status_message(f"Mir | {message_type}: {params.get('message')}")
+        sublime.status_message(f"{message_type}: {params.get('message')}")
 
     def publish_diagnostics(params: PublishDiagnosticsParams):
         from .mir import mir
