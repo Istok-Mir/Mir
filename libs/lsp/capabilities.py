@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+from Mir import mir_logger
 from .dotted_dict import DottedDict
 from Mir.types.lsp import ClientCapabilities, CodeActionKind, CompletionItemKind, CompletionItemTag, FoldingRangeKind, InsertTextMode, MarkupKind, PrepareSupportDefaultBehavior, SymbolKind, SymbolTag,DiagnosticTag, TokenFormat
 from typing import Any, Literal, cast
@@ -347,7 +349,7 @@ class ServerCapabilities(DottedDict):
         capability = self.get(server_capability)
         if isinstance(capability, str):
             msg = f"{server_capability} is already registered. Skipping."
-            print(msg)
+            mir_logger.debug(msg)
             return
         self.set(server_capability, options)
 
@@ -357,6 +359,6 @@ class ServerCapabilities(DottedDict):
     ) -> None:
         capability = self.get(server_capability)
         if not capability:
-            print(f"{server_capability} is not present in the current capabilities. Skipping.")
+            mir_logger.debug(f"{server_capability} is not present in the current capabilities. Skipping.")
             return
         self.remove(server_capability)

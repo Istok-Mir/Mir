@@ -1,5 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
+
+from Mir import mir_logger
 if TYPE_CHECKING:
     from Mir.types.lsp import DocumentDiagnosticParams
     from .server import LanguageServer
@@ -26,4 +28,4 @@ async def pull_diagnostics(server: LanguageServer, uri: str) -> None:
             server.diagnostics.set(uri, result['items'])
             mir._notify_did_change_diagnostics([uri])
     except Exception as e:
-        print('Mir: Error in diagnostic pull', e)
+        mir_logger.debug('Mir: Error in diagnostic pull', e)

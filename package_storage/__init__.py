@@ -1,5 +1,5 @@
 from __future__ import annotations
-from os import path
+from Mir import mir_logger
 import sublime
 from pathlib import Path
 import shutil
@@ -130,9 +130,9 @@ async def command(cmd: list[str], cwd=None):
     stdout, stderr = await process.communicate()
 
     if process.returncode != 0:
-        print(f"Command failed: {cmd}")
+        mir_logger.debug(f"Command failed: {cmd}")
         if stdout:
-            print(f"stdout: {stdout.decode()}")
+            mir_logger.debug(f"stdout: {stdout.decode()}")
         if stderr:
-            print(f"stderr: {stderr.decode()}")
+            mir_logger.debug(f"stderr: {stderr.decode()}")
         raise Exception(f"Command failed with return code {process.returncode}")

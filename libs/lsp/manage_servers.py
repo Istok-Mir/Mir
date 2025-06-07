@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from Mir import mir_logger
+
 from .pull_diagnostics import pull_diagnostics
 import sublime_aio
 from .view_to_lsp import get_view_uri, view_to_text_document_item
@@ -39,7 +41,7 @@ async def open_document(view: sublime.View):
                 await new_server.start(view)
                 ManageServers.attach_server_to_window(new_server, window)
             except Exception as e:
-                print(f'Mir ({server.name}) | Error while starting.', e)
+                mir_logger.debug(f'Mir ({server.name}) | Error while starting.', e)
                 continue
     for server in servers_for_view(view):
         text_document = view_to_text_document_item(view)
@@ -104,16 +106,16 @@ class ManageServers(sublime_aio.EventListener):
             await open_document(v)
 
     def on_pre_move(self, view):
-        print('EventListener on_pre_move', view)
+        mir_logger.debug('EventListener on_pre_move', view)
 
     def on_post_move(self, view):
-        print('EventListener on_post_move', view)
+        mir_logger.debug('EventListener on_post_move', view)
 
     def on_reload(self, view):
-        print('EventListener on_reload', view)
+        mir_logger.debug('EventListener on_reload', view)
 
     def on_revert(self, view):
-        print('EventListener on_revert', view)
+        mir_logger.debug('EventListener on_revert', view)
 
     async def on_load(self, view):
         await open_document(view)
@@ -122,7 +124,7 @@ class ManageServers(sublime_aio.EventListener):
         close_document(view)
 
     def on_new_window(self, window):
-        print('EventListener on_new_window', window)
+        mir_logger.debug('EventListener on_new_window', window)
 
     def on_pre_close_window(self, window: sublime.Window):
         for server in ManageServers.servers_for_window(window):

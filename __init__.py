@@ -1,4 +1,5 @@
 from __future__ import annotations
+from .libs.mir_logger import mir_logger
 from .libs.lsp.server import LanguageServer
 from .libs.lsp.providers import HoverProvider, CompletionProvider
 from .libs.lsp.mir import mir
@@ -59,6 +60,8 @@ __all__ = (
     'save_view',
     'open_view',
 
-    'LoaderInStatusBar'
+    'LoaderInStatusBar',
+
+    'mir_logger'
 )
 

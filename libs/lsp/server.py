@@ -1,6 +1,8 @@
 from __future__ import annotations
 import os
 import re
+
+from Mir import mir_logger
 from .pull_diagnostics import pull_diagnostics
 
 from .server_request_and_notification_handlers import attach_server_request_and_notification_handlers
@@ -138,7 +140,7 @@ def register_language_server(server: LanguageServer):
     if not hasattr(server, 'activation_events'):
         raise Exception(f'Specify a `activation_events` static property` for {server.name}.')
     if server.name in [s.name for s in ManageServers.language_servers_plugins]:
-        print(f'register_language_server {server.name} is skipped because it was already registred.')
+        mir_logger.debug(f'{server.name} is skipped because it was already registered.')
         return
     ManageServers.language_servers_plugins.append(server)
 
@@ -222,7 +224,7 @@ class LanguageServer:
 
                 sublime_aio.run_coroutine(self._run_forever())
             except Exception as e:
-                print(f'Mir ({self.name}) Error while creating subprocess.', e)
+                mir_logger.debug(f'Mir ({self.name}) Error while creating subprocess.', e)
                 self.status = 'off'
                 raise e
         else: 
@@ -370,10 +372,10 @@ class LanguageServer:
                 await self._handle_body(body, num_bytes)
             self.cancel_all_requests('The process exited so stopping all requests.')
         except (BrokenPipeError, ConnectionResetError) as e:
-            print(f'Mir ({self.name}). BrokenPipeError, ConnectionResetError', e)
+            mir_logger.debug(f'Mir ({self.name}). BrokenPipeError, ConnectionResetError', e)
             pass
         except StopLoopException as e:
-            print(f'Mir: ({self.name}) stopped.', e)
+            mir_logger.debug(f'Mir: ({self.name}) stopped.', e)
             pass
         return self._received_shutdown
 
@@ -387,7 +389,7 @@ class LanguageServer:
         except orjson.JSONDecodeError as ex:
             self._log(f"Mir ({self.name})  malformed JSON: {ex}")
         except Exception as e:
-            print(f"Mir ({self.name}) Error in _handle_body. ", e)
+            mir_logger.debug(f"Mir ({self.name}) Error in _handle_body. ", e)
 
     async def _receive_payload(self, payload: dict) -> None:
         try:
@@ -418,7 +420,7 @@ class LanguageServer:
             await self._send_payload(
                 make_error_response(request_id, err))
         except Exception as e:
-            print(f'Mir ({self.name}) Error in send_error_response.', e)
+            mir_logger.debug(f'Mir ({self.name}) Error in send_error_response.', e)
 
     def send_request(self, method: str, params: Optional[dict] = None):
         self.send_did_change_text_document()
@@ -442,9 +444,9 @@ class LanguageServer:
         try:
             self._process.stdin.writelines(msg)
         except BrokenPipeError as e:
-            print(f"Mir ({self.name}) BrokenPipeError | Error while writing (sync).", e)
+            mir_logger.debug(f"Mir ({self.name}) BrokenPipeError | Error while writing (sync).", e)
         except Exception as e:
-            print(f'Mir ({self.name}) Exception | Error while writing (sync).', e)
+            mir_logger.debug(f'Mir ({self.name}) Exception | Error while writing (sync).', e)
 
     async def _send_payload(self, payload: dict) -> None:
         if not self._process or not self._process.stdin:
@@ -454,9 +456,9 @@ class LanguageServer:
             self._process.stdin.writelines(msg)
             await self._process.stdin.drain()
         except BrokenPipeError as e:
-            print(f"Mir ({self.name}) BrokenPipeError | Error while writing.", e)
+            mir_logger.debug(f"Mir ({self.name}) BrokenPipeError | Error while writing.", e)
         except Exception as e:
-            print(f'Mir ({self.name}) Exception | Error while writing:', e)
+            mir_logger.debug(f'Mir ({self.name}) Exception | Error while writing:', e)
 
     def on_request(self, method: str, cb):
         self.on_request_handlers[method] = cb

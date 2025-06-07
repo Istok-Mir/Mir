@@ -3,7 +3,7 @@ from __future__ import annotations
 from .libs.future_with_id import FutureWithId
 import sublime_aio
 
-from Mir import is_text_document_edit, parse_uri, is_text_edit, range_to_region, open_view, save_view, apply_text_document_edits
+from Mir import mir_logger, is_text_document_edit, parse_uri, is_text_edit, range_to_region, open_view, save_view, apply_text_document_edits
 from Mir.types.lsp import WorkspaceEdit, TextEdit, AnnotatedTextEdit, SnippetTextEdit
 import sublime
 import sublime_plugin
@@ -20,7 +20,7 @@ class MirApplyWorkspaceEdit(sublime_aio.ViewCommand):
                 for change in document_changes:
                     was_open = False
                     if not is_text_document_edit(change):
-                        print("Mir: TODO implement change", change)
+                        mir_logger.debug("Mir: TODO implement change", change)
                         continue
                     schema, file_path = parse_uri(change['textDocument']['uri'])
                     view = window.find_open_file(file_path)
@@ -46,7 +46,7 @@ class MirApplyWorkspaceEdit(sublime_aio.ViewCommand):
                     if not was_open:
                         view.close()
                 return
-            print('Mir: TODO implement workspace_edit for', document_changes)
+            mir_logger.debug('Mir: TODO implement workspace_edit for', document_changes)
         finally:
             future = FutureWithId.get(future_id)
             if future:
@@ -61,7 +61,7 @@ class MirApplyTextDocumentEditsCommand(sublime_plugin.TextCommand):
             if is_text_edit(e):
                 text_edits.append(e)
             else:
-                print('Mir TODO implement edit for', e)
+                mir_logger.debug('Mir TODO implement edit for', e)
         for text_edit in reversed(text_edits):
             self.view.replace(edit, range_to_region(self.view, text_edit['range']), text_edit['newText'])
         sublime_aio.run_coroutine(self.save(future_id))

@@ -1,6 +1,7 @@
 from __future__ import annotations
 import asyncio
 
+from Mir import mir_logger
 from sublime_aio import overload
 
 from .commands import MirCommand
@@ -36,7 +37,7 @@ class mir:
                 result = await asyncio.wait_for(provider.provide_definition(view, point), MAX_WAIT_TIME)
             except Exception as e:
                 await provider.cancel()
-                print(f'Error happened in provider {provider.name}', e)
+                mir_logger.debug(f'Error happened in provider {provider.name}', e)
                 return (provider.name, None)
             return (provider.name, result)
 
@@ -45,7 +46,7 @@ class mir:
                 *[handle(provider) for provider in providers],
             )
         except Exception as e:
-            print('Mir (DefinitionError):', e)
+            mir_logger.debug('Mir (DefinitionError):', e)
         return results
 
     @staticmethod
@@ -64,7 +65,7 @@ class mir:
                 result = await asyncio.wait_for(provider.provide_references(view, point), MAX_WAIT_TIME)
             except Exception as e:
                 await provider.cancel()
-                print(f'Error happened in provider {provider.name}', e)
+                mir_logger.debug(f'Error happened in provider {provider.name}', e)
                 return (provider.name, None)
             return (provider.name, result)
 
@@ -73,7 +74,7 @@ class mir:
                 *[handle(provider) for provider in providers],
             )
         except Exception as e:
-            print('Mir (ReferenceError):', e)
+            mir_logger.debug('Mir (ReferenceError):', e)
         return results
 
     @staticmethod
@@ -95,7 +96,7 @@ class mir:
                 result = await asyncio.wait_for(provider.provide_code_actions(view, region, context), MAX_WAIT_TIME)
             except Exception as e:
                 await provider.cancel()
-                print(f'Error happened in provider {provider.name}', e)
+                mir_logger.debug(f'Error happened in provider {provider.name}', e)
                 return (provider.name, None)
             return (provider.name, result)
 
@@ -104,7 +105,7 @@ class mir:
                 *[handle(provider) for provider in providers],
             )
         except Exception as e:
-            print('Mir (CodeActionError):', e)
+            mir_logger.debug('Mir (CodeActionError):', e)
         return results
 
     @staticmethod
@@ -124,7 +125,7 @@ class mir:
                 result = await asyncio.wait_for(provider.provide_hover(view, hover_point, hover_zone), MAX_WAIT_TIME)
             except Exception as e:
                 await provider.cancel()
-                print(f'Error happened in provider {provider.name}', e)
+                mir_logger.debug(f'Error happened in provider {provider.name}', e)
                 return (provider.name, None)
             return (provider.name, result)
 
@@ -135,7 +136,7 @@ class mir:
                 *[handle(provider) for provider in providers],
             )
         except Exception as e:
-            print('Mir (HoverError):', e)
+            mir_logger.debug('Mir (HoverError):', e)
         return results
 
     cache_completion_response = {}
@@ -163,7 +164,7 @@ class mir:
                         del mir.cache_completion_response[provider.name]
                     sublime.set_timeout(reset, 6_000) # this prevent lag while typing for 6 seconds
             except Exception as e:
-                print(f'Error happened in provider {provider.name}', e)
+                mir_logger.debug(f'Error happened in provider {provider.name}', e)
                 return (provider.name, None)
             return (provider.name, result)
 
@@ -174,7 +175,7 @@ class mir:
                 *[handle(provider) for provider in providers],
             )
         except Exception as e:
-            print('Mir (CompletionError):', e)
+            mir_logger.debug('Mir (CompletionError):', e)
         return results
 
     @staticmethod
@@ -192,7 +193,7 @@ class mir:
                 result = await asyncio.wait_for(provider.provide_document_symbol(view), MAX_WAIT_TIME)
             except Exception as e:
                 await provider.cancel()
-                print(f'Error happened in provider {provider.name}', e)
+                mir_logger.debug(f'Error happened in provider {provider.name}', e)
                 return (provider.name, None)
             return (provider.name, result)
 
@@ -203,7 +204,7 @@ class mir:
                 *[handle(provider) for provider in providers],
             )
         except Exception as e:
-            print('Mir (DocumentSymbolError):', e)
+            mir_logger.debug('Mir (DocumentSymbolError):', e)
         return results
 
     @overload
