@@ -28,4 +28,4 @@ async def pull_diagnostics(server: LanguageServer, uri: str) -> None:
             server.diagnostics.set(uri, result['items'])
             mir._notify_did_change_diagnostics([uri])
     except Exception as e:
-        mir_logger.error('Mir: Error in diagnostic pull', e)
+        mir_logger.error('Mir: Error in diagnostic pull', exc_info=e)

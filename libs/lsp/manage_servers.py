@@ -41,7 +41,7 @@ async def open_document(view: sublime.View):
                 await new_server.start(view)
                 ManageServers.attach_server_to_window(new_server, window)
             except Exception as e:
-                mir_logger.error(f'Mir ({server.name}) | Error while starting.', e)
+                mir_logger.error(f'Mir ({server.name}) | Error while starting.', exc_info=e)
                 continue
     for server in servers_for_view(view):
         text_document = view_to_text_document_item(view)
