@@ -78,7 +78,7 @@ Provider packages can be written to enhance mir.
 Hover provider example:
 ```py
 # this is just a concept
-from Mir import HoverProvider, mir, range_to_region
+from Mir import HoverProvider, range_to_region
 from Mir.types.lsp import Hover, MarkupKind, Diagnostic
 import sublime
 
