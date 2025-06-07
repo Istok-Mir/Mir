@@ -2,9 +2,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, cast
 from .capabilities import method_to_capability
 from .view_to_lsp import get_view_uri, parse_uri
-from Mir.types.lsp import ApplyWorkspaceEditParams, ApplyWorkspaceEditResult, RegistrationParams, UnregistrationParams, LogMessageParams, LogMessageParams, MessageType, ConfigurationParams, PublishDiagnosticsParams, DidChangeWatchedFilesRegistrationOptions, CreateFilesParams, RenameFilesParams, DeleteFilesParams, DidChangeWatchedFilesParams, WorkspaceFolder
+from Mir.types.lsp import ApplyWorkspaceEditParams, ApplyWorkspaceEditResult, RegistrationParams, ShowMessageParams, UnregistrationParams, LogMessageParams, LogMessageParams, MessageType, ConfigurationParams, PublishDiagnosticsParams, DidChangeWatchedFilesRegistrationOptions, CreateFilesParams, RenameFilesParams, DeleteFilesParams, DidChangeWatchedFilesParams, WorkspaceFolder
 from .file_watcher import get_file_watcher, create_file_watcher
 from .workspace_edit import apply_workspace_edit
+import sublime
 if TYPE_CHECKING:
 	from .server import LanguageServer
 
@@ -92,8 +93,17 @@ def attach_server_request_and_notification_handlers(server: LanguageServer):
             MessageType.Debug: 'Debug',
             MessageType.Log: 'Log',
         }.get(params.get('type', MessageType.Log))
-        if message_type in ['Error', 'Warning']:
-            print(f"Mir | {message_type}: {params.get('message')}")
+        server.console.log(f"Mir | {message_type}: {params.get('message')}")
+
+    def on_show_message(params: ShowMessageParams):
+        message_type = {
+            MessageType.Error: 'Error',
+            MessageType.Warning: 'Warning',
+            MessageType.Info: 'Info',
+            MessageType.Debug: 'Debug',
+            MessageType.Log: 'Log',
+        }.get(params.get('type', MessageType.Log))
+        sublime.status_message(f"Mir | {message_type}: {params.get('message')}")
 
     def publish_diagnostics(params: PublishDiagnosticsParams):
         from .mir import mir
@@ -124,6 +134,8 @@ def attach_server_request_and_notification_handlers(server: LanguageServer):
             'applied': True # TODO improve, what can go wrong?
         }
 
+
+
     server.on_request('workspace/configuration', workspace_configuration)
     server.on_request('client/registerCapability', register_capability)
     server.on_request('client/unregisterCapability', unregister_capability)
@@ -131,6 +143,8 @@ def attach_server_request_and_notification_handlers(server: LanguageServer):
     server.on_request('workspace/workspaceFolders', workspace_folders)
     server.on_request('workspace/applyEdit', workspace_apply_edits)
     server.on_notification('window/logMessage', on_log_message)
+    server.on_notification('window/showMessage', on_show_message)
+
     server.on_notification('textDocument/publishDiagnostics', publish_diagnostics)
 
 

@@ -7,7 +7,7 @@ from .server_request_and_notification_handlers import attach_server_request_and_
 from .capabilities import CLIENT_CAPABILITIES, ServerCapabilities
 from .lsp_requests import LspRequest, LspNotification, Request
 from Mir.types.lsp import DidChangeTextDocumentParams, ErrorCodes, InitializeParams, LSPAny, MessageType, WorkspaceFolder
-from .communcation_logs import CommmunicationLogs, format_payload
+from .console import Console, format_payload
 from .view_to_lsp import file_name_to_uri, get_view_uri
 from pathlib import Path
 from sublime_plugin import sublime
@@ -217,7 +217,7 @@ class LanguageServer:
                     error_message = (await self._process.stderr.read()).decode('utf-8', errors='ignore')
                     error_message_wihout_ascii_chars = re.sub(r'(?:\x1B[@-_]|[\x80-\x9F])[0-?]*[ -/]*[@-~]',' ', error_message)
                     final_message = f"Command: '{' '.join([str(o) for o in options['cmd']])}'" + '\nExited with: ' + error_message_wihout_ascii_chars
-                    self._communcation_logs.append(final_message)
+                    self.console.log(final_message)
                     raise Exception(final_message)
 
                 sublime_aio.run_coroutine(self._run_forever())
@@ -267,7 +267,7 @@ class LanguageServer:
         self.on_request_handlers = {}
         self.on_notification_handlers: list[NotificationHandler] = []
         # logs
-        self._communcation_logs: CommmunicationLogs = CommmunicationLogs(self.name)
+        self.console: Console = Console(self.name)
         self.before_shutdown: list[Callable[[],None]] = []
 
         self.diagnostics_previous_result_id: str | None = None
@@ -280,7 +280,7 @@ class LanguageServer:
         if not window:
             raise Exception('A window must exists now')
         self.window = window
-        self._communcation_logs = CommmunicationLogs(self.name, window)
+        self.console = Console(self.name, window)
 
         folders = window.folders() if window else []
         first_folder = folders[0] if folders else ''
@@ -404,7 +404,7 @@ class LanguageServer:
             self._log(f"Error handling server payload: {err}")
 
     def send_notification(self, method: str, params: Optional[dict|list] = None):
-        self._communcation_logs.append(f'Send notification "{method}"\nParams: {format_payload(params)}')
+        self.console.log(f'Send notification "{method}"\nParams: {format_payload(params)}')
         self._send_payload_sync(
             make_notification(method, params))
 
@@ -413,7 +413,7 @@ class LanguageServer:
             make_response(request_id, params))
 
     async def send_error_response(self, request_id: Any, err: Error) -> None:
-        self._communcation_logs.append(f'Send error response ({request_id})\n{err}')
+        self.console.log(f'Send error response ({request_id})\n{err}')
         try:
             await self._send_payload(
                 make_error_response(request_id, err))
@@ -426,7 +426,7 @@ class LanguageServer:
         self.request_id += 1
         response = Request(self, request_id, method, params)
         self._response_handlers[request_id] = response
-        self._communcation_logs.append(f'Sending request "{method}" ({request_id})\nParams: {format_payload(params)}')
+        self.console.log(f'Sending request "{method}" ({request_id})\nParams: {format_payload(params)}')
         sublime_aio.run_coroutine(self._send_payload(make_request(method, request_id, params)))
         return response
 
@@ -471,16 +471,16 @@ class LanguageServer:
         request = self._response_handlers.pop(server_response["id"])
         request.request_end_time = datetime.datetime.now()
         if "__ignore" in server_response:
-            self._communcation_logs.append(f'Received response "{request.method}" ({request.id}) - {request.duration}s\nResponse is overridden to be "{format_payload(server_response["result"])}" because the original response is too large ({server_response["num_bytes"]})')
+            self.console.log(f'Received response "{request.method}" ({request.id}) - {request.duration}s\nResponse is overridden to be "{format_payload(server_response["result"])}" because the original response is too large ({server_response["num_bytes"]})')
             request.result.set_result(server_response["result"])
         elif "result" in server_response and "error" not in server_response:
-            self._communcation_logs.append(f'Received response "{request.method}" ({request.id}) - {request.duration}s\nResponse: {format_payload(server_response["result"])}')
+            self.console.log(f'Received response "{request.method}" ({request.id}) - {request.duration}s\nResponse: {format_payload(server_response["result"])}')
             request.result.set_result(server_response["result"])
         elif "result" not in server_response and "error" in server_response:
-            self._communcation_logs.append(f'Received error response "{request.method}" ({request.id}) - {request.duration}s\nResponse:{format_payload(server_response["error"])}')
+            self.console.log(f'Received error response "{request.method}" ({request.id}) - {request.duration}s\nResponse:{format_payload(server_response["error"])}')
             request.result.set_exception(Error.from_lsp(server_response["error"]))
         else:
-            self._communcation_logs.append(f'Received error response "{request.method}" ({request.id}) - {request.duration}s\nResponse:{format_payload(server_response["error"])}')
+            self.console.log(f'Received error response "{request.method}" ({request.id}) - {request.duration}s\nResponse:{format_payload(server_response["error"])}')
             request.result.set_exception(Error(ErrorCodes.InvalidRequest, ''))
 
     async def _request_handler(self, response: dict) -> None:
@@ -493,9 +493,9 @@ class LanguageServer:
                     ErrorCodes.MethodNotFound, "method '{}' not handled on client.".format(method)))
             return
         try:
-            self._communcation_logs.append(f'Received request "{method}" ({request_id})\nParams: {format_payload(params)}')
+            self.console.log(f'Received request "{method}" ({request_id})\nParams: {format_payload(params)}')
             res = await handler(params)
-            self._communcation_logs.append(f'Sending response "{method}" ({request_id})\nResponse: {format_payload(res)}')
+            self.console.log(f'Sending response "{method}" ({request_id})\nResponse: {format_payload(res)}')
             await self.send_response(request_id, res)
         except Error as ex:
             await self.send_error_response(request_id, ex)
@@ -506,7 +506,7 @@ class LanguageServer:
         method = response.get("method", "")
         params = response.get("params")
         handlers = [ handler['cb'] for handler in self.on_notification_handlers if handler['method'] == method]
-        self._communcation_logs.append(f'Received notification "{method}"\nParams: {format_payload(params)}')
+        self.console.log(f'Received notification "{method}"\nParams: {format_payload(params)}')
         if not handlers:
             self._log(f"unhandled {method}")
             return

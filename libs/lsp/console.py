@@ -2,9 +2,9 @@ from __future__ import annotations
 import datetime
 from typing import Any
 from sublime_plugin import sublime
+import orjson
 
-
-class CommmunicationLogs:
+class Console:
     def __init__(self, name: str, window: sublime.Window | None = None):
         self.name = name
         self.logs: list[str] = []
@@ -12,7 +12,7 @@ class CommmunicationLogs:
         if window:
             self.panel = window.create_output_panel(name)
 
-    def append(self, log: str):
+    def log(self, log: str):
         if not self.panel:
             return
         time = datetime.datetime.now().strftime('%H:%M:%S')
@@ -35,4 +35,4 @@ class CommmunicationLogs:
 
 
 def format_payload(value: Any):
-    return value
+    return orjson.dumps(value).decode('utf-8')
