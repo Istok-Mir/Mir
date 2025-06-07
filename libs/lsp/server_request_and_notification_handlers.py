@@ -45,7 +45,7 @@ def attach_server_request_and_notification_handlers(server: LanguageServer):
             if capability_path == 'workspace.didChangeWatchedFiles':
                 wacher_options = cast(DidChangeWatchedFilesRegistrationOptions, options)
                 watchers = wacher_options['watchers']
-                for folder in server.workspace_folders:
+                for folder in server.initialize_params.get('workspaceFolders', []):
                     _, folder_name = parse_uri(folder['uri'])
                     glob_patterns = [watcher['globPattern'] for watcher in watchers if isinstance(watcher['globPattern'], str)]
                     watcher = get_file_watcher(folder_name)
@@ -78,7 +78,7 @@ def attach_server_request_and_notification_handlers(server: LanguageServer):
             if provider:
                 unregister_provider(provider)
             if capability_path == 'workspace.didChangeWatchedFiles':
-                for folder in server.workspace_folders:
+                for folder in server.initialize_params.get('workspaceFolders', []):
                     _, folder_name = parse_uri(folder['uri'])
                     watcher = get_file_watcher(folder_name)
                     # watcher.unregister(server.name) # pyright for some reason unregisters this capaability immediately afterm registering it
@@ -109,7 +109,7 @@ def attach_server_request_and_notification_handlers(server: LanguageServer):
             })
 
     async def workspace_folders(params: None) -> list[WorkspaceFolder] | None:
-        return server.workspace_folders
+        return server.initialize_params.get('workspaceFolders', [])
 
     async def workspace_apply_edits(params: ApplyWorkspaceEditParams) -> ApplyWorkspaceEditResult:
         view = server.window.active_view()

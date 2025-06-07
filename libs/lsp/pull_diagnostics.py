@@ -17,11 +17,11 @@ async def pull_diagnostics(server: LanguageServer, uri: str) -> None:
         identifier = server.capabilities.get('diagnosticProvider.identifier')
         if identifier:
             params['identifier'] = identifier
-        if server.diagnostics_previous_result_id:
+        if server.diagnostics_previous_result_id is not None:
             params['previousResultId'] = server.diagnostics_previous_result_id
         req = server.send.text_document_diagnostic(params)
         result = await req.result
-        server.diagnostics_previous_result_id = str(req.id)
+        server.diagnostics_previous_result_id = result.get('resultId')
         if 'items' in result:
             server.diagnostics.set(uri, result['items'])
             mir._notify_did_change_diagnostics([uri])

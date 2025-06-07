@@ -7,7 +7,6 @@ from .server import LanguageServer, matches_activation_event_on_uri, is_applicab
 from .file_watcher import remove_file_watcher
 from .capabilities import ServerCapability
 import sublime
-import sublime_plugin
 
 
 def servers_for_view(view: sublime.View, capability: ServerCapability | None = None) -> list[LanguageServer]:
@@ -48,7 +47,7 @@ async def open_document(view: sublime.View):
             'textDocument': text_document
         })
         server.open_views.append(view)
-        await pull_diagnostics(server, text_document['uri'])
+        sublime_aio.run_coroutine(pull_diagnostics(server, text_document['uri']))
 
 
 def close_document(view: sublime.View):
@@ -69,7 +68,7 @@ def close_document(view: sublime.View):
                 ManageServers.detach_server_from_window(server, window)
 
 
-class ManageServers(sublime_plugin.EventListener):
+class ManageServers(sublime_aio.EventListener):
     language_servers_plugins: list[LanguageServer] = []
     language_servers_per_window: dict[int, list[LanguageServer]] = {}
 
@@ -116,8 +115,8 @@ class ManageServers(sublime_plugin.EventListener):
     def on_revert(self, view):
         print('EventListener on_revert', view)
 
-    def on_load(self, view):
-        sublime_aio.run_coroutine(open_document(view))
+    async def on_load(self, view):
+        await open_document(view)
 
     def on_pre_close(self, view):
         close_document(view)

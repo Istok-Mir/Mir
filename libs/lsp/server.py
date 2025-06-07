@@ -6,7 +6,7 @@ from .pull_diagnostics import pull_diagnostics
 from .server_request_and_notification_handlers import attach_server_request_and_notification_handlers
 from .capabilities import CLIENT_CAPABILITIES, ServerCapabilities
 from .lsp_requests import LspRequest, LspNotification, Request
-from .types import DidChangeTextDocumentParams, ErrorCodes, LSPAny, MessageType, WorkspaceFolder
+from .types import DidChangeTextDocumentParams, ErrorCodes, InitializeParams, LSPAny, MessageType, WorkspaceFolder
 from .communcation_logs import CommmunicationLogs, format_payload
 from .view_to_lsp import file_name_to_uri, get_view_uri
 from pathlib import Path
@@ -249,12 +249,19 @@ class LanguageServer:
         self._process = None
         self._received_shutdown = False
 
-        self.workspace_folders: list[WorkspaceFolder] = []
+        self.initialize_params: InitializeParams = {
+            'processId': None,
+            'workspaceFolders': [],
+            'rootUri': None,
+            'rootPath': None,
+            'capabilities': CLIENT_CAPABILITIES,
+            'initializationOptions': {}
+        }
 
         self.pending_changes: dict[int, DidChangeTextDocumentParams] = {}
 
         self.request_id = 1
-        # equests sent from client
+        # requests sent from client
         self._response_handlers: Dict[Any, Request] = {}
         # requests and notifications sent from server
         self.on_request_handlers = {}
@@ -264,6 +271,7 @@ class LanguageServer:
         self.before_shutdown: list[Callable[[],None]] = []
 
         self.diagnostics_previous_result_id: str | None = None
+        attach_server_request_and_notification_handlers(self)
 
     async def start(self, view: sublime.View):
         self.view = view
@@ -274,24 +282,27 @@ class LanguageServer:
         self.window = window
         self._communcation_logs = CommmunicationLogs(self.name, window)
 
-        await self.activate() # lots of stuff can fail here
-
         folders = window.folders() if window else []
-        first_foder = folders[0] if folders else ''
-        self.workspace_folders = [{'name': Path(f).name, 'uri':file_name_to_uri(f)} for f in folders]
-        first_folder_uri = self.workspace_folders[0]['uri'] if self.workspace_folders else None
-        initialize_result = await self.send.initialize({
-            'processId': self._process.pid,
-            'workspaceFolders': self.workspace_folders,
+        first_folder = folders[0] if folders else ''
+        workspace_folders: list[WorkspaceFolder] = [{'name': Path(f).name, 'uri':file_name_to_uri(f)} for f in folders]
+        first_folder_uri = workspace_folders[0]['uri'] if workspace_folders else None
+
+        self.initialize_params = {
+            'processId': None,
+            'workspaceFolders': workspace_folders,
             'rootUri': first_folder_uri,  # @deprecated in favour of `workspaceFolders`
-            'rootPath': first_foder,  # @deprecated in favour of `rootUri`.
+            'rootPath': first_folder,  # @deprecated in favour of `rootUri`.
             'capabilities': CLIENT_CAPABILITIES,
             'initializationOptions': self.initialization_options.get()
-        }).result
+        }
+        await self.activate() # lots of stuff can fail here
+
+        assert self._process, f"Mir: {self.name} should be running after activation, but it is not."
+        self.initialize_params['processId'] = self._process.pid # process
+        initialize_result = await self.send.initialize(self.initialize_params).result
         self.capabilities.assign(cast(dict, initialize_result['capabilities']))
 
         self.register_providers()
-        attach_server_request_and_notification_handlers(self) # call this only after a successful initialize
         self.status = 'ready'
 
         self.notify.initialized({})

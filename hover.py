@@ -35,7 +35,7 @@ class MirHoverListener(sublime_aio.ViewEventListener):
         combined_content = [c for c in combined_content if c]
         if combined_content:
             self.view.show_popup(
-                hover_template("""<hr style="border-top: 1px solid color(var(--foreground) blend(var(--background) 20%)); display:block; margin-bottom: 0.5rem"/>""".join(combined_content)),
+                hover_template("<br/>".join(combined_content)),
                 sublime.PopupFlags.HIDE_ON_MOUSE_MOVE_AWAY,
                 hover_point,
                 max_width=800,
