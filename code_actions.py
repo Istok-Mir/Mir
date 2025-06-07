@@ -5,8 +5,7 @@ from .libs.lsp.manage_servers import server_for_view
 from .libs.lsp.mir import SourceName
 
 from Mir.types import CodeActionTriggerKind, Diagnostic, CodeAction, Command, CodeActionKind, CodeActionContext
-from Mir import mir
-from Mir.api import range_to_region
+from Mir import mir, range_to_region
 import sublime
 import sublime_plugin
 import sublime_aio

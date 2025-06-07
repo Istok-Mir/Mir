@@ -2,9 +2,7 @@ from __future__ import annotations
 from typing import Literal
 from .package_storage import PackageStorage, unzip
 import sublime
-import sublime_aio
 import os
-from os import path
 from sublime_lib import ActivityIndicator
 from pathlib import Path
 

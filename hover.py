@@ -1,9 +1,8 @@
 from __future__ import annotations
 import re
 import sublime
-from Mir import mir
+from Mir import mir, minihtml, MinihtmlKind
 import sublime_aio
-from Mir.api import minihtml, MinihtmlKind
 import sublime_plugin
 import html
 from .libs.hover_template import hover_template

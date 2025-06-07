@@ -3,14 +3,13 @@ from __future__ import annotations
 from .libs.future_with_id import FutureWithId
 from .libs.lsp.workspace_edit import apply_text_document_edits
 import sublime_aio
-from .open_view import open_view, save_view
 
-from Mir.api import is_text_document_edit, parse_uri, is_text_edit, range_to_region
+from Mir import is_text_document_edit, parse_uri, is_text_edit, range_to_region, open_view, save_view
 import sublime
 import sublime_plugin
 from Mir.types import WorkspaceEdit, TextEdit, AnnotatedTextEdit, SnippetTextEdit
 
-# use `from Mir.api import apply_workspace_edit`
+# use `from Mir import apply_workspace_edit`
 class MirApplyWorkspaceEdit(sublime_aio.ViewCommand):
     async def run(self, future_id: str, workspace_edit: WorkspaceEdit):
         try:
@@ -55,7 +54,7 @@ class MirApplyWorkspaceEdit(sublime_aio.ViewCommand):
                 future.set_result(None)
 
 
-# use `from Mir.api import apply_text_document_edits`
+# use `from Mir import apply_text_document_edits`
 class MirApplyTextDocumentEditsCommand(sublime_plugin.TextCommand):
     def run(self, edit: sublime.Edit, future_id: str, edits: list[TextEdit | AnnotatedTextEdit | SnippetTextEdit], close_after_edit=False):
         text_edits: list[TextEdit] = []

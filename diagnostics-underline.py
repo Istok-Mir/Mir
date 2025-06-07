@@ -1,9 +1,8 @@
 from __future__ import annotations
 import sublime
-from Mir import mir
+from Mir import mir, parse_uri, range_to_region
 import sublime_aio
 from Mir.types import DiagnosticSeverity, DiagnosticTag
-from Mir.api import parse_uri, range_to_region
 
 
 class MirDiagnosticListener(sublime_aio.ViewEventListener):

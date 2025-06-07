@@ -1,7 +1,6 @@
 # this is just a concept
 from Mir.types import Hover, Diagnostic
-from Mir import HoverProvider, mir
-from Mir.api import range_to_region
+from Mir import HoverProvider, mir, range_to_region
 from Mir.types import DiagnosticSeverity
 
 #Example of a hover provider

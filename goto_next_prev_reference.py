@@ -3,10 +3,8 @@ from __future__ import annotations
 from .libs.lsp.view_to_lsp import parse_uri, range_to_region
 from .libs.lsp.types import Location
 import sublime
-from Mir import mir
+from Mir import mir, position_to_point, open_view
 import sublime_aio
-from Mir.api import position_to_point
-from .open_view import open_view
 
 
 def find_reference(

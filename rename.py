@@ -10,7 +10,7 @@ from .libs.lsp.manage_servers import server_for_view, servers_for_view
 from .libs.lsp.server import LanguageServer, is_applicable_view
 import sublime_aio
 import asyncio
-from Mir.api import range_to_region, point_to_position, get_view_uri, is_range
+from Mir import range_to_region, point_to_position, get_view_uri, is_range
 
 
 class MirRenameCommand(sublime_aio.ViewCommand):
