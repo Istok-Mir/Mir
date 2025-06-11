@@ -8,11 +8,12 @@ import os
 import zipfile
 import urllib.request
 import subprocess
+import sublime_aio
 import tarfile
 import sys
 
 class PackageStorage:
-    def __init__(self, tag: str, sync_folder: str = None):
+    def __init__(self, tag: str):
         # Initially PackageStorage was instanced in code like:
         # PackageStorage('Mir', tag='0.0.1', sync_folder='./some-folder')
         # but            ^^^^^ always needed to match the actual package name, in order to copy files successufly
@@ -31,8 +32,6 @@ class PackageStorage:
         if not self._package_dir.exists():
             raise Exception(f'"NAME" must match Package Name, but it was called with PackageStorage("{self.name}")')
         self._storage_dir.mkdir(parents=True, exist_ok=True)
-        if sync_folder:
-            self.copy(sync_folder)
 
     async def download(self, url: str, save_to_path: Path) -> None:
         if save_to_path.exists():
