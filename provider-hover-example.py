@@ -28,7 +28,7 @@ class DiagnosticsHoverProvider(HoverProvider):
             formatted_source = ''
             if source:
                 formatted_source = f"<span style='{source_styles}'>{source}</span>"
-            return f"<div style='padding: 0.5rem; {message_styles}'>{d['message']} {formatted_source}</div>"
+            return f"<div style='{message_styles}'>{d['message']} {formatted_source}</div>"
 
         return {
           'contents': [format(d) for d in diagnostics_under_cursor]
