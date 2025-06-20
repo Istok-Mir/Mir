@@ -279,7 +279,7 @@ class LanguageServer:
         self.view = view
         self.settings.update(view.settings().get('mir.language_server_settings', {}))
         window = view.window()
-        if not window:
+        if window is None:
             raise Exception('A window must exists now')
         self.window = window
         self.console = Console(self.name, window)

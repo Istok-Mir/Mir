@@ -11,8 +11,17 @@ html.mir_popup {
     border: 1px solid color(var(--foreground) blend(var(--background) 20%));
 }
 .mir_popup_content {
-    padding: 0.5rem;
+    padding: 1rem;
     font-size: 0.9rem;
+}
+
+.mir_popup_content * {
+    padding: 0;
+    margin: 0;
+}
+
+.mir_popup_space_between {
+    margin-top: 1rem;
 }
 
 .mir_popup h1,
