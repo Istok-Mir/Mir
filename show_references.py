@@ -36,10 +36,11 @@ class mir_show_references_command(sublime_aio.ViewCommand):
             title = f'{len(all_references)} references "{word}"'
             content.append(title)
             for reference in extended_locations:
+                _, file_path= parse_uri(reference['uri'])
                 content.append({
-                    'kind': 'View',
-                    'uri': reference['uri'],
-                    'range': reference['range']
+                    'file_path': file_path,
+                    'start_line': reference['range']['start']['line'],
+                    'end_line': reference['range']['end']['line']
                 })
 
             multibuffer = Multibuffer(w, 'mir-references-view')

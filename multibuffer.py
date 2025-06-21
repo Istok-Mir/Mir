@@ -24,16 +24,16 @@ class Multibuffer:
     def render(self, view: sublime.View, multibuffer_content: list[MultibufferContent]):
         rendered_content = ''
         for content in multibuffer_content:
-            if 'kind' in content:
+            if 'file_path' in content and 'start_line' in content:
                 content = cast(BufferContent, content) # this cast is just sad to see in 2025...
-                _, file_path = parse_uri(content['uri'])
+                file_path = content['file_path']
                 relative_file_path = get_relative_path(file_path)
                 syntax = sublime.find_syntax_for_file(file_path)
                 language_id = ''
                 if syntax:
                     language_id = selector_to_language_id(syntax.scope)
-                start_line = content['range']['start']['line']
-                end_line = content['range']['end']['line']
+                start_line = content['start_line']
+                end_line = content['end_line']
                 line_content = get_lines(self.window, file_path, start_line, end_line)
                 rendered_content += f"""```{language_id}\t{relative_file_path}:{start_line+1}\n{line_content}\n```\n"""
             else:
@@ -48,8 +48,8 @@ class Multibuffer:
 
 
 class BufferContent(TypedDict):
-    kind: Literal['View']
-    uri: str
-    range: Range
+    file_path: str
+    start_line: int
+    end_line: int
 
 MultibufferContent = Union[BufferContent, str]
