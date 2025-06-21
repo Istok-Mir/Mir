@@ -72,7 +72,7 @@ class mir_show_references_command(sublime_aio.ViewCommand):
         found_regions = [r for r in new_view.find_all(fr'\b{word}\b') if new_view.match_selector(r.begin()+1, "markup.raw.code-fence")]
         new_view.sel().clear()
         new_view.sel().add_all(found_regions)
-        new_view.settings().set('mir.referemce_workspace_edits', workspace_edits)
+        new_view.settings().set('mir.reference_workspace_edits', workspace_edits)
 
 def group_locations_by_uri(
     window: sublime.Window,
@@ -94,7 +94,7 @@ def group_locations_by_uri(
             if row in files_lines_added[uri]:
                 continue
             files_lines_added[uri].append(row)
-            line_content = get_line_content(window, file_path, row, False)
+            line_content = get_line_content(window, file_path, row, False).strip('\n')
             if line_content.startswith('```'):
                 print('skipping ```')
                 continue
@@ -229,13 +229,12 @@ class AsdCommand(sublime_plugin.TextCommand):
 
 class DddCommand(sublime_aio.ViewCommand):
     async def run(self):
-        workspace_edits: WorkspaceEdit | None = self.view.settings().get('mir.referemce_workspace_edits', None)
+        workspace_edits: WorkspaceEdit | None = self.view.settings().get('mir.reference_workspace_edits', None)
         if workspace_edits is None:
             return
         new_workspace_edits: WorkspaceEdit = {
             'changes': {}
         }
-        print(workspace_edits['changes'])
         for file_uri in workspace_edits.get('changes', {}):
             if file_uri not in new_workspace_edits['changes']:
                 new_workspace_edits['changes'][file_uri] = []
@@ -246,7 +245,6 @@ class DddCommand(sublime_aio.ViewCommand):
                 relative_file_path = get_relative_path(file_path)
                 row = change['range']['start']['line']
                 start = self.view.find(f'{relative_file_path}:{row+1}', 0)
-                print('start looking for',f'{relative_file_path}:{row+1}', start)
                 end = self.view.find('```', start.end())
                 new_range = sublime.Region(
                     start.end()+1,
@@ -254,7 +252,6 @@ class DddCommand(sublime_aio.ViewCommand):
                 )
                 new_text = self.view.substr(new_range)
                 change['newText'] = new_text
-                print('new_text', new_text)
 
                 updated_change = change.copy()
                 lines = new_text.split('\n')
@@ -268,7 +265,7 @@ class DddCommand(sublime_aio.ViewCommand):
                 }
                 new_workspace_edits['changes'][file_uri].append(updated_change)
         await apply_workspace_edit(self.view, workspace_edits)
-        self.view.settings().set('mir.referemce_workspace_edits', new_workspace_edits)
+        self.view.settings().set('mir.reference_workspace_edits', new_workspace_edits)
 
 
 
