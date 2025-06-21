@@ -54,7 +54,7 @@ class InterceptKeyboard(sublime_plugin.ViewEventListener):
         if self.view.settings().get('is_mir_references_view', False):
             point = get_point(self.view)
             if command_name == "select_all" and point and self.view.match_selector(point, "markup.raw.code-fence"):
-                return ('asd')
+                return ('mir_select_buffer_block')
             if command_name == 'find_under_expand' and point and not self.view.match_selector(point, "markup.raw.code-fence"):
                 return ("find_under_expand_skip")
 
@@ -65,7 +65,8 @@ class InterceptKeyboard(sublime_plugin.ViewEventListener):
             if self.view.settings().get('is_mir_references_view', False):
                 return bool(self.view.settings().get('is_mir_references_view', False))
 
-class AsdCommand(sublime_plugin.TextCommand):
+
+class mir_select_multibuffer_block_command(sublime_plugin.TextCommand):
     def run(self, edit):
         point = get_point(self.view)
         if point:
@@ -75,7 +76,7 @@ class AsdCommand(sublime_plugin.TextCommand):
                 self.view.sel().add(sublime.Region(region.begin(), region.end() -1))
 
 
-class DddCommand(sublime_aio.ViewCommand):
+class mir_save_multibuffer_blocks_command(sublime_aio.ViewCommand):
     async def run(self):
         workspace_edits: WorkspaceEdit | None = self.view.settings().get('mir.reference_workspace_edits', None)
         if workspace_edits is None:
