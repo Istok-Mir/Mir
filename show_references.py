@@ -61,10 +61,6 @@ class InterceptKeyboard(sublime_plugin.ViewEventListener):
     def on_query_context(self, key: str, operator: int, operand, match_all: bool) -> bool | None:
         if (key == 'mir.is_reference_panel_visible'):
             return bool(self.view.settings().get('is_mir_references_view', False))
-        if (key == 'is_empty_block'):
-            if self.view.settings().get('is_mir_references_view', False):
-                return bool(self.view.settings().get('is_mir_references_view', False))
-
 
 class mir_select_multibuffer_block_command(sublime_plugin.TextCommand):
     def run(self, edit):
