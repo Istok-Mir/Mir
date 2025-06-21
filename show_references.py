@@ -38,6 +38,7 @@ class mir_show_references_command(sublime_aio.ViewCommand):
             for reference in extended_locations:
                 _, file_path= parse_uri(reference['uri'])
                 content.append({
+                    'type': 'ViewInView',
                     'file_path': file_path,
                     'start_line': reference['range']['start']['line'],
                     'end_line': reference['range']['end']['line']

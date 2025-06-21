@@ -1,7 +1,7 @@
 from __future__ import annotations
 from Mir import get_relative_path, selector_to_language_id, get_lines
 import sublime
-from typing_extensions import TypedDict, cast, Union
+from typing_extensions import TypedDict, cast, Union, Literal
 
 
 class Multibuffer:
@@ -22,8 +22,9 @@ class Multibuffer:
     def render(self, view: sublime.View, multibuffer_content: list[MultibufferContent]):
         rendered_content = ''
         for content in multibuffer_content:
-            if 'file_path' in content and 'start_line' in content:
-                content = cast(BufferContent, content) # this cast is just sad to see in 2025...
+            if isinstance(content, str):
+                rendered_content += content + "\n"
+            else:
                 file_path = content['file_path']
                 relative_file_path = get_relative_path(file_path)
                 syntax = sublime.find_syntax_for_file(file_path)
@@ -34,8 +35,6 @@ class Multibuffer:
                 end_line = content['end_line']
                 line_content = get_lines(self.window, file_path, start_line, end_line)
                 rendered_content += f"""```{language_id}\t{relative_file_path}:{start_line+1}\n{line_content}\n```\n"""
-            else:
-                rendered_content += content + "\n"
 
         view.run_command("append", {
             'characters': rendered_content,
@@ -46,6 +45,7 @@ class Multibuffer:
 
 
 class BufferContent(TypedDict):
+    type: Literal['ViewInView']
     file_path: str
     start_line: int
     end_line: int
