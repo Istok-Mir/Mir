@@ -26,19 +26,24 @@ class mir_show_references_command(sublime_aio.ViewCommand):
             w = self.view.window()
             if not w:
                 return
+            if not all_references:
+                w.status_message('No references')
+                return
             content: list[MultibufferContent] = []
             extended_locations = merge_locations(extend_locations(all_references, 2))
+
+            word = self.view.substr(self.view.word(point))
+            title = f'{len(all_references)} references "{word}"'
+            content.append(title)
             for reference in extended_locations:
                 content.append({
                     'kind': 'View',
                     'uri': reference['uri'],
                     'range': reference['range']
                 })
-            word = self.view.substr(self.view.word(point))
-            tab_title = f'{len(all_references)} references {word}'
 
             multibuffer = Multibuffer(w, 'mir-references-view')
-            multibuffer.open(tab_title, content, flags=sublime.NewFileFlags.ADD_TO_SELECTION | sublime.NewFileFlags.SEMI_TRANSIENT)
+            multibuffer.open(title, content, flags=sublime.NewFileFlags.ADD_TO_SELECTION | sublime.NewFileFlags.SEMI_TRANSIENT)
         except Exception as e:
             mir_logger.error("Show reference failed",  exc_info=e)
 
