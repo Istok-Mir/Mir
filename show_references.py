@@ -127,7 +127,7 @@ def extend_locations(locations: list[Location], offset_lines:int) -> list[Locati
 
 
 def merge_locations(locations: list[Location]) -> list[Location]:
-    sorted_location = sorted(locations, key=lambda l: l['range']['start']['line'])
+    sorted_location = sorted(locations, key=lambda l: (l['uri'], l['range']['start']['line'], l['range']['start']['character']))
     merged_locations: list[Location] = []
 
     for location in sorted_location:
