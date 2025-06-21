@@ -1,9 +1,7 @@
 from __future__ import annotations
-from Mir import parse_uri, get_relative_path, selector_to_language_id, get_lines
+from Mir import get_relative_path, selector_to_language_id, get_lines
 import sublime
 from typing_extensions import TypedDict, cast, Union
-from Mir.types.lsp import Range, MarkupContent
-from sublime import Literal
 
 
 class Multibuffer:
