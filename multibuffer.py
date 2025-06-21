@@ -12,7 +12,7 @@ class Multibuffer:
         self.id = id
         self.window = window
 
-    def open(self, tab_title, content: list[MultibufferContent], flags=sublime.NewFileFlags) -> sublime.View:
+    def open(self, tab_title, content: list[MultibufferContent], flags:sublime.NewFileFlags=sublime.NewFileFlags.NONE) -> sublime.View:
         [v.close() for v in self.window.views() if v.settings().get('is_mir_references_view', False)]
         view = self.window.new_file(flags, syntax=self.syntax)
         view.set_scratch(True)

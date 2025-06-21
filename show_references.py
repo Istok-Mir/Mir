@@ -43,7 +43,7 @@ class mir_show_references_command(sublime_aio.ViewCommand):
                 })
 
             multibuffer = Multibuffer(w, 'mir-references-view')
-            multibuffer.open(title, content, flags=sublime.NewFileFlags.ADD_TO_SELECTION | sublime.NewFileFlags.SEMI_TRANSIENT)
+            multibuffer.open(title, content)
         except Exception as e:
             mir_logger.error("Show reference failed",  exc_info=e)
 
