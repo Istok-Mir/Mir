@@ -7,6 +7,7 @@ from urllib.parse import urlparse
 from urllib.request import url2pathname
 from urllib.request import pathname2url
 import os
+import linecache
 
 
 def view_to_text_document_item(view: sublime.View) -> TextDocumentItem :
@@ -152,3 +153,55 @@ def is_text_edit(val: Any) -> TypeGuard[TextEdit]:
 
 def is_text_document_edit(val: Any) -> TypeGuard[TextDocumentEdit]:
     return isinstance(val, dict) and 'textDocument' in val and 'edits' in val
+
+
+def get_relative_path(file_path: str) -> str:
+    base_dir = get_project_path(file_path)
+    if base_dir:
+        try:
+            return os.path.relpath(file_path, base_dir)
+        except ValueError:
+            # On Windows, ValueError is raised when path and start are on different drives.
+            pass
+    return file_path
+
+
+def get_project_path(file_path: str) -> str | None:
+    active_window = sublime.active_window()
+    if not active_window:
+        return None
+    folders = active_window.folders()
+    candidate: str | None = None
+    for folder in folders:
+        if file_path.startswith(folder):
+            if candidate is None or len(folder) > len(candidate):
+                candidate = folder
+    return candidate
+
+
+def get_lines(window: sublime.Window, file_name: str, start_line: int, end_line:int|None = None) -> str:
+    '''
+    Get the line from the buffer if the view is open, else get line from linecache.
+    start_line and end_line - are 0 based. If you want to get the first line, you should pass 0.
+    '''
+    view = window.find_open_file(file_name)
+    if view:
+        if end_line is not None:
+            start_point = view.text_point(start_line , 0)
+            end_point = view.text_point(end_line , 0)
+            return view.substr(sublime.Region(view.line(start_point).begin(), view.line(end_point).end()))
+        else:
+            point = view.text_point(start_line , 0)
+            return view.substr(view.line(point))
+    else:
+        # get from linecache
+        if end_line is not None:
+            lines = []
+            for line_index in range(start_line, end_line + 1):
+                lines.append(linecache.getline(file_name, line_index + 1).strip('\n'))
+            linecache.clearcache()
+            return '\n'.join(lines)
+        else:
+            line = linecache.getline(file_name, start_line + 1)
+            linecache.clearcache()
+            return line
