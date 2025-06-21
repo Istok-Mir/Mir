@@ -28,9 +28,6 @@ class mir_show_references_command(sublime_aio.ViewCommand):
                 return
             content: list[MultibufferContent] = []
             extended_locations = merge_locations(extend_locations(all_references, 2))
-            print('all_references', all_references)
-            print('extend_locations', extend_locations(all_references, 2))
-            print('merge_locations', merge_locations(extend_locations(all_references, 2)))
             for reference in extended_locations:
                 content.append({
                     'kind': 'View',
