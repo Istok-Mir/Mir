@@ -2,84 +2,89 @@ from __future__ import annotations
 
 from Mir import apply_workspace_edit
 
-from .libs.lsp.view_to_lsp import is_text_edit, region_to_range, selector_to_language_id
+from .libs.lsp.view_to_lsp import is_text_edit, selector_to_language_id
 import sublime_aio
 import sublime
 import sublime_plugin
 import linecache
 from Mir import mir, parse_uri
-from Mir.types.lsp import Location, WorkspaceEdit
+from Mir.types.lsp import Location, WorkspaceEdit, Range
 import os
+from Mir import mir_logger
 
 view_reference_name = 'Mir References'
 
 class mir_show_references_command(sublime_aio.ViewCommand):
     async def run(self):
-        point = get_point(self.view)
-        if point is None:
-            return
-        results = await mir.references(self.view, point)
-        all_references: list[Location] = []
-        for _, references in results:
-            if references:
-                all_references.extend(references)
-        w = self.view.window()
-        if not w:
-            return
-        grouped_locations_by_uri = group_locations_by_uri(w, all_references)
-        [v.close() for v in w.views() if v.settings().get('is_mir_references_view', False)]
-        new_view = w.new_file(sublime.NewFileFlags.ADD_TO_SELECTION | sublime.NewFileFlags.SEMI_TRANSIENT, syntax="Packages/Markdown/Markdown.sublime-syntax")
-        new_view.settings().set('is_mir_references_view', True)
-        word = self.view.substr(self.view.word(point))
-        new_view.set_name(f'{len(all_references)} references {word}')
-        new_view.set_scratch(True)
-        content = ''
-        workspace_edits: WorkspaceEdit = {
-            'changes': {}
-        }
-        for file_uri in grouped_locations_by_uri:
-            if file_uri not in workspace_edits['changes']:
-                workspace_edits['changes'][file_uri] = []
-            for reference in grouped_locations_by_uri[file_uri]:
-                row, line_content =  reference
-                _, file_path = parse_uri(file_uri)
-                relative_file_path = get_relative_path(file_path)
-                syntax = self.view.syntax()
-                language_id = ''
-                if syntax:
-                    language_id = selector_to_language_id(syntax.scope)
-                lines = line_content.split('\n')
-                number_of_line_rows = len(lines)
-                workspace_edits['changes'][file_uri].append({
-                    'range': {
-                        'start': {'line': row, 'character': 0},
-                        'end': {
-                            'line': row + number_of_line_rows - 1, # lines in LSP are 0 based, so thus - 1
-                            'character': len(lines[-1])
-                        }
-                    },
-                    'newText': line_content
-                })
-                content += f"""```{language_id}\t{relative_file_path}:{row+1}
-{line_content}
-```\n"""
-        new_view.run_command("append", {
-            'characters': content,
-            'force': False,
-            'scroll_to_end': False
-        })
-        new_view.clear_undo_stack()
-        found_regions = [r for r in new_view.find_all(fr'\b{word}\b') if new_view.match_selector(r.begin()+1, "markup.raw.code-fence")]
-        new_view.sel().clear()
-        new_view.sel().add_all(found_regions)
-        new_view.settings().set('mir.reference_workspace_edits', workspace_edits)
+        try:
+            point = get_point(self.view)
+            if point is None:
+                return
+            results = await mir.references(self.view, point)
+            all_references: list[Location] = []
+            for _, references in results:
+                if references:
+                    all_references.extend(references)
+            w = self.view.window()
+            if not w:
+                return
+            grouped_locations_by_uri = group_locations_by_uri(w, all_references)
+            [v.close() for v in w.views() if v.settings().get('is_mir_references_view', False)]
+            new_view = w.new_file(sublime.NewFileFlags.ADD_TO_SELECTION | sublime.NewFileFlags.SEMI_TRANSIENT, syntax="Packages/Markdown/Markdown.sublime-syntax")
+            new_view.settings().set('is_mir_references_view', True)
+            word = self.view.substr(self.view.word(point))
+            new_view.set_name(f'{len(all_references)} references {word}')
+            new_view.set_scratch(True)
+            content = ''
+            workspace_edits: WorkspaceEdit = {
+                'changes': {}
+            }
+            for file_uri in grouped_locations_by_uri:
+                if file_uri not in workspace_edits['changes']:
+                    workspace_edits['changes'][file_uri] = []
+                for reference in grouped_locations_by_uri[file_uri]:
+                    row, line_content, lsp_range =  reference
+                    _, file_path = parse_uri(file_uri)
+                    relative_file_path = get_relative_path(file_path)
+                    syntax = self.view.syntax()
+                    language_id = ''
+                    if syntax:
+                        language_id = selector_to_language_id(syntax.scope)
+                    lines = line_content.split('\n')
+                    number_of_line_rows = len(lines)
+                    workspace_edits['changes'][file_uri].append({
+                        'range': {
+                            'start': {'line': row, 'character': 0},
+                            'end': {
+                                'line': row + number_of_line_rows - 1, # lines in LSP are 0 based, so thus - 1
+                                'character': len(lines[-1])
+                            }
+                        },
+                        'newText': line_content
+                    })
+                    content += f"""```{language_id}\t{relative_file_path}:{row+1}
+    {line_content}
+    ```\n"""
+            new_view.run_command("append", {
+                'characters': content,
+                'force': False,
+                'scroll_to_end': False
+            })
+            new_view.clear_undo_stack()
+            found_regions = [r for r in new_view.find_all(fr'\b{word}\b') if new_view.match_selector(r.begin()+1, "markup.raw.code-fence")]
+            new_view.sel().clear()
+            new_view.sel().add_all(found_regions)
+            new_view.settings().set('mir.reference_workspace_edits', workspace_edits)
+        except Exception as e:
+            mir_logger.error("Show reference failed",  exc_info=e)
+
 
 def group_locations_by_uri(
     window: sublime.Window,
     locations: list[Location]
-) -> dict[str, list[tuple[int, str]]]:
+) -> dict[str, list[tuple[int, str, list[Range]]]]:
     """Return a dictionary that groups locations by the URI it belongs."""
-    grouped_locations: dict[str, list[tuple[int, str]]] = {}
+    grouped_locations: dict[str, list[tuple[int, str, Range]]] = {}
     files_lines_added: dict[str, list[int]] = {}
     for location in locations:
         uri = location['uri']
@@ -98,7 +103,7 @@ def group_locations_by_uri(
             if line_content.startswith('```'):
                 print('skipping ```')
                 continue
-            grouped_locations[uri].append((row, line_content))
+            grouped_locations[uri].append((row, line_content, location['range']))
     # we don't want to cache the line, we always want to get fresh data
     linecache.clearcache()
     return squash_nearby_lines(grouped_locations)
@@ -129,51 +134,35 @@ def get_point(view: sublime.View):
     return region.b
 
 
-def squash_nearby_lines(input_data: dict[str, list[tuple[int, str]]]) -> dict[str, list[tuple[int, str]]]:
-    squashed_data: dict[str, list[tuple[int, str]]] = {}
+def squash_nearby_lines(input_data: dict[str, list[tuple[int, str, Range]]]) -> dict[str, list[tuple[int, str, list[Range]]]]:
+    squashed_data: dict[str, list[tuple[int, str, list[Range]]]] = {}
 
     for uri, references in input_data.items():
+        squashed_data[uri] = []
         if not references:
-            squashed_data[uri] = []
             continue
-        sorted_references: list[tuple[int, str]] = sorted(references, key=lambda x: x[0])
-        current_squashed_block: list[tuple[int, str]] = []
-        result_for_uri: list[tuple[int, str]] = []
-        for i, (row, line_content) in enumerate(sorted_references):
-            if not current_squashed_block:
-                # If the current block is empty, start a new one with the current reference.
-                current_squashed_block.append((row, line_content))
+        sorted_references: list[tuple[int, str, Range]] = sorted(references, key=lambda x: x[0])
+        result_for_uri: list[tuple[int, dict]] = []
+        for row, line_content, lsp_range in sorted_references:
+            if not result_for_uri:
+                result_for_uri.append((row, {
+                    'content': line_content,
+                    'ranges': [lsp_range]
+                }))
+                continue # Move to the next reference
+            previous_row, previous_dict = result_for_uri[-1]
+
+            last_row_of_previous_block = previous_row + len(previous_dict['content'].split('\n')) -1
+            if row == last_row_of_previous_block + 1:
+                previous_dict['content'] += '\n' + line_content
+                previous_dict['ranges'].append(lsp_range)
             else:
-                # Get the row number of the last line added to the current squashed block.
-                last_row_in_block: int = current_squashed_block[-1][0]
-                if row == last_row_in_block + 1:
-                    # If the current line's row is exactly one greater than the last line's row,
-                    # it's consecutive, so add it to the current block.
-                    current_squashed_block.append((row, line_content))
-                else:
-                    # If the current line is not consecutive, it means the previous block is complete.
-                    # Extract the first reference's row and column for the combined entry.
-                    first_row: int = current_squashed_block[0][0]
-
-                    # Join all line contents in the current block with a newline character.
-                    combined_content: str = "\n".join([item[1] for item in current_squashed_block])
-
-                    # Add the combined entry to the result list for this URI.
-                    result_for_uri.append((first_row, combined_content))
-
-                    # Start a new squashed block with the current non-consecutive line.
-                    current_squashed_block = [(row, line_content)]
-
-        # After the loop finishes, there might be a pending `current_squashed_block`
-        # that needs to be added to the results.
-        if current_squashed_block:
-            first_row = current_squashed_block[0][0]
-            combined_content = "\n".join([item[1] for item in current_squashed_block])
-            result_for_uri.append((first_row, combined_content))
-
-        # Assign the processed list of squashed references to the URI in the final dictionary.
-        squashed_data[uri] = result_for_uri
-
+                result_for_uri.append((row, {
+                    'content': line_content,
+                    'ranges': [lsp_range]
+                }))
+        for result_row, result_dict in result_for_uri:
+            squashed_data[uri].append((result_row, result_dict['content'], result_dict['ranges']))
     return squashed_data
 
 
