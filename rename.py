@@ -4,12 +4,12 @@ import sublime_aio
 from .libs.lsp.workspace_edit import apply_workspace_edit
 
 
-from .libs.lsp.mir import MAX_WAIT_TIME
-from Mir.types.lsp import PrepareRenameResult
-from .libs.lsp.server import is_applicable_view # Bad, mir.rename_symbol should exist instead, or something like that
 import sublime_aio
 import asyncio
 from Mir import mir_logger, range_to_region, LanguageServer, point_to_position, get_view_uri, is_range, server_for_view, servers_for_view
+from .libs.lsp.mir import MAX_WAIT_TIME
+from Mir.types.lsp import PrepareRenameResult
+from .libs.lsp.server import is_applicable_view # Bad, mir.rename_symbol should exist instead, or something like that
 
 
 class MirRenameCommand(sublime_aio.ViewCommand):

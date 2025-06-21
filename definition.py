@@ -14,9 +14,9 @@ class MirGotoDefinitionCommand(sublime_aio.ViewCommand):
         window = self.view.window()
         if not window:
             return
-        for name, defintion in definitions:
-            if isinstance(defintion, list):
-                for d in defintion:
+        for name, definition in definitions:
+            if isinstance(definition, list):
+                for d in definition:
                     if 'targetUri' in d:
                         # open_view_with_uri(d['targetUri'], d['targetSelectionRange'], window)
                         _, file_name = parse_uri(d['targetUri'])
@@ -32,9 +32,9 @@ class MirGotoDefinitionCommand(sublime_aio.ViewCommand):
                         window.focus_view(view)
                         move_cursor_to(view, point)
                     return
-            if isinstance(defintion, dict):
-                # open_view_with_uri(defintion['uri'], defintion['range'], window)
-                _, file_name = parse_uri(defintion['uri'])
+            if isinstance(definition, dict):
+                # open_view_with_uri(definition['uri'], definition['range'], window)
+                _, file_name = parse_uri(definition['uri'])
                 view = window.find_open_file(file_name)
                 if view:
                     selected_sheets = window.selected_sheets()
@@ -42,7 +42,7 @@ class MirGotoDefinitionCommand(sublime_aio.ViewCommand):
                         window.select_sheets([view.sheet()])
                 else:
                     view = await open_view(file_name, window, flags=sublime.NewFileFlags.ENCODED_POSITION | sublime.ADD_TO_SELECTION | sublime.SEMI_TRANSIENT)
-                point = position_to_point(view, defintion['range']['end'])
+                point = position_to_point(view, definition['range']['end'])
                 window.focus_view(view)
                 move_cursor_to(view, point)
                 return
@@ -55,4 +55,3 @@ def move_cursor_to(view: sublime.View, point: int) -> None:
     view.run_command("add_jump_record", {"selection": [(point, point)]})
     if not view.visible_region().contains(point):
         view.show_at_center(point)
-

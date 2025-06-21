@@ -9,7 +9,7 @@ import sublime
 import sublime_plugin
 
 # use `from Mir import apply_workspace_edit`
-class MirApplyWorkspaceEdit(sublime_aio.ViewCommand):
+class mir_apply_workspace_edit_command(sublime_aio.ViewCommand):
     async def run(self, future_id: str, workspace_edit: WorkspaceEdit):
         try:
             window = self.view.window()
@@ -28,7 +28,8 @@ class MirApplyWorkspaceEdit(sublime_aio.ViewCommand):
                         was_open = True
                     else:
                         view = await open_view(file_path, window)
-                    await apply_text_document_edits(view, change['edits'])
+                    apply_text_document_edits(view, change['edits'])
+                    await save_view(view)
                     if not was_open:
                         view.close()
                 return
@@ -42,7 +43,8 @@ class MirApplyWorkspaceEdit(sublime_aio.ViewCommand):
                         was_open = True
                     else:
                         view = await open_view(file_path, window)
-                    await apply_text_document_edits(view, text_edits)
+                    apply_text_document_edits(view, text_edits)
+                    await save_view(view)
                     if not was_open:
                         view.close()
                 return
@@ -53,9 +55,9 @@ class MirApplyWorkspaceEdit(sublime_aio.ViewCommand):
                 future.set_result(None)
 
 
-# use `from Mir import apply_text_document_edits`
-class MirApplyTextDocumentEditsCommand(sublime_plugin.TextCommand):
-    def run(self, edit: sublime.Edit, future_id: str, edits: list[TextEdit | AnnotatedTextEdit | SnippetTextEdit], close_after_edit=False):
+# use `from Mir import apply_text_document_edits` instead of mir_apply_text_document_edits_command
+class mir_apply_text_document_edits_command(sublime_plugin.TextCommand):
+    def run(self, edit: sublime.Edit, edits: list[TextEdit | AnnotatedTextEdit | SnippetTextEdit]):
         text_edits: list[TextEdit] = []
         for e in edits:
             if is_text_edit(e):
@@ -64,11 +66,3 @@ class MirApplyTextDocumentEditsCommand(sublime_plugin.TextCommand):
                 mir_logger.info('Mir TODO implement edit for', e)
         for text_edit in reversed(text_edits):
             self.view.replace(edit, range_to_region(self.view, text_edit['range']), text_edit['newText'])
-        sublime_aio.run_coroutine(self.save(future_id))
-
-    async def save(self, future_id: str):
-        await save_view(self.view)
-        future = FutureWithId.get(future_id)
-        if future:
-            future.set_result(None)
-

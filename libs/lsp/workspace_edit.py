@@ -15,12 +15,9 @@ async def apply_workspace_edit(view: sublime.View, workspace_edit: WorkspaceEdit
     return future
 
 
-async def apply_text_document_edits(view: sublime.View, edits: list[TextEdit | AnnotatedTextEdit | SnippetTextEdit] | list[AnnotatedTextEdit] | list[TextEdit] | list[SnippetTextEdit]): # the wierd type is to silence pyright
-    future = FutureWithId()
+def apply_text_document_edits(view: sublime.View, edits: list[TextEdit | AnnotatedTextEdit | SnippetTextEdit] | list[AnnotatedTextEdit] | list[TextEdit] | list[SnippetTextEdit]): # the wierd type is to silence pyright
     view.run_command('mir_apply_text_document_edits', {
-        'future_id': future.id,
         'edits': edits
     })
-    return future
 
 
