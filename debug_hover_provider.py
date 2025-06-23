@@ -44,11 +44,8 @@ class DebugHoverProvider(HoverProvider):
         word_string, region = r
         value = ''
         try:
-            response =await session.evaluate_expression(word_string, 'hover')
-            component = VariableView(debugger, dap.Variable(session, '', response.result, response.variablesReference, evaluateName=word_string))
-            component.toggle_expand()
-            res = await component.variable.session.evaluate_expression(word_string, 'variables')
-            value = res.result
+            response =await session.evaluate_expression(word_string, 'clipboard')
+            value = response.result
         # errors trying to evaluate a hover expression should be ignored
         except dap.Error as e:
             print('ee', e)
