@@ -18,6 +18,7 @@ html.mir_popup {
 .mir_popup_content * {
     padding: 0;
     margin: 0;
+    display: block;
 }
 
 .mir_popup_space_between {

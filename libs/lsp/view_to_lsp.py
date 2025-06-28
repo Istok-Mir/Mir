@@ -8,6 +8,7 @@ from urllib.request import url2pathname
 from urllib.request import pathname2url
 import os
 import linecache
+import re
 
 
 def view_to_text_document_item(view: sublime.View) -> TextDocumentItem :
@@ -56,9 +57,41 @@ def _view_to_uri(view) -> str:
 def file_name_to_uri(file_name: str) -> str:
     return 'file://' + pathname2url(file_name)
 
-def open_view_with_uri(uri: str, lsp_range: Range, window: sublime.Window) -> sublime.View:
+async def open_view_with_uri(uri: str, lsp_range: Range, view: sublime.View) -> sublime.View:
+    window = view.window()
+    if not window:
+        raise Exception('No window')
     schema, parsed_uri = parse_uri(uri)
+    if schema == 'deno':
+        # TODO introduce UriResolverProvider or something like that
+        from Mir import server_for_view
+        server = server_for_view('deno', view)
+        syntax = sublime.find_syntax_for_file(urlparse(uri).path).path
+        if not server:
+            raise Exception('No server')
+        response = server.send_request('deno/virtualTextDocument', {"textDocument": {"uri": uri}})
+        result = await response.result
+        v = window.new_file(syntax=syntax)
+        v.settings().set("mir_text_document_uri", uri)
+        v.set_scratch(True)
+        v.set_name(uri)
+        v.run_command("append", {"characters": result})
+        v.set_read_only(True)
+        point = position_to_point(v, lsp_range['end'])
+        window.focus_view(v)
+        move_cursor_to(v, point)
+        return v
     return window.open_file(parsed_uri+f":{lsp_range['end']['line']+1}:{lsp_range['end']['character']+1}", sublime.ENCODED_POSITION)
+
+
+def move_cursor_to(view: sublime.View, point: int) -> None:
+    sel = view.sel()
+    sel.clear()
+    sel.add(point)
+    view.run_command("add_jump_record", {"selection": [(point, point)]})
+    if not view.visible_region().contains(point):
+        view.show_at_center(point)
+
 
 def parse_uri(uri: str) -> tuple[str, str]:
     """
@@ -84,6 +117,14 @@ def parse_uri(uri: str) -> tuple[str, str]:
         # workaround for bug in urllib.parse.urlparse
         return parsed.path.split(':')[0], uri
     return parsed.scheme, uri
+
+
+def _uppercase_driveletter(match: Any) -> str:
+    """
+    For compatibility with Sublime's VCS status in the status bar.
+    """
+    return f"{match.group(1).upper()}:"
+
 
 def get_view_uri(view) -> str:
     uri = view.settings().get("mir_text_document_uri")
