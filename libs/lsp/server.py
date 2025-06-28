@@ -231,7 +231,7 @@ class LanguageServer:
             raise Exception('Mir: Only transport stdio is supported at the moment.')
 
     def __init__(self) -> None:
-        self.status: Literal['off', 'initializing','ready'] = 'off'
+        self.status: Literal['off', 'initializing','initialized'] = 'off'
 
         self.send = LspRequest(self.send_request)
         self.notify = LspNotification(self.send_notification)
@@ -305,9 +305,9 @@ class LanguageServer:
         self.capabilities.assign(cast(dict, initialize_result['capabilities']))
 
         self.register_providers()
-        self.status = 'ready'
 
         self.notify.initialized({})
+        self.status = 'initialized'
 
         def update_settings_on_change():
             self.settings.update(view.settings().get('mir.language_server_settings', {}))

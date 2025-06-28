@@ -12,10 +12,12 @@ html.mir_popup {
 }
 .mir_popup_content {
     padding: 0.7rem;
+}
+.mir_popup_content, .mir_popup_content * {
     font-size: 0.9rem;
 }
 
-.mir_popup_content * {
+.mir_popup_content > * {
     padding: 0;
     margin: 0;
     display: block;
