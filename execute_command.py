@@ -5,7 +5,7 @@ from Mir.types.lsp import ExecuteCommandParams
 from Mir import mir, server_for_view
 from typing import Any
 
-class MirExecuteCommandCommand(sublime_aio.ViewCommand):
+class mir_execute_command_command(sublime_aio.ViewCommand):
     async def run(self, server_name: str, command: str | None = None, arguments: list[Any] | None = None) -> None:
         if not command:
             return

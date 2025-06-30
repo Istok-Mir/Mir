@@ -33,7 +33,7 @@ def find_diagnostic(view: sublime.View, diagnostics: list[Diagnostic], forward: 
     return (diag_pos, diag)
 
 
-class MirNextDiagnosticCommand(sublime_aio.ViewCommand):
+class mir_next_diagnostic_command(sublime_aio.ViewCommand):
     async def run(self):
         results = await mir.get_diagnostics(self.view)
         all_diagnostics = []
@@ -42,7 +42,7 @@ class MirNextDiagnosticCommand(sublime_aio.ViewCommand):
         diag_pos, diagnostic = find_diagnostic(self.view, all_diagnostics, forward=True)
         self.view.run_command('mir_go_to_point', {'point': diag_pos, 'message': diagnostic['message'] if diagnostic else None})
 
-class MirPrevDiagnosticCommand(sublime_aio.ViewCommand):
+class mir_prev_diagnostic_command(sublime_aio.ViewCommand):
     async def run(self):
         results = await mir.get_diagnostics(self.view)
         all_diagnostics = []

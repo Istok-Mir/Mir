@@ -4,7 +4,7 @@ from Mir import mir, parse_uri, position_to_point, open_view, open_view_with_uri
 import sublime_aio
 
 
-class MirGotoDefinitionCommand(sublime_aio.ViewCommand):
+class mir_goto_definition_command(sublime_aio.ViewCommand):
     async def run(self):
         sel = self.view.sel()
         if sel is None:

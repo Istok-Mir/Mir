@@ -61,7 +61,7 @@ class Cache:
 
 
 
-class MirNextReferenceCommand(sublime_aio.ViewCommand):
+class mir_next_reference_command(sublime_aio.ViewCommand):
     async def run(self):
         point = get_point(self.view)
         if point is None:
@@ -85,7 +85,7 @@ class MirNextReferenceCommand(sublime_aio.ViewCommand):
         point = position_to_point(view, location['range']['end'])
         view.run_command('mir_go_to_point', {'point': point, 'message': f"{ordinal_number} of {len(all_references)} referenecs"})
 
-class MirPrevReferenceCommand(sublime_aio.ViewCommand):
+class mir_prev_reference_command(sublime_aio.ViewCommand):
     async def run(self):
         point = get_point(self.view)
         if point is None:

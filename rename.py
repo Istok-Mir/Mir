@@ -12,7 +12,7 @@ from Mir.types.lsp import PrepareRenameResult
 from .libs.lsp.server import is_applicable_view # Bad, mir.rename_symbol should exist instead, or something like that
 
 
-class MirRenameCommand(sublime_aio.ViewCommand):
+class mir_rename_command(sublime_aio.ViewCommand):
     async def run(self):
         sel = self.view.sel()
         if not sel:

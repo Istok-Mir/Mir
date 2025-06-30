@@ -9,16 +9,16 @@ import sublime
 
 class MirCompletionListener(sublime_plugin.EventListener):
     def on_pre_save(self, view: sublime.View):
-        if MirCodeActionsOnSaveCommand.running_code_actions_on_save:
+        if mir_code_actions_on_save_command.running_code_actions_on_save:
             return
         view.run_command('mir_code_actions_on_save')
 
 
-class MirCodeActionsOnSaveCommand(sublime_aio.ViewCommand):
+class mir_code_actions_on_save_command(sublime_aio.ViewCommand):
     running_code_actions_on_save = False
 
     async def run(self):
-        MirCodeActionsOnSaveCommand.running_code_actions_on_save = True
+        mir_code_actions_on_save_command.running_code_actions_on_save = True
         servers = servers_for_view(self.view, 'codeActionProvider')
         view_settings = self.view.settings()
         settings: list[str] = view_settings.get('mir.on_save', [])
@@ -82,4 +82,4 @@ class MirCodeActionsOnSaveCommand(sublime_aio.ViewCommand):
                 })
 
         self.view.run_command('save')
-        MirCodeActionsOnSaveCommand.running_code_actions_on_save = False
+        mir_code_actions_on_save_command.running_code_actions_on_save = False
