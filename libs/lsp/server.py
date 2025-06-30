@@ -205,7 +205,6 @@ class LanguageServer:
 
         if transport == 'stdio':
             try:
-                self.status = 'initializing'
                 self._process = await asyncio.create_subprocess_exec(
                     *options['cmd'],
                     stdout=asyncio.subprocess.PIPE,
@@ -225,13 +224,19 @@ class LanguageServer:
                 sublime_aio.run_coroutine(self._run_forever())
             except Exception as e:
                 mir_logger.error(f'Mir ({self.name}) Error while creating subprocess.', exc_info=e)
-                self.status = 'off'
                 raise e
         else: 
             raise Exception('Mir: Only transport stdio is supported at the moment.')
 
+        assert self._process, f"Mir: {self.name} should be running after activation, but it is not."
+        self.initialize_params['processId'] = self._process.pid # process
+        initialize_result = await self.send.initialize(self.initialize_params).result
+        self.capabilities.assign(cast(dict, initialize_result['capabilities']))
+
+        self.register_providers()
+        self.notify.initialized({})
+
     def __init__(self) -> None:
-        self.status: Literal['off', 'initializing','initialized'] = 'off'
 
         self.send = LspRequest(self.send_request)
         self.notify = LspNotification(self.send_notification)
@@ -299,22 +304,12 @@ class LanguageServer:
         }
         await self.activate() # lots of stuff can fail here
 
-        assert self._process, f"Mir: {self.name} should be running after activation, but it is not."
-        self.initialize_params['processId'] = self._process.pid # process
-        initialize_result = await self.send.initialize(self.initialize_params).result
-        self.capabilities.assign(cast(dict, initialize_result['capabilities']))
-
-        self.register_providers()
-
-        self.notify.initialized({})
-        self.status = 'initialized'
-
         def update_settings_on_change():
             self.settings.update(view.settings().get('mir.language_server_settings', {}))
-            self.notify.workspace_did_change_configuration({'settings': {}}) # https://github.com/microsoft/language-server-protocol/issues/567#issuecomment-420589320
+            self.notify.workspace_did_change_configuration({'settings': self.settings.get()}) # https://github.com/microsoft/language-server-protocol/issues/567#issuecomment-420589320
 
         self.view.settings().add_on_change('mir-settings-listener', update_settings_on_change)
-        self.notify.workspace_did_change_configuration({'settings': {}}) # https://github.com/microsoft/language-server-protocol/issues/567#issuecomment-420589320
+        self.notify.workspace_did_change_configuration({'settings': self.settings.get()}) # https://github.com/microsoft/language-server-protocol/issues/567#issuecomment-420589320
 
 
     def stop(self):
@@ -346,7 +341,6 @@ class LanguageServer:
             self._process.kill()
             await self._process.wait()
             self._process = None
-        self.status = 'off'
 
     def _log(self, message: str) -> None:
         self.send_notification("window/logMessage",

@@ -59,7 +59,7 @@ class MirTextChangeListener(sublime_plugin.TextChangeListener):
             sublime.set_timeout(debounce_func, 1000)
 
     def debounce_sending_changes(self, server: LanguageServer, view:sublime.View, last_change_count: int):
-        if view.change_count() == last_change_count and server.status == 'ready':
+        if view.change_count() == last_change_count:
             server.send_did_change_text_document()
 
 
