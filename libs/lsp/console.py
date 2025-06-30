@@ -11,6 +11,9 @@ class Console:
         self.panel: sublime.View | None = None
         if window:
             self.panel = window.create_output_panel(name)
+            self.panel.settings().set("word_wrap", False)
+            self.panel.settings().set('scroll_past_end', False)
+            self.panel.settings().set('syntax', 'Packages/Mir/mir-lsp-logs.sublime-syntax')
 
     def log(self, log: str):
         if not self.panel:
@@ -28,8 +31,6 @@ class Console:
         # start_bracket_point = self.panel.find(r'^(Response: |Params: )', last_bracket_point.end(), sublime.FindFlags.REVERSE)
         # if last_bracket_point is not None and start_bracket_point is not None:
         #     self.panel.fold(sublime.Region(start_bracket_point.end() + 1, last_bracket_point.begin()))
-        self.panel.settings().set("word_wrap", False)
-        self.panel.settings().set('scroll_past_end', False)
         self.panel.clear_undo_stack()
         self.panel.set_read_only(True)
 

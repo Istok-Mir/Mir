@@ -1,0 +1,15 @@
+%YAML 1.2
+---
+name: MirLspLogs
+hidden: true
+scope: text.mir_lsp-logs
+
+contexts:
+  main:
+    - match: '\(.+?\).+?"\b(.+)\b"'
+      captures:
+        1: keyword.control
+      pop: true
+    - match: '^(Params|Response):\s+'
+      embed: scope:source.json
+      escape: '^$'
