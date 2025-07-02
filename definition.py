@@ -1,6 +1,5 @@
 from __future__ import annotations
-import sublime
-from Mir import mir, parse_uri, position_to_point, open_view, open_view_with_uri
+from Mir import mir, open_view_with_uri
 import sublime_aio
 
 

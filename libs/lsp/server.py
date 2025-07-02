@@ -154,7 +154,8 @@ def unregister_language_server(server: LanguageServer):
 server_callbacks_when_ready = []
 
 class LanguageServerConnectionOptions(TypedDict):
-    cmd: list[str]
+    communication_channel: Literal['stdio', 'pipe', 'socket', 'node-ipc']
+    command: list[str]
     env: NotRequired[dict]
     initialization_options: NotRequired[dict]
 
@@ -196,17 +197,17 @@ class LanguageServer:
         ...
 
 
-    async def connect(self, transport: Literal['stdio', 'tcp'], options: LanguageServerConnectionOptions):
+    async def initialize(self, options: LanguageServerConnectionOptions):
         if "initialization_options" in options:
             self.initialization_options.update(options['initialization_options'])
         env = os.environ.copy()
         if 'env' in options:
             env.update(options['env'])
 
-        if transport == 'stdio':
+        if options.get('communication_channel') == 'stdio':
             try:
                 self._process = await asyncio.create_subprocess_exec(
-                    *options['cmd'],
+                    *options['command'],
                     stdout=asyncio.subprocess.PIPE,
                     stdin=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE,
@@ -217,7 +218,7 @@ class LanguageServer:
                 if self._process.returncode and self._process.stderr:
                     error_message = (await self._process.stderr.read()).decode('utf-8', errors='ignore')
                     error_message_wihout_ascii_chars = re.sub(r'(?:\x1B[@-_]|[\x80-\x9F])[0-?]*[ -/]*[@-~]',' ', error_message)
-                    final_message = f"Command: '{' '.join([str(o) for o in options['cmd']])}'" + '\nExited with: ' + error_message_wihout_ascii_chars
+                    final_message = f"Command: '{' '.join([str(o) for o in options['command']])}'" + '\nExited with: ' + error_message_wihout_ascii_chars
                     self.console.log(final_message)
                     raise Exception(final_message)
 
@@ -226,7 +227,7 @@ class LanguageServer:
                 mir_logger.error(f'Mir ({self.name}) Error while creating subprocess.', exc_info=e)
                 raise e
         else: 
-            raise Exception('Mir: Only transport stdio is supported at the moment.')
+            raise Exception('Mir: Only `stdio` is supported as a communication_channel at the moment.')
 
         assert self._process, f"Mir: {self.name} should be running after activation, but it is not."
         self.initialize_params['processId'] = self._process.pid # process
