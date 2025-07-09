@@ -491,7 +491,7 @@ class LanguageServer:
             return
         try:
             self.console.log(f'Received request "{method}" ({request_id})\nParams: {format_payload(params)}')
-            res = await handler(params)
+            res = await handler(params) if asyncio.iscoroutinefunction(handler) else handler(params)
             self.console.log(f'Sending response "{method}" ({request_id})\nResponse: {format_payload(res)}')
             await self.send_response(request_id, res)
         except Error as ex:
