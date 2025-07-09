@@ -4,7 +4,7 @@ html.mir_popup {
 }
 
 /* no margin/padding */
-html.mir_popup,  .mir_popup body, .mir_popup p {
+html.mir_popup, .mir_popup body, .mir_popup p, .mir_popup .highlight {
     padding: 0;
     margin: 0;
 }
@@ -14,25 +14,28 @@ html.mir_popup,  .mir_popup body, .mir_popup p {
     border: 1px solid color(var(--foreground) blend(var(--background) 20%));
 }
 
+.mir_popup .highlight {
+    font-size: 0.9rem;
+}
+
+.mir_popup_content h1,
+.mir_popup_content h2,
+.mir_popup_content h3,
+.mir_popup_content h4,
+.mir_popup_content h5,
+.mir_popup_content h6 {
+    padding: 0;
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+
 .mir_popup_content {
     padding: 0.7rem;
     font-size: 0.9rem;
 }
 
-.mir_popup_content > * {
-    display: block;
-    font-size: 0.9rem;
-}
 
 .mir_popup_space_between {
     margin-top: 0.7rem;
-}
-
-.mir_popup h1,
-.mir_popup h2,
-.mir_popup h3,
-.mir_popup h4,
-.mir_popup h5,
-.mir_popup h6 {
-    font-size: 0.9rem;
 }
