@@ -1,0 +1,28 @@
+%YAML 1.2
+---
+name: Mir Multibuffer
+scope: source.mir.multibuffer
+file_extensions:
+  - codeblock
+
+contexts:
+  main:
+    - match: '(◤)\s*(.+?)(:)(\d+)'
+      scope: meta.block.start.codeblock
+      captures:
+        1: comment.multibuffer.start
+        2: comment.multibuffer.filename
+        3: comment.divider
+        4: constant.numeric.line-number.codeblock
+      push: code_block
+
+  code_block:
+    - meta_scope: source.embedded.codeblock
+    - match: .*$\n
+      embed: scope:source.python
+      embed_scope: markup.raw.code-fence
+      escape: '^◣'
+      escape_captures:
+        0: meta.block.end.codeblock comment.multibuffer.end
+      pop: 1
+

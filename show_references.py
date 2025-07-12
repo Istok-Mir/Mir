@@ -56,7 +56,7 @@ class InterceptKeyboard(sublime_plugin.ViewEventListener):
         if self.view.settings().get('is_mir_references_view', False):
             point = get_point(self.view)
             if command_name == "select_all" and point and self.view.match_selector(point, "markup.raw.code-fence"):
-                return ('mir_select_buffer_block')
+                return ('mir_select_multibuffer_block')
             if command_name == 'find_under_expand' and point and not self.view.match_selector(point, "markup.raw.code-fence"):
                 return ("find_under_expand_skip")
 
@@ -92,7 +92,7 @@ class mir_save_multibuffer_blocks_command(sublime_aio.ViewCommand):
                 relative_file_path = get_relative_path(file_path)
                 row = change['range']['start']['line']
                 start = self.view.find(f'{relative_file_path}:{row+1}', 0)
-                end = self.view.find('```', start.end())
+                end = self.view.find('◣', start.end())
                 new_range = sublime.Region(
                     start.end()+1,
                     end.begin()-1

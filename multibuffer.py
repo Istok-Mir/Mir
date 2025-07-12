@@ -6,7 +6,7 @@ from typing_extensions import TypedDict, cast, Union, Literal
 
 class Multibuffer:
     def __init__(self, window: sublime.Window, id: str):
-        self.syntax = "Packages/Markdown/Markdown.sublime-syntax"
+        self.syntax = "Packages/Mir/mir-multibuffer.sublime-syntax"
         self.id = id
         self.window = window
 
@@ -34,7 +34,7 @@ class Multibuffer:
                 start_line = content['start_line']
                 end_line = content['end_line']
                 line_content = get_lines(self.window, file_path, start_line, end_line)
-                rendered_content += f"""```{language_id}\t{relative_file_path}:{start_line+1}\n{line_content}\n```\n"""
+                rendered_content += f"""◤ {relative_file_path}:{start_line+1}\n{line_content}\n◣\n"""
 
         view.run_command("append", {
             'characters': rendered_content,
