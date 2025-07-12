@@ -3,7 +3,7 @@ from __future__ import annotations
 from Mir import apply_workspace_edit
 from .multibuffer import Multibuffer, MultibufferContent
 
-from .libs.lsp.view_to_lsp import is_text_edit
+from .libs.lsp.view_to_lsp import get_lines, is_text_edit
 import sublime_aio
 import sublime
 import sublime_plugin
@@ -34,18 +34,35 @@ class mir_show_references_command(sublime_aio.ViewCommand):
 
             word = self.view.substr(self.view.word(point))
             title = f'{len(all_references)} references "{word}"'
-            content.append(title)
+            workspace_edits: WorkspaceEdit = {
+                'changes': {}
+            }
             for reference in extended_locations:
                 _, file_path= parse_uri(reference['uri'])
                 content.append({
-                    'type': 'ViewInView',
+                    'type': 'Buffer',
                     'file_path': file_path,
                     'start_line': reference['range']['start']['line'],
                     'end_line': reference['range']['end']['line']
                 })
+                workspace_edits['changes'].setdefault(reference['uri'], []).append({
+                    'range': {
+                        'start': {
+                            'line': reference['range']['start']['line'],
+                            'character': 0
+                        },
+                        'end': {
+                            'line': reference['range']['end']['line'],
+                            'character': -1
+                        }
+                    },
+                    'newText': get_lines(w, file_path, reference['range']['start']['line'], reference['range']['end']['line'])
+                })
 
             multibuffer = Multibuffer(w, 'mir-references-view')
             multibuffer.open(title, content)
+            print('workspace_edits', workspace_edits)
+            w.settings().set('mir.reference_workspace_edits', workspace_edits)
         except Exception as e:
             mir_logger.error("Show reference failed",  exc_info=e)
 
@@ -76,7 +93,11 @@ class mir_select_multibuffer_block_command(sublime_plugin.TextCommand):
 
 class mir_save_multibuffer_blocks_command(sublime_aio.ViewCommand):
     async def run(self):
-        workspace_edits: WorkspaceEdit | None = self.view.settings().get('mir.reference_workspace_edits', None)
+        w = self.view.window()
+        if not w:
+            return
+        workspace_edits: WorkspaceEdit | None = w.settings().get('mir.reference_workspace_edits', None)
+        print('workspace_edits', workspace_edits)
         if workspace_edits is None:
             return
         new_workspace_edits: WorkspaceEdit = {
@@ -112,7 +133,7 @@ class mir_save_multibuffer_blocks_command(sublime_aio.ViewCommand):
                 }
                 new_workspace_edits['changes'][file_uri].append(updated_change)
         await apply_workspace_edit(self.view, workspace_edits)
-        self.view.settings().set('mir.reference_workspace_edits', new_workspace_edits)
+        w.settings().set('mir.reference_workspace_edits', new_workspace_edits)
 
 
 def extend_locations(locations: list[Location], offset_lines:int) -> list[Location]:

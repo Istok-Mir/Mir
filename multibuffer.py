@@ -45,7 +45,7 @@ class Multibuffer:
 
 
 class BufferContent(TypedDict):
-    type: Literal['ViewInView']
+    type: Literal['Buffer']
     file_path: str
     start_line: int
     end_line: int
