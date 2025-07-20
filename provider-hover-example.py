@@ -20,10 +20,12 @@ class DiagnosticsHoverProvider(HoverProvider):
             source_styles: str = 'opacity: 0.4; color: var(--grayish)'
             if d.get('severity') == DiagnosticSeverity.Error:
                 message_styles = 'color: var(--redish)'
-                source_styles: str = 'opacity: 0.4; padding: 0 0.3rem; border-radius: 4px; color: var(--redish); background-color: color(var(--redish) alpha(0.1));'
+                source_styles = 'opacity: 0.4; padding: 0 0.3rem; border-radius: 4px; color: var(--redish); background-color: color(var(--redish) alpha(0.1));'
             elif d.get('severity') == DiagnosticSeverity.Warning:
                 message_styles = 'color:var(--yellowish)'
-                source_styles: str = 'opacity: 0.4; padding: 0 0.3rem; border-radius: 4px; color: var(--yellowish); background-color: color(var(--yellowish) alpha(0.1))'
+                source_styles = 'opacity: 0.4; padding: 0 0.3rem; border-radius: 4px; color: var(--yellowish); background-color: color(var(--yellowish) alpha(0.1))'
+            else:
+                source_styles = 'opacity: 0.4; padding: 0 0.3rem; border-radius: 4px; color: var(--foreground); background-color: color(var(--foreground) alpha(0.1))'
             source = d.get('source', '')
             formatted_source = ''
             if source:
