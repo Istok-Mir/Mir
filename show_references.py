@@ -3,7 +3,7 @@ from __future__ import annotations
 from Mir import apply_workspace_edit
 from .multibuffer import Multibuffer, MultibufferContent
 
-from .libs.lsp.view_to_lsp import get_lines, is_text_edit
+from .libs.lsp.view_to_lsp import get_lines, get_relative_path, is_text_edit
 import sublime_aio
 import sublime
 import sublime_plugin
@@ -61,7 +61,6 @@ class mir_show_references_command(sublime_aio.ViewCommand):
 
             multibuffer = Multibuffer(w, 'mir-references-view')
             multibuffer.open(title, content)
-            print('workspace_edits', workspace_edits)
             w.settings().set('mir.reference_workspace_edits', workspace_edits)
         except Exception as e:
             mir_logger.error("Show reference failed",  exc_info=e)
@@ -113,7 +112,7 @@ class mir_save_multibuffer_blocks_command(sublime_aio.ViewCommand):
                 relative_file_path = get_relative_path(file_path)
                 row = change['range']['start']['line']
                 start = self.view.find(f'{relative_file_path}:{row+1}', 0)
-                end = self.view.find('◣', start.end())
+                end = self.view.find('◣', start.begin())
                 new_range = sublime.Region(
                     start.end()+1,
                     end.begin()-1
@@ -132,7 +131,7 @@ class mir_save_multibuffer_blocks_command(sublime_aio.ViewCommand):
                     }
                 }
                 new_workspace_edits['changes'][file_uri].append(updated_change)
-        await apply_workspace_edit(self.view, workspace_edits)
+        await apply_workspace_edit(self.view, new_workspace_edits)
         w.settings().set('mir.reference_workspace_edits', new_workspace_edits)
 
 
