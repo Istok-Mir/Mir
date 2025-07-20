@@ -112,7 +112,7 @@ class mir_save_multibuffer_blocks_command(sublime_aio.ViewCommand):
                 relative_file_path = get_relative_path(file_path)
                 row = change['range']['start']['line']
                 start = self.view.find(f'{relative_file_path}:{row+1}', 0)
-                end = self.view.find('◣', start.begin())
+                end = self.view.find('```', start.end())
                 new_range = sublime.Region(
                     start.end()+1,
                     end.begin()-1
