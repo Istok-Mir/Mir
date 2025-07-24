@@ -8,9 +8,9 @@ import html
 from .libs.hover_template import hover_template
 
 
-class MirHoverListener(sublime_aio.ViewEventListener):
-    async def on_hover(self, hover_point, hover_zone):
-        hovers = await mir.hover(self.view, hover_point, hover_zone)
+class MirHoverListener(sublime_aio.EventListener):
+    async def on_hover(self, view, hover_point, hover_zone):
+        hovers = await mir.hover(view, hover_point, hover_zone)
         combined_content: list[str] = []
         for name, hover in hovers:
             if isinstance(hover, dict):
@@ -22,7 +22,7 @@ class MirHoverListener(sublime_aio.ViewEventListener):
                     mir_copy_text = content.get('value', '')
                 elif isinstance(content, list):
                     mir_copy_text = " ".join([c for c in content])
-                content = minihtml(self.view, content, MinihtmlKind.FORMAT_MARKED_STRING | MinihtmlKind.FORMAT_MARKUP_CONTENT)
+                content = minihtml(view, content, MinihtmlKind.FORMAT_MARKED_STRING | MinihtmlKind.FORMAT_MARKUP_CONTENT)
                 if content:
                     content = f"""
                     <a title="Click to copy" style='text-decoration: none; display: block; color: var(--foreground)' href='{sublime.command_url('mir_copy_text', {
@@ -33,7 +33,7 @@ class MirHoverListener(sublime_aio.ViewEventListener):
                 combined_content.append(content)
         combined_content = [c for c in combined_content if c]
         if combined_content:
-            self.view.show_popup(
+            view.show_popup(
                 hover_template(f"""<div class="mir_popup_space_between"></div>""".join(combined_content)),
                 sublime.PopupFlags.HIDE_ON_MOUSE_MOVE_AWAY,
                 hover_point,
