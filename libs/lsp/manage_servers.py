@@ -88,6 +88,9 @@ class ManageServers(sublime_aio.EventListener):
     @classmethod
     def attach_server_to_window(cls, server: LanguageServer, window: sublime.Window):
         ManageServers.language_servers_per_window.setdefault(window.id(), [])
+        if server.name in [s.name for s in ManageServers.language_servers_per_window[window.id()]]:
+            # don't attach if already attached
+            return
         ManageServers.language_servers_per_window[window.id()].append(server)
 
     @classmethod
