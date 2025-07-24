@@ -96,7 +96,6 @@ class mir_save_multibuffer_blocks_command(sublime_aio.ViewCommand):
         if not w:
             return
         workspace_edits: WorkspaceEdit | None = w.settings().get('mir.reference_workspace_edits', None)
-        print('workspace_edits', workspace_edits)
         if workspace_edits is None:
             return
         new_workspace_edits: WorkspaceEdit = {
