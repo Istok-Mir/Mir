@@ -36,11 +36,12 @@ async def open_document(view: sublime.View):
         if not is_applicable_view(view, server.activation_events):
             continue
         if server.name not in [s.name for s in ManageServers.servers_for_view(view)]:
+            new_server = server()
+            ManageServers.attach_server_to_window(new_server, window)
             try:
-                new_server = server()
                 await new_server.start(view)
-                ManageServers.attach_server_to_window(new_server, window)
             except Exception as e:
+                ManageServers.detach_server_from_window(new_server, window)
                 mir_logger.error(f'Mir ({server.name}) | Error while starting.', exc_info=e)
                 continue
     for server in servers_for_view(view):
@@ -88,9 +89,6 @@ class ManageServers(sublime_aio.EventListener):
     @classmethod
     def attach_server_to_window(cls, server: LanguageServer, window: sublime.Window):
         ManageServers.language_servers_per_window.setdefault(window.id(), [])
-        if server.name in [s.name for s in ManageServers.language_servers_per_window[window.id()]]:
-            # don't attach if already attached
-            return
         ManageServers.language_servers_per_window[window.id()].append(server)
 
     @classmethod
