@@ -17,7 +17,7 @@ Mir is a Sublime Text package that speaks the LSP language but provides more on 
 
 What is Mir?
 
-Mir collects data from "Langauge Servers" and from "Providers" pacakges.
+Mir collects data from "Language Servers" and from "Providers" packages.
 
 ```py
 # To read the data that Mir collected
