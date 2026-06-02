@@ -1,13 +1,13 @@
 Simply, don't use it now:
 - Mir API will change without notice, the features that it exposes will change or be removed without notice, it is experimental not stable and not usable for most people (except for the one developer working on this).
 - Registering/unregistering capabilities is not implemented properly.
-- Windows and Linux is not tested and probably doesn't work.
+- Windows and Linux are not tested and probably doesn't work.
 - It has some code that it should not have, for example ai.py.
 - `language-server-*.py` files should not be part of this repo.
-- the commit messages will most likely be gibberish `'asd'` and will stay that way until things start to become serious.
+- The commit messages will most likely be gibberish `'asd'` and will stay that way until things start to become serious.
 
 Don't forget the LSP package for Sublime Text works. 
-If you like something from Mir move it just to LSP.
+If you like something from Mir, move it just to LSP.
 
 The only thing that this code can give are ideas.
 
@@ -51,7 +51,6 @@ class MirCompletionListener(sublime_aio.ViewEventListener):
         completion_list.set_completions(completions, sublime.INHIBIT_WORD_COMPLETIONS)
         return completion_list
 ```
-See `Mir/package-implemenation-*.py` files for examples.
 
 ---
 
@@ -76,7 +75,7 @@ See `Mir/package-language-server-*.py` files for examples.
 ---
 
 Language servers are not the only way to provide data to Mir.
-Provider packages can be written to enhance mir.
+Provider packages can be written to enhance Mir.
 
 Hover provider example:
 ```py
